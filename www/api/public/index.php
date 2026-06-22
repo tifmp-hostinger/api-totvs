@@ -78,13 +78,21 @@ $app->setBasePath('');
 
 (require __DIR__ . '/../config/routes.php')($app);
 
+/* ---------- Autenticação (API key) ----------
+ * Ativa só quando a env API_KEY está definida. Isenta /status e /sso.
+ * Adicionada ANTES do CORS para que o CORS (externo) envolva também o 401.
+ */
+$app->add(new \FMP\RMApi\Middleware\ApiKeyAuth(
+    \FMP\RMApi\Support\Env::get('API_KEY', '') ?? ''
+));
+
 /* ---------- CORS ---------- */
 
 $app->add(function (Request $request, $handler) {
     $response = $handler->handle($request);
     return $response
         ->withHeader('Access-Control-Allow-Origin', '*')
-        ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
+        ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization, X-API-Key')
         ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
 });
 

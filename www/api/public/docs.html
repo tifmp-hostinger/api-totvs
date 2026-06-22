@@ -23,12 +23,13 @@
   .spark{color:var(--fmp-red);font-size:18px;line-height:1}
   h1{font-family:"Noto Serif",serif;font-style:italic;font-weight:600;font-size:30px;margin:10px 0 4px}
   h1 b{color:var(--fmp-red);font-weight:600}
-  .sub{color:#cfcbbf;font-size:14px;max-width:720px}
+  .sub{color:#cfcbbf;font-size:14px;max-width:760px}
   .controls{max-width:1080px;margin:20px auto 0;padding:0 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
   .field{display:flex;flex-direction:column;gap:5px}
   .field label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2)}
-  .field input{font-family:var(--mono);font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;min-width:340px}
-  .field.search input{min-width:240px;font-family:"Outfit"}
+  .field input,.field select{font-family:var(--mono);font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .field select{cursor:pointer}
+  #base{min-width:300px} #apikey{min-width:220px} .field.search input{min-width:220px;font-family:"Outfit"}
   main{max-width:1080px;margin:0 auto;padding:8px 24px 80px}
   .note{background:#fff;border:1px solid var(--line);border-left:4px solid var(--fmp-red);border-radius:12px;padding:12px 16px;margin:20px 0;font-size:13.5px;color:var(--ink-2)}
   .note b{color:var(--fmp-ink)}
@@ -67,27 +68,40 @@
 <body>
 <header>
   <div class="wrap">
-    <div class="brand"><span class="spark">✦</span> FMP · Fundação Escola Superior do Ministério Público</div>
-    <h1>RM-API — referência de <b>endpoints</b></h1>
-    <div class="sub">Integração com o TOTVS RM via SOAP. Ajuste a URL base e os campos; cada endpoint gera o <b>cURL</b> pronto para copiar (no terminal ou no <i>Import cURL</i> do n8n). A página não executa requisições — apenas monta os comandos.</div>
+    <div class="brand"><span class="spark">&#10022;</span> FMP &middot; Funda&ccedil;&atilde;o Escola Superior do Minist&eacute;rio P&uacute;blico</div>
+    <h1>RM-API &mdash; refer&ecirc;ncia de <b>endpoints</b></h1>
+    <div class="sub">Integra&ccedil;&atilde;o com o TOTVS RM via SOAP. Ajuste a URL base, a chave e os campos; cada endpoint gera o <b>cURL</b> pronto para copiar (terminal ou <i>Import cURL</i> do n8n). A p&aacute;gina n&atilde;o executa requisi&ccedil;&otilde;es &mdash; apenas monta os comandos.</div>
   </div>
 </header>
 
 <div class="controls">
   <div class="field">
-    <label for="base">URL base do serviço</label>
+    <label for="base">URL base do servi&ccedil;o</label>
     <input id="base" value="https://fmp-api-totvs.3wmyqq.easypanel.host" spellcheck="false" />
+  </div>
+  <div class="field">
+    <label for="apikey">API key (header X-API-Key)</label>
+    <input id="apikey" placeholder="cole sua chave" spellcheck="false" />
+  </div>
+  <div class="field">
+    <label for="fmt">Formato do corpo (POST)</label>
+    <select id="fmt">
+      <option value="json">JSON</option>
+      <option value="form">Campos (form / "Using Fields Below")</option>
+    </select>
   </div>
   <div class="field search">
     <label for="q">Filtrar endpoints</label>
-    <input id="q" placeholder="ex: pessoa, inscrição, schema…" />
+    <input id="q" placeholder="ex: pessoa, inscri&ccedil;&atilde;o, schema&hellip;" />
   </div>
 </div>
 
 <main>
   <div class="note">
-    <b>Base path na raiz:</b> as rotas são <code>/pessoas</code>, <code>/rm/test</code> etc., <b>sem</b> <code>/api</code>.
-    <b>POST cria/altera dados reais no RM</b> — cuidado ao testar gravações. Em POST, envie sempre <code>Content-Type: application/json</code>.
+    <b>Base path na raiz:</b> as rotas s&atilde;o <code>/pessoas</code>, <code>/rm/test</code> etc., <b>sem</b> <code>/api</code>.
+    <b>Autentica&ccedil;&atilde;o:</b> se o servidor tiver <code>API_KEY</code>, preencha o campo acima &mdash; o header <code>X-API-Key</code> entra nos cURLs.
+    <b>Formato:</b> escolha <code>JSON</code> ou <code>Campos</code> (a API aceita os dois). Corpos aninhados (rm/sql, rm/read, rm/save) saem sempre em JSON.
+    <b>POST grava dados reais no RM</b> &mdash; cuidado. A p&aacute;gina s&oacute; monta o comando.
   </div>
   <div class="toolbar">
     <button id="expandAll">Expandir tudo</button>
@@ -97,53 +111,39 @@
 </main>
 
 <footer>
-  FMP RM-API · gerado a partir de <code>docs/CURLS.md</code>. Diagnóstico: <code>GET /teste.php</code>, <code>/status</code>, <code>/rm/test</code>. Deploy e troubleshooting em <code>docs/DEPLOY-EASYPANEL.md</code>.
+  FMP RM-API &middot; gerado a partir de <code>docs/CURLS.md</code>. Diagn&oacute;stico: <code>GET /teste.php</code>, <code>/status</code>, <code>/rm/test</code>. Deploy e troubleshooting em <code>docs/DEPLOY-EASYPANEL.md</code>.
 </footer>
 
 <script>
 const endpoints = [
-  {g:"Sistema", method:"GET", path:"/status", desc:"Health check do RM (sentença INT.EDUVEM.00001)."},
+  {g:"Sistema", method:"GET", path:"/status", desc:"Health check do RM (INT.EDUVEM.00001). Isento de API key."},
 
-  {g:"RM genérico (diagnóstico)", method:"GET", path:"/rm/test", desc:"Valida conectividade e credenciais SOAP com o RM."},
-  {g:"RM genérico (diagnóstico)", method:"GET", path:"/rm/schema/{dataserver}", desc:"Schema parseado (tabelas, campos, chaves). Marque xml=1 para o XSD bruto.",
-   params:{dataserver:"RhuPessoaData"}, query:[{name:"xml", val:"", label:"xml (1 = XSD bruto)"}]},
-  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/sql/{codsentenca}", desc:"Executa uma sentença SQL cadastrada no RM.",
-   params:{codsentenca:"INT.EDUVEM.00007"},
-   body:{parametros:{CPF_S:"12345678901", RNM_S:"0"}, codcoligada:"0", codsistema:"G"}},
-  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/read/{dataserver}", desc:"ReadRecord: lê um registro pela chave primária.",
-   hint:"chave = partes da PK na ordem.", params:{dataserver:"RhuPessoaData"}, body:{chave:["12345"], contexto:{}}},
-  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/view/{dataserver}", desc:"ReadView: consulta com filtro SQL na view do DataServer.",
-   params:{dataserver:"GlbColigadaData"}, body:{filtro:"CODCOLIGADA=1", contexto:{}}},
-  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/save/{dataserver}", desc:"SaveRecord genérico: grava um XML qualquer (uso avançado/diagnóstico).",
-   params:{dataserver:"RhuPessoaData"},
-   body:{xml:"<RhuPessoa><PPessoa><CODIGO>0</CODIGO><NOME>Teste Da Silva</NOME><DTNASCIMENTO>1990-01-15</DTNASCIMENTO><SEXO>M</SEXO><CPF>12345678901</CPF><EMAIL>teste@email.com</EMAIL></PPessoa><VPCompl><CODPESSOA>0</CODPESSOA></VPCompl></RhuPessoa>", contexto:{CODCOLIGADA:"1", CODSISTEMA:"S", CODUSUARIO:"integra.eduvem"}}},
+  {g:"RM genérico (diagnóstico)", method:"GET", path:"/rm/test", desc:"Valida conectividade e credenciais SOAP."},
+  {g:"RM genérico (diagnóstico)", method:"GET", path:"/rm/schema/{dataserver}", desc:"Schema parseado. Marque xml=1 para o XSD bruto.", params:{dataserver:"RhuPessoaData"}, query:[{name:"xml", val:"", label:"xml (1 = XSD bruto)"}]},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/sql/{codsentenca}", desc:"Executa uma sentença SQL cadastrada no RM.", params:{codsentenca:"INT.EDUVEM.00007"}, body:{parametros:{CPF_S:"12345678901", RNM_S:"0"}, codcoligada:"0", codsistema:"G"}},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/read/{dataserver}", desc:"ReadRecord: lê um registro pela chave primária.", hint:"chave = partes da PK na ordem.", params:{dataserver:"RhuPessoaData"}, body:{chave:["12345"], contexto:{}}},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/view/{dataserver}", desc:"ReadView: consulta com filtro SQL na view do DataServer.", params:{dataserver:"GlbColigadaData"}, body:{filtro:"CODCOLIGADA=1", contexto:{}}},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/save/{dataserver}", desc:"SaveRecord genérico (uso avançado/diagnóstico).", params:{dataserver:"RhuPessoaData"}, body:{xml:"<RhuPessoa><PPessoa><CODIGO>0</CODIGO><NOME>Teste Da Silva</NOME><CPF>12345678901</CPF></PPessoa><VPCompl><CODPESSOA>0</CODPESSOA></VPCompl></RhuPessoa>", contexto:{CODCOLIGADA:"1", CODSISTEMA:"S", CODUSUARIO:"integra.eduvem"}}},
 
-  {g:"Pessoa", method:"POST", path:"/pessoas", desc:"CODIGO=0 ou ausente cria; CODIGO>0 atualiza. Retorna CODPESSOA.",
-   body:{CODIGO:0,NOME:"Fulano de Tal",DTNASCIMENTO:"1990-01-15",ESTADONATAL:"SP",NATURALIDADE:"São Paulo",SEXO:"M",NACIONALIDADE:"10",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"Apto 101",BAIRRO:"Bela Vista",ESTADO:"SP",CIDADE:"São Paulo",CEP:"01310100",PAIS:"Brasil",CPF:"12345678901",TELEFONE1:"11987654321",EMAIL:"fulano@email.com",CODMUNICIPIO:"3550308",CODNATURALIDADE:"3550308",IDPAIS:1,NROREGGERAL:""}},
+  {g:"Pessoa", method:"POST", path:"/pessoas", desc:"CODIGO=0/ausente cria; CODIGO>0 atualiza. CPF/CEP aceitam máscara (a API remove). Retorna CODPESSOA.", body:{CODIGO:0,NOME:"Fulano de Tal",DTNASCIMENTO:"1990-01-15",SEXO:"M",CPF:"123.456.789-01",CEP:"01310-100",TELEFONE1:"11987654321",EMAIL:"fulano@email.com"}},
   {g:"Pessoa", method:"GET", path:"/pessoas/{codigo}", desc:"ReadRecord RhuPessoaData pelo código.", params:{codigo:"12345"}},
   {g:"Pessoa", method:"POST", path:"/pessoas/busca", desc:"Localiza por CPF (brasileiro).", body:{CPF:"12345678901"}},
   {g:"Pessoa", method:"POST", path:"/pessoas/busca", desc:"Localiza por RNM (estrangeiro).", body:{RNM:"A123456-7"}},
 
-  {g:"Aluno", method:"POST", path:"/alunos", desc:"Cria o aluno da pessoa na coligada. Retorna CHAVE = CODCOLIGADA;RA.",
-   body:{CODPESSOA:12345,CODCOLIGADA:1,CODTIPOCURSO:2,CODFILIAL:1,CPF:"12345678901",RNM:""}},
+  {g:"Aluno", method:"POST", path:"/alunos", desc:"Cria o aluno da pessoa na coligada. Retorna CHAVE = CODCOLIGADA;RA.", body:{CODPESSOA:12345,CODCOLIGADA:1,CODTIPOCURSO:2,CODFILIAL:1,CPF:"12345678901",RNM:""}},
   {g:"Aluno", method:"GET", path:"/alunos/{codcoligada}/{codpessoa}", desc:"Retorna RA, CODUSUARIO, SENHAPADRAO…", params:{codcoligada:"1", codpessoa:"12345"}},
 
-  {g:"Inscrição (fluxo completo)", method:"POST", path:"/inscricoes", desc:"Fluxo orquestrado (brasileiro): pessoa → aluno → matrículas → enturmação → cupom → lançamento. Idempotente.",
-   hint:"CIDADE/BAIRRO/NATURALIDADE são códigos (use /enderecos). CUPOM é opcional.",
-   body:{OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01",CPF:"12345678901",NOME:"Fulano de Tal",NASCIMENTO:"1990-01-15",SEXO:"M",EMAIL:"fulano@email.com",TELEFONE:"11987654321",CEP:"01310100",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NATURALIDADE:"3550308",CUPOM:"PROMO10"}},
-  {g:"Inscrição (fluxo completo)", method:"POST", path:"/inscricoes", desc:"Fluxo orquestrado (estrangeiro): usa RNM; endereço fica como 'Outro'.",
-   body:{OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01",RNM:"A123456-7",NOME:"John Doe Smith",NASCIMENTO:"1985-06-20",SEXO:"M",EMAIL:"john@email.com",TELEFONE:"11987654321"}},
+  {g:"Inscrição (fluxo completo)", method:"POST", path:"/inscricoes", desc:"Fluxo orquestrado (brasileiro): pessoa → aluno → matrículas → enturmação → cupom → lançamento. Idempotente.", hint:"CIDADE/BAIRRO/NATURALIDADE são códigos (use /enderecos). CUPOM é opcional.", body:{OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01",CPF:"12345678901",NOME:"Fulano de Tal",NASCIMENTO:"1990-01-15",SEXO:"M",EMAIL:"fulano@email.com",TELEFONE:"11987654321",CEP:"01310100",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NATURALIDADE:"3550308",CUPOM:"PROMO10"}},
+  {g:"Inscrição (fluxo completo)", method:"POST", path:"/inscricoes", desc:"Fluxo orquestrado (estrangeiro): usa RNM; endereço fica como 'Outro'.", body:{OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01",RNM:"A123456-7",NOME:"John Doe Smith",NASCIMENTO:"1985-06-20",SEXO:"M",EMAIL:"john@email.com",TELEFONE:"11987654321"}},
 
-  {g:"Matrícula (etapas granulares)", method:"POST", path:"/matriculas/curso", desc:"Pré-matrícula (CODSTATUS 23) via EduHabilitacaoAlunoData.", body:{RA:"000123",OFERTA:"OF2026-001"}},
-  {g:"Matrícula (etapas granulares)", method:"POST", path:"/matriculas/periodo-letivo", desc:"Processo 'Matricular aluno' — gera o contrato. Retorna CODCONTRATO.", body:{RA:"000123",OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01"}},
-  {g:"Matrícula (etapas granulares)", method:"POST", path:"/matriculas/disciplinas", desc:"Processo 'Matricular aluno nas disciplinas' por turma da oferta.", body:{RA:"000123",OFERTA:"OF2026-001"}},
+  {g:"Matrícula (etapas)", method:"POST", path:"/matriculas/curso", desc:"Pré-matrícula (CODSTATUS 23) via EduHabilitacaoAlunoData.", body:{RA:"000123",OFERTA:"OF2026-001"}},
+  {g:"Matrícula (etapas)", method:"POST", path:"/matriculas/periodo-letivo", desc:"Processo 'Matricular aluno' — gera o contrato. Retorna CODCONTRATO.", body:{RA:"000123",OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01"}},
+  {g:"Matrícula (etapas)", method:"POST", path:"/matriculas/disciplinas", desc:"Processo 'Matricular aluno nas disciplinas' por turma da oferta.", body:{RA:"000123",OFERTA:"OF2026-001"}},
 
-  {g:"Contrato", method:"POST", path:"/contratos", desc:"GenerateReport 1664 → GetGeneratedReportSize → GetFileChunk. Retorna CONTEUDO (PDF).",
-   hint:"CIDADE e BAIRRO são códigos; a API resolve os nomes via INT.EDUVEM.00010/00020.",
-   body:{NOME:"Fulano de Tal",CPF:"12345678901",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NACIONALIDADE:"Brasileira",NASCIMENTO:"1990-01-15"}},
+  {g:"Contrato", method:"POST", path:"/contratos", desc:"GenerateReport 1664 → GetGeneratedReportSize → GetFileChunk. Retorna CONTEUDO (PDF).", hint:"CIDADE e BAIRRO são códigos; a API resolve via INT.EDUVEM.00010/00020.", body:{NOME:"Fulano de Tal",CPF:"12345678901",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NACIONALIDADE:"Brasileira",NASCIMENTO:"1990-01-15"}},
 
   {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}", desc:"Dados da oferta (INT.EDUVEM.00006).", params:{codoferta:"OF2026-001"}},
-  {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}/planos-pagamento", desc:"Planos de pagamento da oferta (INT.EDUVEM.00013).", params:{codoferta:"OF2026-001"}},
+  {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}/planos-pagamento", desc:"Planos de pagamento (INT.EDUVEM.00013).", params:{codoferta:"OF2026-001"}},
 
   {g:"Endereço", method:"GET", path:"/enderecos/estados", desc:"Lista de estados (INT.EDUVEM.00002)."},
   {g:"Endereço", method:"GET", path:"/enderecos/estados/{codestado}/cidades", desc:"Cidades do estado (INT.EDUVEM.00003).", params:{codestado:"SP"}},
@@ -152,15 +152,22 @@ const endpoints = [
 
   {g:"Cupom", method:"GET", path:"/cupons/{codoferta}/{codplano}/{cupom}", desc:"Valida cupom (INT.EDUVEM.00016).", params:{codoferta:"OF2026-001",codplano:"PP01",cupom:"PROMO10"}},
 
-  {g:"SSO (exceção HTML)", method:"GET", path:"/sso/{token}", desc:"Único endpoint HTML — auto-login no Portal. O token vem em dados.nextUrl de POST /inscricoes.", params:{token:"TOKEN_GERADO_PELA_INSCRICAO"}}
+  {g:"SSO (exceção HTML)", method:"GET", path:"/sso/{token}", desc:"Único endpoint HTML — auto-login no Portal. Isento de API key. O token vem em dados.nextUrl de POST /inscricoes.", params:{token:"TOKEN_GERADO_PELA_INSCRICAO"}}
 ];
 
 const $ = s => document.querySelector(s);
 const baseInput = $("#base");
-try{ const saved = localStorage.getItem("fmp_api_base"); if(saved) baseInput.value = saved; }catch(e){}
+const apiKeyInput = $("#apikey");
+const fmtSelect = $("#fmt");
+try{
+  const sb = localStorage.getItem("fmp_api_base"); if(sb) baseInput.value = sb;
+  const sk = localStorage.getItem("fmp_api_key"); if(sk) apiKeyInput.value = sk;
+  const sf = localStorage.getItem("fmp_api_fmt"); if(sf) fmtSelect.value = sf;
+}catch(e){}
 
 function trimBase(){ return baseInput.value.trim().replace(/\/+$/,""); }
-function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function isFlat(obj){ return obj && typeof obj==="object" && !Array.isArray(obj) && Object.values(obj).every(v => v===null || typeof v!=="object"); }
 
 function buildUrl(ep, card){
   let path = ep.path;
@@ -181,21 +188,32 @@ function buildUrl(ep, card){
 
 function buildCurl(ep, card){
   const url = buildUrl(ep, card);
-  let lines = [`curl -X ${ep.method} "${url}"`];
-  if(ep.body){
-    lines.push(`  -H "Content-Type: application/json"`);
+  const key = apiKeyInput.value.trim();
+  let lines = ['curl -X '+ep.method+' "'+url+'"'];
+  if(key){ lines.push('  -H "X-API-Key: '+key+'"'); }
+
+  if(!ep.body){
+    lines.push('  -H "Accept: application/json"');
+    return lines.join(" \\\n");
   }
-  lines.push(`  -H "Accept: application/json"`);
-  if(ep.body){
-    const ta = card.querySelector("textarea");
-    lines.push(`  -d '${ta.value}'`);
+
+  const ta = card.querySelector("textarea");
+  let obj = null;
+  try{ obj = JSON.parse(ta.value); }catch(e){ obj = null; }
+  const useForm = fmtSelect.value === "form" && isFlat(obj);
+
+  if(useForm){
+    lines.push('  -H "Accept: application/json"');
+    Object.keys(obj).forEach(k=>{ lines.push('  --data-urlencode "'+k+'='+obj[k]+'"'); });
+  } else {
+    lines.push('  -H "Content-Type: application/json"');
+    lines.push('  -H "Accept: application/json"');
+    lines.push("  -d '"+ta.value+"'");
   }
   return lines.join(" \\\n");
 }
 
-function refresh(ep, card){
-  card.querySelector(".curl").textContent = buildCurl(ep, card);
-}
+function refresh(ep, card){ card.querySelector(".curl").textContent = buildCurl(ep, card); }
 
 const catalog = $("#catalog");
 const groups = {};
@@ -203,56 +221,48 @@ endpoints.forEach((ep,i)=>{ (groups[ep.g] = groups[ep.g]||[]).push({ep,i}); });
 
 Object.keys(groups).forEach(gname=>{
   const sec = document.createElement("div");
-  sec.className="group";
-  sec.innerHTML = `<h2>${esc(gname)}</h2>`;
-  groups[gname].forEach(({ep,i})=>{
+  sec.className = "group";
+  sec.innerHTML = "<h2>"+esc(gname)+"</h2>";
+  groups[gname].forEach(({ep})=>{
     const card = document.createElement("div");
-    card.className="card";
-    const searchText = (ep.g+" "+ep.method+" "+ep.path+" "+ep.desc).toLowerCase();
-    card.dataset.text = searchText;
+    card.className = "card";
+    card.dataset.text = (ep.g+" "+ep.method+" "+ep.path+" "+ep.desc).toLowerCase();
 
     let inputsHtml = "";
     if(ep.params){
       inputsHtml += Object.keys(ep.params).map(p=>
-        `<div class="inp"><label>${p}</label><input data-param="${p}" value="${esc(ep.params[p])}"></div>`).join("");
+        '<div class="inp"><label>'+p+'</label><input data-param="'+p+'" value="'+esc(ep.params[p])+'"></div>').join("");
     }
     if(ep.query){
       inputsHtml += ep.query.map(q=>
-        `<div class="inp"><label>${esc(q.label||q.name)}</label><input data-query="${q.name}" value="${esc(q.val||"")}" placeholder="vazio = ignora"></div>`).join("");
+        '<div class="inp"><label>'+esc(q.label||q.name)+'</label><input data-query="'+q.name+'" value="'+esc(q.val||"")+'" placeholder="vazio = ignora"></div>').join("");
     }
-    const inputsBlock = inputsHtml ? `<div class="inputs">${inputsHtml}</div>` : "";
-    const bodyBlock = ep.body ? `<textarea spellcheck="false">${esc(JSON.stringify(ep.body,null,2))}</textarea>` : "";
-    const hintBlock = ep.hint ? `<p class="desc hint">${esc(ep.hint)}</p>` : "";
+    const inputsBlock = inputsHtml ? '<div class="inputs">'+inputsHtml+'</div>' : "";
+    const bodyBlock = ep.body ? '<textarea spellcheck="false">'+esc(JSON.stringify(ep.body,null,2))+'</textarea>' : "";
+    const hintBlock = ep.hint ? '<p class="desc hint">'+esc(ep.hint)+'</p>' : "";
 
-    card.innerHTML = `
-      <div class="card-head">
-        <span class="method m-${ep.method}">${ep.method}</span>
-        <code class="path">${esc(ep.path)}</code>
-        <span class="chev">▶</span>
-      </div>
-      <div class="card-body">
-        <p class="desc">${esc(ep.desc)}</p>
-        ${hintBlock}
-        ${inputsBlock}
-        ${bodyBlock}
-        <div class="snippet">
-          <div class="snippet-head"><span>cURL</span>
-            <div class="btns">
-              <button class="copy" data-act="url">Copiar URL</button>
-              <button class="copy" data-act="curl">Copiar cURL</button>
-            </div>
-          </div>
-          <pre class="curl"></pre>
-        </div>
-      </div>`;
+    card.innerHTML =
+      '<div class="card-head">'+
+        '<span class="method m-'+ep.method+'">'+ep.method+'</span>'+
+        '<code class="path">'+esc(ep.path)+'</code>'+
+        '<span class="chev">&#9656;</span>'+
+      '</div>'+
+      '<div class="card-body">'+
+        '<p class="desc">'+esc(ep.desc)+'</p>'+
+        hintBlock + inputsBlock + bodyBlock +
+        '<div class="snippet">'+
+          '<div class="snippet-head"><span>cURL</span>'+
+            '<div class="btns">'+
+              '<button class="copy" data-act="url">Copiar URL</button>'+
+              '<button class="copy" data-act="curl">Copiar cURL</button>'+
+            '</div>'+
+          '</div>'+
+          '<pre class="curl"></pre>'+
+        '</div>'+
+      '</div>';
 
-    // toggle open/close
     card.querySelector(".card-head").addEventListener("click", ()=> card.classList.toggle("open"));
-
-    // live refresh
     card.querySelectorAll("input,textarea").forEach(el=> el.addEventListener("input", ()=> refresh(ep, card)));
-
-    // copy buttons
     card.querySelectorAll("button.copy").forEach(btn=>{
       btn.addEventListener("click", e=>{
         e.stopPropagation();
@@ -270,17 +280,14 @@ Object.keys(groups).forEach(gname=>{
   catalog.appendChild(sec);
 });
 
-// base url: persist + rebuild todos os cURLs
 function rebuildAll(){
   let flat=[]; Object.keys(groups).forEach(g=> groups[g].forEach(o=> flat.push(o.ep)));
   document.querySelectorAll(".card").forEach((card,idx)=> refresh(flat[idx], card));
 }
-baseInput.addEventListener("input", ()=>{
-  try{ localStorage.setItem("fmp_api_base", baseInput.value.trim()); }catch(e){}
-  rebuildAll();
-});
+baseInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_api_base", baseInput.value.trim()); }catch(e){} rebuildAll(); });
+apiKeyInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_api_key", apiKeyInput.value.trim()); }catch(e){} rebuildAll(); });
+fmtSelect.addEventListener("change", ()=>{ try{ localStorage.setItem("fmp_api_fmt", fmtSelect.value); }catch(e){} rebuildAll(); });
 
-// search
 $("#q").addEventListener("input", e=>{
   const term = e.target.value.toLowerCase().trim();
   document.querySelectorAll(".card").forEach(card=>{

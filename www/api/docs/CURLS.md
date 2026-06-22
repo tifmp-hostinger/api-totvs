@@ -1,78 +1,68 @@
 # cURLs de todos os endpoints — FMP RM-API
 
-> Defina a variável de ambiente antes (ou substitua direto na URL):
+> **URL base** (servida na raiz, sem `/api`) e **chave da API**:
 >
 > ```bash
 > export BASE_URL="https://fmp-api-totvs.3wmyqq.easypanel.host"
+> export API_KEY="SUA_CHAVE_AQUI"
 > ```
 >
-> **Atenção ao base path:** a aplicação é servida na **raiz** (`setBasePath('')` em `public/index.php`), então as rotas são `/pessoas`, `/rm/test` etc. — **sem** o prefixo `/api`. Use a URL do serviço direto.
+> **Autenticação:** quando a env `API_KEY` está definida no servidor, todo request precisa do header `X-API-Key: $API_KEY` (ou `Authorization: Bearer $API_KEY`). Isentos: `GET /status` e `GET /sso/{token}`.
 >
-> **Página interativa:** abra `/(docs.html)` no navegador (`https://SEU-SERVIDOR/docs.html`) para montar e copiar os cURLs/bodies visualmente.
+> **Dois formatos de corpo (POST):** a API aceita os dois — escolha o que cair melhor:
+> - **JSON** (`Content-Type: application/json`) → no n8n: *Body Content Type = JSON*.
+> - **Campos / form-urlencoded** (`--data-urlencode`) → no n8n importa como **"Using Fields Below"** (*Body Content Type = Form Urlencoded*).
 >
-> **n8n:** em um nó *HTTP Request*, use *Import cURL* e cole qualquer comando abaixo (troque $BASE_URL pela URL real). Marque **Send Body → JSON** para os POST (envia `Content-Type: application/json`, necessário para o corpo ser lido).
-> Alternativa: importe `docs/postman_collection.json` no Postman/Insomnia (variável `baseUrl`).
+> Corpos **aninhados** (ex.: `/rm/sql`, `/rm/read`, `/rm/save`) → use **JSON** (campos soltos não representam objetos/arrays direito).
+>
+> **Página interativa:** `/docs.html` monta os dois formatos e injeta a chave automaticamente.
+> **Coleção:** `docs/postman_collection.json`.
 
 
 ## Sistema
 
-### Health check
+### `GET /status`
 
-`GET /status` — Verifica disponibilidade do RM (INT.EDUVEM.00001)
-
+Health check do RM (INT.EDUVEM.00001). Isento de API key.
 
 ```bash
 curl -X GET "$BASE_URL/status" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
 
-## RM genérico
+## RM genérico (diagnóstico)
 
-### Testar conexão
+### `GET /rm/test`
 
-`GET /rm/test` — Valida conectividade e credenciais SOAP
-
+Valida conectividade e credenciais SOAP.
 
 ```bash
 curl -X GET "$BASE_URL/rm/test" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
-### Schema de DataServer
+### `GET /rm/schema/RhuPessoaData`
 
-`GET /rm/schema/RhuPessoaData` — Schema parseado (tabelas, campos, chaves). Acrescente **?xml=1** para o XSD bruto (alias antigo: `?raw=1`)
-
-
-> Troque RhuPessoaData pelo DataServer desejado (EduAlunoData, EduHabilitacaoAlunoData...)
-
+Schema parseado. Acrescente ?xml=1 para o XSD bruto (alias antigo: ?raw=1).
 
 ```bash
 curl -X GET "$BASE_URL/rm/schema/RhuPessoaData" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
-### Consulta SQL cadastrada
+### `POST /rm/sql/INT.EDUVEM.00007`
 
-`POST /rm/sql/INT.EDUVEM.00007` — Executa qualquer sentença SQL cadastrada no RM
+Executa uma sentença SQL cadastrada.
 
-
-Body de exemplo:
-
-```json
-{
-  "parametros": {
-    "CPF_S": "12345678901",
-    "RNM_S": "0"
-  },
-  "codcoligada": "0",
-  "codsistema": "G"
-}
-```
-
+**JSON** (corpo aninhado — use este formato)
 
 ```bash
 curl -X POST "$BASE_URL/rm/sql/INT.EDUVEM.00007" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -85,28 +75,15 @@ curl -X POST "$BASE_URL/rm/sql/INT.EDUVEM.00007" \
 }'
 ```
 
-### ReadRecord genérico
+### `POST /rm/read/RhuPessoaData`
 
-`POST /rm/read/RhuPessoaData` — Lê um registro pela chave primária
+ReadRecord pela chave primária.
 
-
-> chave = partes da PK na ordem (separadas no RM por ';')
-
-
-Body de exemplo:
-
-```json
-{
-  "chave": [
-    "12345"
-  ],
-  "contexto": {}
-}
-```
-
+**JSON** (corpo aninhado — use este formato)
 
 ```bash
 curl -X POST "$BASE_URL/rm/read/RhuPessoaData" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -117,23 +94,15 @@ curl -X POST "$BASE_URL/rm/read/RhuPessoaData" \
 }'
 ```
 
-### ReadView genérico
+### `POST /rm/view/GlbColigadaData`
 
-`POST /rm/view/GlbColigadaData` — Consulta com filtro SQL na view do DataServer
+ReadView com filtro SQL.
 
-
-Body de exemplo:
-
-```json
-{
-  "filtro": "CODCOLIGADA=1",
-  "contexto": {}
-}
-```
-
+**JSON** (corpo aninhado — use este formato)
 
 ```bash
 curl -X POST "$BASE_URL/rm/view/GlbColigadaData" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -142,31 +111,19 @@ curl -X POST "$BASE_URL/rm/view/GlbColigadaData" \
 }'
 ```
 
-### SaveRecord genérico
+### `POST /rm/save/RhuPessoaData`
 
-`POST /rm/save/RhuPessoaData` — Grava um XML qualquer no DataServer (uso para diagnóstico/automação avançada)
+SaveRecord genérico (uso avançado).
 
-
-Body de exemplo:
-
-```json
-{
-  "xml": "<RhuPessoa><PPessoa><CODIGO>0</CODIGO><NOME>Teste Da Silva</NOME><DTNASCIMENTO>1990-01-15</DTNASCIMENTO><SEXO>M</SEXO><CPF>12345678901</CPF><EMAIL>teste@email.com</EMAIL></PPessoa><VPCompl><CODPESSOA>0</CODPESSOA></VPCompl></RhuPessoa>",
-  "contexto": {
-    "CODCOLIGADA": "1",
-    "CODSISTEMA": "S",
-    "CODUSUARIO": "integra.eduvem"
-  }
-}
-```
-
+**JSON** (corpo aninhado — use este formato)
 
 ```bash
 curl -X POST "$BASE_URL/rm/save/RhuPessoaData" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
-  "xml": "<RhuPessoa><PPessoa><CODIGO>0</CODIGO><NOME>Teste Da Silva</NOME><DTNASCIMENTO>1990-01-15</DTNASCIMENTO><SEXO>M</SEXO><CPF>12345678901</CPF><EMAIL>teste@email.com</EMAIL></PPessoa><VPCompl><CODPESSOA>0</CODPESSOA></VPCompl></RhuPessoa>",
+  "xml": "<RhuPessoa><PPessoa><CODIGO>0</CODIGO><NOME>Teste Da Silva</NOME><CPF>12345678901</CPF></PPessoa><VPCompl><CODPESSOA>0</CODPESSOA></VPCompl></RhuPessoa>",
   "contexto": {
     "CODCOLIGADA": "1",
     "CODSISTEMA": "S",
@@ -178,100 +135,64 @@ curl -X POST "$BASE_URL/rm/save/RhuPessoaData" \
 
 ## Pessoa
 
-### Criar/atualizar pessoa
+### `POST /pessoas`
 
-`POST /pessoas` — CODIGO=0 ou ausente cria; CODIGO>0 atualiza. Retorna CODPESSOA
+CODIGO=0/ausente cria; CODIGO>0 atualiza. CPF/CEP aceitam máscara (a API remove). Retorna CODPESSOA.
 
-
-> Em caso de erro de validação do RM, o retorno traz retorno_rm com a mensagem original
-
-
-Body de exemplo:
-
-```json
-{
-  "CODIGO": 0,
-  "NOME": "Fulano de Tal",
-  "DTNASCIMENTO": "1990-01-15",
-  "ESTADONATAL": "SP",
-  "NATURALIDADE": "São Paulo",
-  "SEXO": "M",
-  "NACIONALIDADE": "10",
-  "RUA": "Av. Paulista",
-  "NUMERO": "1000",
-  "COMPLEMENTO": "Apto 101",
-  "BAIRRO": "Bela Vista",
-  "ESTADO": "SP",
-  "CIDADE": "São Paulo",
-  "CEP": "01310100",
-  "PAIS": "Brasil",
-  "CPF": "12345678901",
-  "TELEFONE1": "11987654321",
-  "EMAIL": "fulano@email.com",
-  "CODMUNICIPIO": "3550308",
-  "CODNATURALIDADE": "3550308",
-  "IDPAIS": 1,
-  "NROREGGERAL": ""
-}
-```
-
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/pessoas" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
   "CODIGO": 0,
   "NOME": "Fulano de Tal",
   "DTNASCIMENTO": "1990-01-15",
-  "ESTADONATAL": "SP",
-  "NATURALIDADE": "São Paulo",
   "SEXO": "M",
-  "NACIONALIDADE": "10",
-  "RUA": "Av. Paulista",
-  "NUMERO": "1000",
-  "COMPLEMENTO": "Apto 101",
-  "BAIRRO": "Bela Vista",
-  "ESTADO": "SP",
-  "CIDADE": "São Paulo",
-  "CEP": "01310100",
-  "PAIS": "Brasil",
-  "CPF": "12345678901",
+  "CPF": "123.456.789-01",
+  "CEP": "01310-100",
   "TELEFONE1": "11987654321",
-  "EMAIL": "fulano@email.com",
-  "CODMUNICIPIO": "3550308",
-  "CODNATURALIDADE": "3550308",
-  "IDPAIS": 1,
-  "NROREGGERAL": ""
+  "EMAIL": "fulano@email.com"
 }'
 ```
 
-### Buscar pessoa por código
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
 
-`GET /pessoas/12345` — ReadRecord RhuPessoaData
+```bash
+curl -X POST "$BASE_URL/pessoas" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "CODIGO=0" \
+  --data-urlencode "NOME=Fulano de Tal" \
+  --data-urlencode "DTNASCIMENTO=1990-01-15" \
+  --data-urlencode "SEXO=M" \
+  --data-urlencode "CPF=123.456.789-01" \
+  --data-urlencode "CEP=01310-100" \
+  --data-urlencode "TELEFONE1=11987654321" \
+  --data-urlencode "EMAIL=fulano@email.com"
+```
 
+### `GET /pessoas/12345`
+
+ReadRecord RhuPessoaData pelo código.
 
 ```bash
 curl -X GET "$BASE_URL/pessoas/12345" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
-### Buscar pessoa por CPF
+### `POST /pessoas/busca`
 
-`POST /pessoas/busca` — Localiza por CPF (brasileiro)
+Localiza por CPF (brasileiro).
 
-
-Body de exemplo:
-
-```json
-{
-  "CPF": "12345678901"
-}
-```
-
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/pessoas/busca" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -279,53 +200,52 @@ curl -X POST "$BASE_URL/pessoas/busca" \
 }'
 ```
 
-### Buscar pessoa por RNM (estrangeiro)
-
-`POST /pessoas/busca` — Localiza por RNM
-
-
-Body de exemplo:
-
-```json
-{
-  "RNM": "A123456-7"
-}
-```
-
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
 
 ```bash
 curl -X POST "$BASE_URL/pessoas/busca" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "CPF=12345678901"
+```
+
+### `POST /pessoas/busca`
+
+Localiza por RNM (estrangeiro).
+
+**Tipo 1 — JSON**
+
+```bash
+curl -X POST "$BASE_URL/pessoas/busca" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
   "RNM": "A123456-7"
 }'
+```
+
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
+
+```bash
+curl -X POST "$BASE_URL/pessoas/busca" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "RNM=A123456-7"
 ```
 
 
 ## Aluno
 
-### Criar/atualizar aluno
+### `POST /alunos`
 
-`POST /alunos` — Cria o aluno da pessoa na coligada. Retorna CHAVE = CODCOLIGADA;RA
+Cria o aluno da pessoa na coligada. Retorna CHAVE = CODCOLIGADA;RA.
 
-
-Body de exemplo:
-
-```json
-{
-  "CODPESSOA": 12345,
-  "CODCOLIGADA": 1,
-  "CODTIPOCURSO": 2,
-  "CODFILIAL": 1,
-  "CPF": "12345678901",
-  "RNM": ""
-}
-```
-
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/alunos" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -338,54 +258,42 @@ curl -X POST "$BASE_URL/alunos" \
 }'
 ```
 
-### Buscar aluno
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
 
-`GET /alunos/1/12345` — Formato: /alunos/{codcoligada}/{codpessoa}. Retorna RA, CODUSUARIO, SENHAPADRAO...
+```bash
+curl -X POST "$BASE_URL/alunos" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "CODPESSOA=12345" \
+  --data-urlencode "CODCOLIGADA=1" \
+  --data-urlencode "CODTIPOCURSO=2" \
+  --data-urlencode "CODFILIAL=1" \
+  --data-urlencode "CPF=12345678901" \
+  --data-urlencode "RNM="
+```
 
+### `GET /alunos/1/12345`
+
+Formato: /alunos/{codcoligada}/{codpessoa}.
 
 ```bash
 curl -X GET "$BASE_URL/alunos/1/12345" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
 
-## Inscrição
+## Inscrição (fluxo completo)
 
-### Inscrição completa (brasileiro)
+### `POST /inscricoes`
 
-`POST /inscricoes` — Fluxo orquestrado: pessoa → aluno → matrículas → enturmação → cupom → lançamento. Idempotente
+Fluxo orquestrado (brasileiro). Idempotente.
 
-
-> CIDADE/BAIRRO/NATURALIDADE são códigos (use /enderecos para obtê-los). CUPOM é opcional
-
-
-Body de exemplo:
-
-```json
-{
-  "OFERTA": "OF2026-001",
-  "PLANOPAGAMENTO": "PP01",
-  "CPF": "12345678901",
-  "NOME": "Fulano de Tal",
-  "NASCIMENTO": "1990-01-15",
-  "SEXO": "M",
-  "EMAIL": "fulano@email.com",
-  "TELEFONE": "11987654321",
-  "CEP": "01310100",
-  "ESTADO": "SP",
-  "CIDADE": "3550308",
-  "BAIRRO": "123",
-  "RUA": "Av. Paulista",
-  "NUMERO": "1000",
-  "COMPLEMENTO": "",
-  "NATURALIDADE": "3550308",
-  "CUPOM": "PROMO10"
-}
-```
-
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/inscricoes" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -409,29 +317,40 @@ curl -X POST "$BASE_URL/inscricoes" \
 }'
 ```
 
-### Inscrição completa (estrangeiro)
-
-`POST /inscricoes` — Sem CPF/endereço BR: usa RNM; endereço fica como 'Outro'
-
-
-Body de exemplo:
-
-```json
-{
-  "OFERTA": "OF2026-001",
-  "PLANOPAGAMENTO": "PP01",
-  "RNM": "A123456-7",
-  "NOME": "John Doe Smith",
-  "NASCIMENTO": "1985-06-20",
-  "SEXO": "M",
-  "EMAIL": "john@email.com",
-  "TELEFONE": "11987654321"
-}
-```
-
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
 
 ```bash
 curl -X POST "$BASE_URL/inscricoes" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "OFERTA=OF2026-001" \
+  --data-urlencode "PLANOPAGAMENTO=PP01" \
+  --data-urlencode "CPF=12345678901" \
+  --data-urlencode "NOME=Fulano de Tal" \
+  --data-urlencode "NASCIMENTO=1990-01-15" \
+  --data-urlencode "SEXO=M" \
+  --data-urlencode "EMAIL=fulano@email.com" \
+  --data-urlencode "TELEFONE=11987654321" \
+  --data-urlencode "CEP=01310100" \
+  --data-urlencode "ESTADO=SP" \
+  --data-urlencode "CIDADE=3550308" \
+  --data-urlencode "BAIRRO=123" \
+  --data-urlencode "RUA=Av. Paulista" \
+  --data-urlencode "NUMERO=1000" \
+  --data-urlencode "COMPLEMENTO=" \
+  --data-urlencode "NATURALIDADE=3550308" \
+  --data-urlencode "CUPOM=PROMO10"
+```
+
+### `POST /inscricoes`
+
+Fluxo orquestrado (estrangeiro): usa RNM.
+
+**Tipo 1 — JSON**
+
+```bash
+curl -X POST "$BASE_URL/inscricoes" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -446,26 +365,34 @@ curl -X POST "$BASE_URL/inscricoes" \
 }'
 ```
 
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
 
-## Matrícula
-
-### Matrícula no curso
-
-`POST /matriculas/curso` — Pré-matrícula (CODSTATUS 23) via EduHabilitacaoAlunoData
-
-
-Body de exemplo:
-
-```json
-{
-  "RA": "000123",
-  "OFERTA": "OF2026-001"
-}
+```bash
+curl -X POST "$BASE_URL/inscricoes" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "OFERTA=OF2026-001" \
+  --data-urlencode "PLANOPAGAMENTO=PP01" \
+  --data-urlencode "RNM=A123456-7" \
+  --data-urlencode "NOME=John Doe Smith" \
+  --data-urlencode "NASCIMENTO=1985-06-20" \
+  --data-urlencode "SEXO=M" \
+  --data-urlencode "EMAIL=john@email.com" \
+  --data-urlencode "TELEFONE=11987654321"
 ```
 
+
+## Matrícula (etapas)
+
+### `POST /matriculas/curso`
+
+Pré-matrícula (CODSTATUS 23).
+
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/matriculas/curso" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -474,24 +401,25 @@ curl -X POST "$BASE_URL/matriculas/curso" \
 }'
 ```
 
-### Matrícula no período letivo
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
 
-`POST /matriculas/periodo-letivo` — Processo 'Matricular aluno' — gera o contrato. Retorna a linha com CODCONTRATO
-
-
-Body de exemplo:
-
-```json
-{
-  "RA": "000123",
-  "OFERTA": "OF2026-001",
-  "PLANOPAGAMENTO": "PP01"
-}
+```bash
+curl -X POST "$BASE_URL/matriculas/curso" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "RA=000123" \
+  --data-urlencode "OFERTA=OF2026-001"
 ```
 
+### `POST /matriculas/periodo-letivo`
+
+Gera o contrato. Retorna CODCONTRATO.
+
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/matriculas/periodo-letivo" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -501,62 +429,56 @@ curl -X POST "$BASE_URL/matriculas/periodo-letivo" \
 }'
 ```
 
-### Matrícula nas disciplinas (enturmação)
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
 
-`POST /matriculas/disciplinas` — Processo 'Matricular aluno nas disciplinas' para cada turma da oferta
-
-
-Body de exemplo:
-
-```json
-{
-  "RA": "000123",
-  "OFERTA": "OF2026-001"
-}
+```bash
+curl -X POST "$BASE_URL/matriculas/periodo-letivo" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "RA=000123" \
+  --data-urlencode "OFERTA=OF2026-001" \
+  --data-urlencode "PLANOPAGAMENTO=PP01"
 ```
 
+### `POST /matriculas/disciplinas`
+
+Enturmação por disciplina.
+
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/matriculas/disciplinas" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
   "RA": "000123",
   "OFERTA": "OF2026-001"
 }'
+```
+
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
+
+```bash
+curl -X POST "$BASE_URL/matriculas/disciplinas" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "RA=000123" \
+  --data-urlencode "OFERTA=OF2026-001"
 ```
 
 
 ## Contrato
 
-### Gerar contrato (PDF)
+### `POST /contratos`
 
-`POST /contratos` — GenerateReport 1664 → GetGeneratedReportSize → GetFileChunk. Retorna CONTEUDO
+Gera o contrato em PDF (retorna CONTEUDO).
 
-
-> CIDADE e BAIRRO são códigos; a API resolve os nomes via INT.EDUVEM.00010/00020
-
-
-Body de exemplo:
-
-```json
-{
-  "NOME": "Fulano de Tal",
-  "CPF": "12345678901",
-  "ESTADO": "SP",
-  "CIDADE": "3550308",
-  "BAIRRO": "123",
-  "RUA": "Av. Paulista",
-  "NUMERO": "1000",
-  "COMPLEMENTO": "",
-  "NACIONALIDADE": "Brasileira",
-  "NASCIMENTO": "1990-01-15"
-}
-```
-
+**Tipo 1 — JSON**
 
 ```bash
 curl -X POST "$BASE_URL/contratos" \
+  -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
@@ -573,97 +495,112 @@ curl -X POST "$BASE_URL/contratos" \
 }'
 ```
 
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
+
+```bash
+curl -X POST "$BASE_URL/contratos" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "NOME=Fulano de Tal" \
+  --data-urlencode "CPF=12345678901" \
+  --data-urlencode "ESTADO=SP" \
+  --data-urlencode "CIDADE=3550308" \
+  --data-urlencode "BAIRRO=123" \
+  --data-urlencode "RUA=Av. Paulista" \
+  --data-urlencode "NUMERO=1000" \
+  --data-urlencode "COMPLEMENTO=" \
+  --data-urlencode "NACIONALIDADE=Brasileira" \
+  --data-urlencode "NASCIMENTO=1990-01-15"
+```
+
 
 ## Oferta
 
-### Dados da oferta
+### `GET /ofertas/OF2026-001`
 
-`GET /ofertas/OF2026-001` — INT.EDUVEM.00006
-
+Dados da oferta (INT.EDUVEM.00006).
 
 ```bash
 curl -X GET "$BASE_URL/ofertas/OF2026-001" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
-### Planos de pagamento da oferta
+### `GET /ofertas/OF2026-001/planos-pagamento`
 
-`GET /ofertas/OF2026-001/planos-pagamento` — INT.EDUVEM.00013
-
+Planos de pagamento (INT.EDUVEM.00013).
 
 ```bash
 curl -X GET "$BASE_URL/ofertas/OF2026-001/planos-pagamento" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
 
 ## Endereço
 
-### Estados
+### `GET /enderecos/estados`
 
-`GET /enderecos/estados` — INT.EDUVEM.00002
-
+Estados (INT.EDUVEM.00002).
 
 ```bash
 curl -X GET "$BASE_URL/enderecos/estados" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
-### Cidades do estado
+### `GET /enderecos/estados/SP/cidades`
 
-`GET /enderecos/estados/SP/cidades` — INT.EDUVEM.00003
-
+Cidades do estado (INT.EDUVEM.00003).
 
 ```bash
 curl -X GET "$BASE_URL/enderecos/estados/SP/cidades" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
-### Bairros da cidade
+### `GET /enderecos/cidades/3550308/bairros`
 
-`GET /enderecos/cidades/3550308/bairros` — INT.EDUVEM.00004
-
+Bairros da cidade (INT.EDUVEM.00004).
 
 ```bash
 curl -X GET "$BASE_URL/enderecos/cidades/3550308/bairros" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
-### Endereço por CEP
+### `GET /enderecos/cep/01310100`
 
-`GET /enderecos/cep/01310100` — INT.EDUVEM.00005
-
+Endereço por CEP (INT.EDUVEM.00005).
 
 ```bash
 curl -X GET "$BASE_URL/enderecos/cep/01310100" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
 
 ## Cupom
 
-### Validar cupom
+### `GET /cupons/OF2026-001/PP01/PROMO10`
 
-`GET /cupons/OF2026-001/PP01/PROMO10` — Formato: /cupons/{codoferta}/{codplano}/{cupom} (INT.EDUVEM.00016)
-
+Valida cupom (INT.EDUVEM.00016).
 
 ```bash
 curl -X GET "$BASE_URL/cupons/OF2026-001/PP01/PROMO10" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```
 
 
 ## SSO
 
-### Auto-login no Portal (HTML)
+### `GET /sso/TOKEN_GERADO_PELA_INSCRICAO`
 
-`GET /sso/TOKEN_GERADO_PELA_INSCRICAO` — Único endpoint HTML — consumir no navegador do aluno via redirect do nextUrl
-
-
-> O token vem no retorno de POST /inscricoes (dados.nextUrl)
-
+Único endpoint HTML (auto-login). Isento de API key. O token vem em dados.nextUrl de POST /inscricoes.
 
 ```bash
 curl -X GET "$BASE_URL/sso/TOKEN_GERADO_PELA_INSCRICAO" \
+  -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
 ```

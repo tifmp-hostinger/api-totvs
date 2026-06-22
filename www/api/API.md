@@ -9,6 +9,10 @@ API REST de integração com o **TOTVS RM via SOAP**. Sem frontend, sem checkout
 > **Deploy / EasyPanel / variáveis de ambiente / troubleshooting:** `docs/DEPLOY-EASYPANEL.md`.
 >
 > **Base path:** a app é servida na **raiz** (`setBasePath('')`). As rotas são `/pessoas`, `/rm/test` etc., **sem** `/api`.
+>
+> **Autenticação:** quando a env `API_KEY` está definida, toda requisição precisa do header `X-API-Key: <chave>` (ou `Authorization: Bearer <chave>`). Isentas: `GET /status` e `GET /sso/{token}`. Sem chave válida → **401**. Detalhes em `docs/DEPLOY-EASYPANEL.md`.
+>
+> **Formato do corpo (POST):** a API aceita **`application/json`** e **`application/x-www-form-urlencoded`** (campos soltos). No n8n, tanto "Using JSON" quanto "Using Fields Below" funcionam. Corpos aninhados (ex.: `/rm/sql`, `/rm/read`) → use JSON.
 
 ```
 www/api/

@@ -27,6 +27,7 @@ precedência:
 | `TOTVS_WS_URL` | **sim** | `https://fundacaoescola114384.rm.cloudtotvs.com.br:8051` (host + porta do webservice do RM; confirme com o DBA) |
 | `TOTVS_WS_USER` | **sim** | usuário de integração do RM |
 | `TOTVS_WS_PASSWORD` | **sim** | senha do usuário de integração |
+| `API_KEY` | recomendada | Liga a autenticação. Quando definida, toda requisição precisa do header `X-API-Key`. Vazia = autenticação desligada |
 | `APP_DEBUG` | não | `true` para expor `xml_enviado`/`xml_retornado`/`soap_fault` nos erros. Padrão `false` |
 | `APP_BASE` | não | base path lógico. **Hoje ignorado** — `index.php` usa `setBasePath('')` (rotas na raiz) |
 | `APP_CRYPTO_KEY` | só p/ SSO | chave de **32 bytes exatos** (AES-256-GCM do `/sso/{token}`) |
@@ -136,7 +137,94 @@ linhas do Apache (inclusive `child pid ... Segmentation fault`) aparecem ali.
 
 ---
 
-## 7. Checklist de deploy
+## 6.1. Autenticação por API key
+
+A API aceita uma chave única definida na env **`API_KEY`**.
+
+- Defina `API_KEY` no EasyPanel (Environment) com um valor longo e aleatório.
+  Exemplo de geração: `openssl rand -hex 32`.
+- A partir daí, **toda** requisição precisa enviar o header:
+
+  ```
+  X-API-Key: SUA_CHAVE
+  ```
+
+  (Também é aceito `Authorization: Bearer SUA_CHAVE`.)
+
+- **Rotas isentas** (não exigem chave): `GET /status` (health check) e
+  `GET /sso/{token}` (aberto no navegador do aluno, já tem token criptografado).
+  Os arquivos estáticos `/{docs.html}` e `/teste.php` são servidos pelo Apache,
+  fora do app — não passam pela checagem.
+- **Importante:** a autenticação só fica ativa **quando `API_KEY` está definida**.
+  Se a variável estiver vazia/ausente, a API libera tudo e registra um aviso no log
+  (`[RMAPI] AVISO: API_KEY nao definida`). Ou seja: definir a chave = proteger; e
+  você não fica trancado pra fora antes de configurá-la.
+
+Sem a chave, a resposta é **401**:
+
+```json
+{ "sucesso": false, "mensagem": "Não autorizado. Envie o header X-API-Key com a chave da API.", "detalhe": "API key ausente ou inválida." }
+```
+
+No **n8n**, adicione um header `X-API-Key` no nó HTTP Request (ou use uma credencial
+do tipo *Header Auth* com nome `X-API-Key`).
+
+## 7. Erros: como ver, e o modo `APP_DEBUG`
+
+### O que SEMPRE volta na resposta (com debug ligado ou não)
+Erro do RM retorna **HTTP 502** com um JSON assim — e o `retorno_rm` já traz a
+**mensagem real do RM**. Você **não precisa** do debug pra ver isso:
+
+```json
+{
+  "sucesso": false,
+  "mensagem": "O RM rejeitou a gravação da pessoa",
+  "operacao": "SaveRecord",
+  "dataserver": "RhuPessoaData",
+  "retorno_rm": "String or binary data would be truncated ... column 'CPF'."
+}
+```
+
+Status usados: **422** (validação/fluxo), **502** (erro do RM), **404** (rota), **500** (interno).
+
+### O que o `APP_DEBUG=true` ADICIONA
+- No **JSON da resposta**: bloco `debug` com `xml_enviado`, `xml_retornado` e `soap_fault`
+  (e, em erro 500, o stack trace). É o detalhe fino pra ajustar a integração.
+- Nos **Logs** (stderr → aba Logs do EasyPanel): os XMLs e os marcadores de SOAP
+  (`>> SOAP SaveRecord` / `>> SOAP SaveRecord OK`).
+
+`APP_DEBUG=false` deixa só o essencial (`mensagem` + `operacao` + `dataserver` +
+`retorno_rm`). **Use `true` enquanto integra; volte pra `false` em produção** —
+os XMLs e o stack trace contêm dados pessoais e detalhes internos.
+
+> Resumo: o **motivo** do erro (`retorno_rm`) aparece sempre; o **debug** só liga/desliga
+> o detalhe extra (XMLs/stack) na resposta e nos logs.
+
+### "Crashou" (HTML do EasyPanel) ≠ erro do app
+- Página HTML **"Service is not reachable"** = o **proxy** do EasyPanel não achou o
+  container (infra: container fora do ar / reiniciando / sem RAM). **Não é** regra de negócio.
+- Erro do app sempre vem em **JSON**. Se você vê JSON, a aplicação está de pé e te
+  dizendo o que houve.
+- Erro fatal de PHP (ex.: estouro de memória) agora é convertido em **JSON 500** legível
+  (via `register_shutdown_function`), em vez do 502 opaco — quando o processo não morre de vez.
+
+### Logs server-side (à prova de resposta perdida)
+Mesmo que o n8n/proxy esconda o corpo, o erro vai pros **Logs** (linhas começando com
+`[RMAPI]`):
+- `[RMAPI] >> SOAP {op} ({dataserver})` e `>> SOAP {op} OK` delimitam a chamada SOAP.
+  Se entrar (`>>`) e **não** sair (`OK`) nem logar erro → o processo morreu **dentro** do
+  SOAP (segfault/memória).
+- `[RMAPI] RM operacao=... retorno_rm=...` = a rejeição do RM (sempre logada).
+- `xml_enviado`/`xml_retornado` só são logados com `APP_DEBUG=true`.
+
+### Como VER o erro no n8n
+Por padrão o nó **HTTP Request** trata 4xx/5xx como falha e mostra só "Bad gateway",
+escondendo o corpo. Para ver o JSON do erro:
+- nas **Settings** do nó: **On Error → Continue (using error output)**;
+- e/ou a opção **Full Response**; o corpo aparece em `errorDetails`/`rawErrorMessage`.
+- Alternativa rápida: testar por `curl -i` ou Insomnia, que sempre mostram o corpo.
+
+## 8. Checklist de deploy
 
 1. Variáveis na aba **Environment** (`TOTVS_WS_URL`, `TOTVS_WS_USER`, `TOTVS_WS_PASSWORD`; opcional `APP_DEBUG`, `APP_CRYPTO_KEY`).
 2. **Resources**: RAM ≥ 2 GB; porta do serviço = **80** (a imagem `php:apache` escuta na 80).
