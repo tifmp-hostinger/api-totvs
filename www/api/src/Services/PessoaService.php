@@ -56,6 +56,8 @@ class PessoaService
      */
     public function salvar(array $p): string
     {
+        $p = self::sanitizarDocumentos($p);
+
         $xml = self::buildXml($p);
 
         $result = $this->rm->saveRecord(self::DATASERVER, $xml);
@@ -71,6 +73,21 @@ class PessoaService
         }
 
         return $result;
+    }
+
+    /**
+     * Remove máscara dos campos que o RM grava como dígitos puros.
+     * A coluna PPESSOA.CPF (e CEP) tem tamanho fixo: enviar com pontos/traços
+     * estoura ("String or binary data would be truncated ... column 'CPF'").
+     */
+    private static function sanitizarDocumentos(array $p): array
+    {
+        foreach (['CPF', 'CEP', 'TELEFONE1'] as $campo) {
+            if (isset($p[$campo]) && $p[$campo] !== '') {
+                $p[$campo] = preg_replace('/\D/', '', (string) $p[$campo]);
+            }
+        }
+        return $p;
     }
 
     public static function buildXml(array $p): string

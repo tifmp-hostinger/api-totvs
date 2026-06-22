@@ -117,10 +117,11 @@ $errorMiddleware->setDefaultErrorHandler(
         if ($e instanceof RMException) {
             error_log('[RMAPI] RM operacao=' . $e->operacao . ' dataserver=' . $e->dataServer
                 . ' retorno_rm=' . (string) $e->retornoRm);
-            if ($e->xmlEnviado !== null) {
+            // XMLs contêm dados pessoais: só logar em modo debug.
+            if ($debug && $e->xmlEnviado !== null) {
                 error_log('[RMAPI] xml_enviado=' . $e->xmlEnviado);
             }
-            if ($e->xmlRetornado !== null) {
+            if ($debug && $e->xmlRetornado !== null) {
                 error_log('[RMAPI] xml_retornado=' . substr((string) $e->xmlRetornado, 0, 3000));
             }
         }
