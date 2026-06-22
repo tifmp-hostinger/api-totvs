@@ -19,6 +19,40 @@ require __DIR__ . '/../vendor/autoload.php';
  */
 \FMP\RMApi\Support\Env::load(__DIR__ . '/../.env');
 
+/* ---------- Captura de erro fatal ----------
+ * Erros fatais (ex.: "Allowed memory size exhausted" ao carregar o WSDL
+ * gigante do RM) NÃO são pegos pelo error handler do Slim e viram um 502
+ * opaco no proxy. Aqui convertemos em JSON legível (e logado no stderr).
+ * OBS: um segfault real do ext-soap mata o processo e nem isto roda — se
+ * mesmo assim vier o 502 HTML do EasyPanel, a causa é segfault, não memória.
+ */
+register_shutdown_function(static function (): void {
+    $e = error_get_last();
+    if ($e === null) {
+        return;
+    }
+    $fatais = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if (!in_array($e['type'], $fatais, true) || headers_sent()) {
+        return;
+    }
+
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+
+    $payload = [
+        'sucesso'  => false,
+        'mensagem' => 'Erro fatal no processamento (possível esgotamento de memória ou falha do SOAP ao carregar o WSDL do RM).',
+    ];
+    if (getenv('APP_DEBUG') === 'true') {
+        $payload['fatal'] = [
+            'tipo'     => $e['type'],
+            'mensagem' => $e['message'],
+            'local'    => $e['file'] . ':' . $e['line'],
+        ];
+    }
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+});
+
 /* ---------- Container ---------- */
 
 $containerBuilder = new ContainerBuilder();
