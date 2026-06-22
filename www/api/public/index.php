@@ -105,6 +105,26 @@ $errorMiddleware = $app->addErrorMiddleware($debug, true, true);
 $errorMiddleware->setDefaultErrorHandler(
     function (Request $request, Throwable $e) use ($container, $debug) {
 
+        // Log server-side (stderr → Logs do EasyPanel). Garante que o erro
+        // apareça mesmo que a resposta HTTP se perca (proxy/restart).
+        error_log(sprintf(
+            '[RMAPI] %s em %s %s :: %s',
+            get_class($e),
+            $request->getMethod(),
+            (string) $request->getUri()->getPath(),
+            $e->getMessage()
+        ));
+        if ($e instanceof RMException) {
+            error_log('[RMAPI] RM operacao=' . $e->operacao . ' dataserver=' . $e->dataServer
+                . ' retorno_rm=' . (string) $e->retornoRm);
+            if ($e->xmlEnviado !== null) {
+                error_log('[RMAPI] xml_enviado=' . $e->xmlEnviado);
+            }
+            if ($e->xmlRetornado !== null) {
+                error_log('[RMAPI] xml_retornado=' . substr((string) $e->xmlRetornado, 0, 3000));
+            }
+        }
+
         // Loga falhas de fluxo no RM (mantendo o comportamento do legado)
         if ($e instanceof FluxoException || $e instanceof ValidationException) {
             $body = (array) $request->getParsedBody();

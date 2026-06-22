@@ -85,8 +85,20 @@ class RMSoapClient
     ): mixed {
         $client ??= $this->conn($type);
 
+        // Marcadores no stderr (Logs do EasyPanel): se aparecer ">> SOAP"
+        // mas nunca ">> SOAP OK" nem um erro logado, o processo morreu DENTRO
+        // da chamada SOAP (segfault/OOM) — não é rejeição do RM.
+        $debug = getenv('APP_DEBUG') === 'true';
+        if ($debug) {
+            error_log("[RMAPI] >> SOAP {$function} ({$dataServer})");
+        }
+
         try {
-            return $client->__soapCall($function, $arguments);
+            $result = $client->__soapCall($function, $arguments);
+            if ($debug) {
+                error_log("[RMAPI] >> SOAP {$function} OK");
+            }
+            return $result;
         } catch (SoapFault $fault) {
             throw new RMException(
                 $fault->getMessage(),
