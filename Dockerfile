@@ -28,13 +28,14 @@ RUN { \
     } > "$PHP_INI_DIR/conf.d/zz-app.ini"
 
 # Apache:
-#  - Timeout/ProxyTimeout 300s: acompanha os processos lentos do RM.
+#  - Timeout 300s: acompanha os processos lentos do RM.
+#    (NÃO usar ProxyTimeout aqui: depende do mod_proxy, que não está
+#     habilitado nesta imagem, e quebraria a inicialização do Apache.)
 #  - MaxRequestWorkers limitado: cada worker (prefork) pode usar até o
 #    memory_limit, então workers x memory_limit precisa caber na RAM do
 #    container. Com 256M e 8 workers = ~2GB de pico. Ajuste se der mais RAM.
 RUN { \
       echo 'Timeout 300'; \
-      echo 'ProxyTimeout 300'; \
     } > /etc/apache2/conf-available/zz-timeout.conf \
  && a2enconf zz-timeout \
  && { \
