@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>FMP RM-API — Referência de Endpoints</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fmp-red:#EE2A42; --fmp-ink:#191818; --fmp-cream:#EFEEEA; --fmp-sand:#BFBAA4;
+    --ink-2:#3a3838; --line:#e2e0d8; --card:#ffffff; --ok:#1f9d6b;
+    --get:#2563eb; --post:#16a34a; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Outfit",system-ui,sans-serif;color:var(--fmp-ink);background:var(--fmp-cream);line-height:1.55}
+  a{color:var(--fmp-red)}
+  header{background:var(--fmp-ink);color:#fff;padding:28px 24px 24px}
+  header .wrap{max-width:1080px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.18em;font-size:13px;color:var(--fmp-sand);text-transform:uppercase}
+  .spark{color:var(--fmp-red);font-size:18px;line-height:1}
+  h1{font-family:"Noto Serif",serif;font-style:italic;font-weight:600;font-size:30px;margin:10px 0 4px}
+  h1 b{color:var(--fmp-red);font-weight:600}
+  .sub{color:#cfcbbf;font-size:14px;max-width:720px}
+  .controls{max-width:1080px;margin:20px auto 0;padding:0 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2)}
+  .field input{font-family:var(--mono);font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;min-width:340px}
+  .field.search input{min-width:240px;font-family:"Outfit"}
+  main{max-width:1080px;margin:0 auto;padding:8px 24px 80px}
+  .note{background:#fff;border:1px solid var(--line);border-left:4px solid var(--fmp-red);border-radius:12px;padding:12px 16px;margin:20px 0;font-size:13.5px;color:var(--ink-2)}
+  .note b{color:var(--fmp-ink)}
+  .group{margin-top:30px}
+  .group h2{font-family:"Noto Serif",serif;font-style:italic;font-size:20px;margin:0 0 4px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:12px 0;overflow:hidden}
+  .card-head{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;user-select:none}
+  .card-head:hover{background:#faf9f6}
+  .method{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;padding:3px 9px;border-radius:999px;letter-spacing:.04em;min-width:52px;text-align:center}
+  .m-GET{background:var(--get)} .m-POST{background:var(--post)}
+  .path{font-family:var(--mono);font-size:14px;font-weight:500;flex:1;word-break:break-all}
+  .chev{color:var(--fmp-sand);transition:transform .18s;font-size:13px}
+  .card.open .chev{transform:rotate(90deg)}
+  .card-body{display:none;padding:0 16px 18px;border-top:1px solid var(--line)}
+  .card.open .card-body{display:block}
+  .desc{font-size:13.5px;color:var(--ink-2);margin:14px 0 4px}
+  .desc.hint{color:#8a8678;font-size:12.5px;font-style:italic}
+  .inputs{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 4px}
+  .inp{display:flex;flex-direction:column;gap:4px}
+  .inp label{font-size:11px;font-weight:600;color:var(--ink-2);font-family:var(--mono)}
+  .inp input{font-family:var(--mono);font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;min-width:160px}
+  textarea{width:100%;font-family:var(--mono);font-size:13px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fdfdfb;min-height:120px;resize:vertical;margin-top:8px}
+  .snippet{margin-top:14px;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a}
+  .snippet-head{display:flex;align-items:center;justify-content:space-between;background:#222;color:#cfcbbf;padding:7px 12px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+  .snippet pre{margin:0;background:var(--fmp-ink);color:#f3f1ea;padding:14px;font-family:var(--mono);font-size:12.5px;overflow-x:auto;white-space:pre}
+  .btns{display:flex;gap:8px}
+  button.copy{background:transparent;border:1px solid #4a4a4a;color:#cfcbbf;border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:"Outfit";font-weight:600}
+  button.copy:hover{border-color:var(--fmp-red);color:#fff}
+  button.copy.done{border-color:var(--ok);color:var(--ok)}
+  footer{max-width:1080px;margin:0 auto;padding:24px;color:#8a8678;font-size:12.5px;border-top:1px solid var(--line)}
+  .toolbar{display:flex;gap:10px;margin:18px 0 0}
+  .toolbar button{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:"Outfit";color:var(--ink-2)}
+  .toolbar button:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand"><span class="spark">✦</span> FMP · Fundação Escola Superior do Ministério Público</div>
+    <h1>RM-API — referência de <b>endpoints</b></h1>
+    <div class="sub">Integração com o TOTVS RM via SOAP. Ajuste a URL base e os campos; cada endpoint gera o <b>cURL</b> pronto para copiar (no terminal ou no <i>Import cURL</i> do n8n). A página não executa requisições — apenas monta os comandos.</div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="field">
+    <label for="base">URL base do serviço</label>
+    <input id="base" value="https://fmp-api-totvs.3wmyqq.easypanel.host" spellcheck="false" />
+  </div>
+  <div class="field search">
+    <label for="q">Filtrar endpoints</label>
+    <input id="q" placeholder="ex: pessoa, inscrição, schema…" />
+  </div>
+</div>
+
+<main>
+  <div class="note">
+    <b>Base path na raiz:</b> as rotas são <code>/pessoas</code>, <code>/rm/test</code> etc., <b>sem</b> <code>/api</code>.
+    <b>POST cria/altera dados reais no RM</b> — cuidado ao testar gravações. Em POST, envie sempre <code>Content-Type: application/json</code>.
+  </div>
+  <div class="toolbar">
+    <button id="expandAll">Expandir tudo</button>
+    <button id="collapseAll">Recolher tudo</button>
+  </div>
+  <div id="catalog"></div>
+</main>
+
+<footer>
+  FMP RM-API · gerado a partir de <code>docs/CURLS.md</code>. Diagnóstico: <code>GET /teste.php</code>, <code>/status</code>, <code>/rm/test</code>. Deploy e troubleshooting em <code>docs/DEPLOY-EASYPANEL.md</code>.
+</footer>
+
+<script>
+const endpoints = [
+  {g:"Sistema", method:"GET", path:"/status", desc:"Health check do RM (sentença INT.EDUVEM.00001)."},
+
+  {g:"RM genérico (diagnóstico)", method:"GET", path:"/rm/test", desc:"Valida conectividade e credenciais SOAP com o RM."},
+  {g:"RM genérico (diagnóstico)", method:"GET", path:"/rm/schema/{dataserver}", desc:"Schema parseado (tabelas, campos, chaves). Marque xml=1 para o XSD bruto.",
+   params:{dataserver:"RhuPessoaData"}, query:[{name:"xml", val:"", label:"xml (1 = XSD bruto)"}]},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/sql/{codsentenca}", desc:"Executa uma sentença SQL cadastrada no RM.",
+   params:{codsentenca:"INT.EDUVEM.00007"},
+   body:{parametros:{CPF_S:"12345678901", RNM_S:"0"}, codcoligada:"0", codsistema:"G"}},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/read/{dataserver}", desc:"ReadRecord: lê um registro pela chave primária.",
+   hint:"chave = partes da PK na ordem.", params:{dataserver:"RhuPessoaData"}, body:{chave:["12345"], contexto:{}}},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/view/{dataserver}", desc:"ReadView: consulta com filtro SQL na view do DataServer.",
+   params:{dataserver:"GlbColigadaData"}, body:{filtro:"CODCOLIGADA=1", contexto:{}}},
+  {g:"RM genérico (diagnóstico)", method:"POST", path:"/rm/save/{dataserver}", desc:"SaveRecord genérico: grava um XML qualquer (uso avançado/diagnóstico).",
+   params:{dataserver:"RhuPessoaData"},
+   body:{xml:"<RhuPessoa><PPessoa><CODIGO>0</CODIGO><NOME>Teste Da Silva</NOME><DTNASCIMENTO>1990-01-15</DTNASCIMENTO><SEXO>M</SEXO><CPF>12345678901</CPF><EMAIL>teste@email.com</EMAIL></PPessoa><VPCompl><CODPESSOA>0</CODPESSOA></VPCompl></RhuPessoa>", contexto:{CODCOLIGADA:"1", CODSISTEMA:"S", CODUSUARIO:"integra.eduvem"}}},
+
+  {g:"Pessoa", method:"POST", path:"/pessoas", desc:"CODIGO=0 ou ausente cria; CODIGO>0 atualiza. Retorna CODPESSOA.",
+   body:{CODIGO:0,NOME:"Fulano de Tal",DTNASCIMENTO:"1990-01-15",ESTADONATAL:"SP",NATURALIDADE:"São Paulo",SEXO:"M",NACIONALIDADE:"10",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"Apto 101",BAIRRO:"Bela Vista",ESTADO:"SP",CIDADE:"São Paulo",CEP:"01310100",PAIS:"Brasil",CPF:"12345678901",TELEFONE1:"11987654321",EMAIL:"fulano@email.com",CODMUNICIPIO:"3550308",CODNATURALIDADE:"3550308",IDPAIS:1,NROREGGERAL:""}},
+  {g:"Pessoa", method:"GET", path:"/pessoas/{codigo}", desc:"ReadRecord RhuPessoaData pelo código.", params:{codigo:"12345"}},
+  {g:"Pessoa", method:"POST", path:"/pessoas/busca", desc:"Localiza por CPF (brasileiro).", body:{CPF:"12345678901"}},
+  {g:"Pessoa", method:"POST", path:"/pessoas/busca", desc:"Localiza por RNM (estrangeiro).", body:{RNM:"A123456-7"}},
+
+  {g:"Aluno", method:"POST", path:"/alunos", desc:"Cria o aluno da pessoa na coligada. Retorna CHAVE = CODCOLIGADA;RA.",
+   body:{CODPESSOA:12345,CODCOLIGADA:1,CODTIPOCURSO:2,CODFILIAL:1,CPF:"12345678901",RNM:""}},
+  {g:"Aluno", method:"GET", path:"/alunos/{codcoligada}/{codpessoa}", desc:"Retorna RA, CODUSUARIO, SENHAPADRAO…", params:{codcoligada:"1", codpessoa:"12345"}},
+
+  {g:"Inscrição (fluxo completo)", method:"POST", path:"/inscricoes", desc:"Fluxo orquestrado (brasileiro): pessoa → aluno → matrículas → enturmação → cupom → lançamento. Idempotente.",
+   hint:"CIDADE/BAIRRO/NATURALIDADE são códigos (use /enderecos). CUPOM é opcional.",
+   body:{OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01",CPF:"12345678901",NOME:"Fulano de Tal",NASCIMENTO:"1990-01-15",SEXO:"M",EMAIL:"fulano@email.com",TELEFONE:"11987654321",CEP:"01310100",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NATURALIDADE:"3550308",CUPOM:"PROMO10"}},
+  {g:"Inscrição (fluxo completo)", method:"POST", path:"/inscricoes", desc:"Fluxo orquestrado (estrangeiro): usa RNM; endereço fica como 'Outro'.",
+   body:{OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01",RNM:"A123456-7",NOME:"John Doe Smith",NASCIMENTO:"1985-06-20",SEXO:"M",EMAIL:"john@email.com",TELEFONE:"11987654321"}},
+
+  {g:"Matrícula (etapas granulares)", method:"POST", path:"/matriculas/curso", desc:"Pré-matrícula (CODSTATUS 23) via EduHabilitacaoAlunoData.", body:{RA:"000123",OFERTA:"OF2026-001"}},
+  {g:"Matrícula (etapas granulares)", method:"POST", path:"/matriculas/periodo-letivo", desc:"Processo 'Matricular aluno' — gera o contrato. Retorna CODCONTRATO.", body:{RA:"000123",OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01"}},
+  {g:"Matrícula (etapas granulares)", method:"POST", path:"/matriculas/disciplinas", desc:"Processo 'Matricular aluno nas disciplinas' por turma da oferta.", body:{RA:"000123",OFERTA:"OF2026-001"}},
+
+  {g:"Contrato", method:"POST", path:"/contratos", desc:"GenerateReport 1664 → GetGeneratedReportSize → GetFileChunk. Retorna CONTEUDO (PDF).",
+   hint:"CIDADE e BAIRRO são códigos; a API resolve os nomes via INT.EDUVEM.00010/00020.",
+   body:{NOME:"Fulano de Tal",CPF:"12345678901",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NACIONALIDADE:"Brasileira",NASCIMENTO:"1990-01-15"}},
+
+  {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}", desc:"Dados da oferta (INT.EDUVEM.00006).", params:{codoferta:"OF2026-001"}},
+  {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}/planos-pagamento", desc:"Planos de pagamento da oferta (INT.EDUVEM.00013).", params:{codoferta:"OF2026-001"}},
+
+  {g:"Endereço", method:"GET", path:"/enderecos/estados", desc:"Lista de estados (INT.EDUVEM.00002)."},
+  {g:"Endereço", method:"GET", path:"/enderecos/estados/{codestado}/cidades", desc:"Cidades do estado (INT.EDUVEM.00003).", params:{codestado:"SP"}},
+  {g:"Endereço", method:"GET", path:"/enderecos/cidades/{codcidade}/bairros", desc:"Bairros da cidade (INT.EDUVEM.00004).", params:{codcidade:"3550308"}},
+  {g:"Endereço", method:"GET", path:"/enderecos/cep/{cep}", desc:"Endereço por CEP (INT.EDUVEM.00005).", params:{cep:"01310100"}},
+
+  {g:"Cupom", method:"GET", path:"/cupons/{codoferta}/{codplano}/{cupom}", desc:"Valida cupom (INT.EDUVEM.00016).", params:{codoferta:"OF2026-001",codplano:"PP01",cupom:"PROMO10"}},
+
+  {g:"SSO (exceção HTML)", method:"GET", path:"/sso/{token}", desc:"Único endpoint HTML — auto-login no Portal. O token vem em dados.nextUrl de POST /inscricoes.", params:{token:"TOKEN_GERADO_PELA_INSCRICAO"}}
+];
+
+const $ = s => document.querySelector(s);
+const baseInput = $("#base");
+try{ const saved = localStorage.getItem("fmp_api_base"); if(saved) baseInput.value = saved; }catch(e){}
+
+function trimBase(){ return baseInput.value.trim().replace(/\/+$/,""); }
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function buildUrl(ep, card){
+  let path = ep.path;
+  if(ep.params){
+    card.querySelectorAll("[data-param]").forEach(inp=>{
+      path = path.replace("{"+inp.dataset.param+"}", encodeURIComponent(inp.value.trim() || ("{"+inp.dataset.param+"}")));
+    });
+  }
+  let qs = [];
+  if(ep.query){
+    card.querySelectorAll("[data-query]").forEach(inp=>{
+      const v = inp.value.trim();
+      if(v!=="") qs.push(encodeURIComponent(inp.dataset.query)+"="+encodeURIComponent(v));
+    });
+  }
+  return trimBase()+path+(qs.length?("?"+qs.join("&")):"");
+}
+
+function buildCurl(ep, card){
+  const url = buildUrl(ep, card);
+  let lines = [`curl -X ${ep.method} "${url}"`];
+  if(ep.body){
+    lines.push(`  -H "Content-Type: application/json"`);
+  }
+  lines.push(`  -H "Accept: application/json"`);
+  if(ep.body){
+    const ta = card.querySelector("textarea");
+    lines.push(`  -d '${ta.value}'`);
+  }
+  return lines.join(" \\\n");
+}
+
+function refresh(ep, card){
+  card.querySelector(".curl").textContent = buildCurl(ep, card);
+}
+
+const catalog = $("#catalog");
+const groups = {};
+endpoints.forEach((ep,i)=>{ (groups[ep.g] = groups[ep.g]||[]).push({ep,i}); });
+
+Object.keys(groups).forEach(gname=>{
+  const sec = document.createElement("div");
+  sec.className="group";
+  sec.innerHTML = `<h2>${esc(gname)}</h2>`;
+  groups[gname].forEach(({ep,i})=>{
+    const card = document.createElement("div");
+    card.className="card";
+    const searchText = (ep.g+" "+ep.method+" "+ep.path+" "+ep.desc).toLowerCase();
+    card.dataset.text = searchText;
+
+    let inputsHtml = "";
+    if(ep.params){
+      inputsHtml += Object.keys(ep.params).map(p=>
+        `<div class="inp"><label>${p}</label><input data-param="${p}" value="${esc(ep.params[p])}"></div>`).join("");
+    }
+    if(ep.query){
+      inputsHtml += ep.query.map(q=>
+        `<div class="inp"><label>${esc(q.label||q.name)}</label><input data-query="${q.name}" value="${esc(q.val||"")}" placeholder="vazio = ignora"></div>`).join("");
+    }
+    const inputsBlock = inputsHtml ? `<div class="inputs">${inputsHtml}</div>` : "";
+    const bodyBlock = ep.body ? `<textarea spellcheck="false">${esc(JSON.stringify(ep.body,null,2))}</textarea>` : "";
+    const hintBlock = ep.hint ? `<p class="desc hint">${esc(ep.hint)}</p>` : "";
+
+    card.innerHTML = `
+      <div class="card-head">
+        <span class="method m-${ep.method}">${ep.method}</span>
+        <code class="path">${esc(ep.path)}</code>
+        <span class="chev">▶</span>
+      </div>
+      <div class="card-body">
+        <p class="desc">${esc(ep.desc)}</p>
+        ${hintBlock}
+        ${inputsBlock}
+        ${bodyBlock}
+        <div class="snippet">
+          <div class="snippet-head"><span>cURL</span>
+            <div class="btns">
+              <button class="copy" data-act="url">Copiar URL</button>
+              <button class="copy" data-act="curl">Copiar cURL</button>
+            </div>
+          </div>
+          <pre class="curl"></pre>
+        </div>
+      </div>`;
+
+    // toggle open/close
+    card.querySelector(".card-head").addEventListener("click", ()=> card.classList.toggle("open"));
+
+    // live refresh
+    card.querySelectorAll("input,textarea").forEach(el=> el.addEventListener("input", ()=> refresh(ep, card)));
+
+    // copy buttons
+    card.querySelectorAll("button.copy").forEach(btn=>{
+      btn.addEventListener("click", e=>{
+        e.stopPropagation();
+        const text = btn.dataset.act==="url" ? buildUrl(ep, card) : buildCurl(ep, card);
+        navigator.clipboard.writeText(text).then(()=>{
+          const old = btn.textContent; btn.textContent="Copiado ✓"; btn.classList.add("done");
+          setTimeout(()=>{ btn.textContent=old; btn.classList.remove("done"); }, 1400);
+        });
+      });
+    });
+
+    refresh(ep, card);
+    sec.appendChild(card);
+  });
+  catalog.appendChild(sec);
+});
+
+// base url: persist + rebuild todos os cURLs
+function rebuildAll(){
+  let flat=[]; Object.keys(groups).forEach(g=> groups[g].forEach(o=> flat.push(o.ep)));
+  document.querySelectorAll(".card").forEach((card,idx)=> refresh(flat[idx], card));
+}
+baseInput.addEventListener("input", ()=>{
+  try{ localStorage.setItem("fmp_api_base", baseInput.value.trim()); }catch(e){}
+  rebuildAll();
+});
+
+// search
+$("#q").addEventListener("input", e=>{
+  const term = e.target.value.toLowerCase().trim();
+  document.querySelectorAll(".card").forEach(card=>{
+    card.style.display = card.dataset.text.includes(term) ? "" : "none";
+  });
+  document.querySelectorAll(".group").forEach(sec=>{
+    const any = [...sec.querySelectorAll(".card")].some(c=> c.style.display!=="none");
+    sec.style.display = any ? "" : "none";
+  });
+});
+
+$("#expandAll").addEventListener("click", ()=> document.querySelectorAll(".card").forEach(c=>c.classList.add("open")));
+$("#collapseAll").addEventListener("click", ()=> document.querySelectorAll(".card").forEach(c=>c.classList.remove("open")));
+</script>
+</body>
+</html>

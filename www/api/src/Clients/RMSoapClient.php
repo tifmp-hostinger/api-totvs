@@ -46,10 +46,13 @@ class RMSoapClient
 
         try {
             $client = new SoapClient($this->baseUrl . $type->getUrlSuffix(), [
-                'login'      => $user ?? $this->user,
-                'password'   => $password ?? $this->password,
-                'trace'      => true, // necessário para capturar XML enviado/retornado
-                'exceptions' => true,
+                'login'              => $user ?? $this->user,
+                'password'           => $password ?? $this->password,
+                'trace'              => true, // necessário para capturar XML enviado/retornado
+                'exceptions'         => true,
+                'connection_timeout' => 30,                // não fica pendurado se o RM não responder
+                'cache_wsdl'         => WSDL_CACHE_BOTH,    // cacheia o WSDL grande do RM (memória/tempo)
+                'keep_alive'         => false,              // evita reuso de socket que trava sob carga
             ]);
         } catch (Throwable $e) {
             throw new RMException(

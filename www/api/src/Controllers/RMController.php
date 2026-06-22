@@ -24,11 +24,12 @@ final class RMController
         return Json::success('Conexão com o RM OK', $this->rmService->testConnection());
     }
 
-    /** GET /rm/schema/{dataserver}?raw=1 */
+    /** GET /rm/schema/{dataserver}?xml=1  (alias antigo: ?raw=1) */
     public function getSchema(Request $request, Response $response, array $args = []): Response
     {
         $query = $request->getQueryParams();
-        $raw = ($query['raw'] ?? '') === '1';
+        // ?xml=1 devolve o XSD bruto. Mantém ?raw=1 como alias por compatibilidade.
+        $raw = ($query['xml'] ?? $query['raw'] ?? '') === '1';
 
         $schema = $this->rmService->getSchema($args['dataserver'], [], $raw);
 

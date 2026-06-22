@@ -3,10 +3,14 @@
 > Defina a variável de ambiente antes (ou substitua direto na URL):
 >
 > ```bash
-> export BASE_URL="https://SEU-SERVIDOR/api"
+> export BASE_URL="https://fmp-api-totvs.3wmyqq.easypanel.host"
 > ```
 >
-> **n8n:** em um nó *HTTP Request*, use *Import cURL* e cole qualquer comando abaixo (troque $BASE_URL pela URL real).
+> **Atenção ao base path:** a aplicação é servida na **raiz** (`setBasePath('')` em `public/index.php`), então as rotas são `/pessoas`, `/rm/test` etc. — **sem** o prefixo `/api`. Use a URL do serviço direto.
+>
+> **Página interativa:** abra `/(docs.html)` no navegador (`https://SEU-SERVIDOR/docs.html`) para montar e copiar os cURLs/bodies visualmente.
+>
+> **n8n:** em um nó *HTTP Request*, use *Import cURL* e cole qualquer comando abaixo (troque $BASE_URL pela URL real). Marque **Send Body → JSON** para os POST (envia `Content-Type: application/json`, necessário para o corpo ser lido).
 > Alternativa: importe `docs/postman_collection.json` no Postman/Insomnia (variável `baseUrl`).
 
 
@@ -37,7 +41,7 @@ curl -X GET "$BASE_URL/rm/test" \
 
 ### Schema de DataServer
 
-`GET /rm/schema/RhuPessoaData` — Schema parseado (tabelas, campos, chaves). Acrescente ?raw=1 para o XSD bruto
+`GET /rm/schema/RhuPessoaData` — Schema parseado (tabelas, campos, chaves). Acrescente **?xml=1** para o XSD bruto (alias antigo: `?raw=1`)
 
 
 > Troque RhuPessoaData pelo DataServer desejado (EduAlunoData, EduHabilitacaoAlunoData...)

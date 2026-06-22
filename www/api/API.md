@@ -3,6 +3,12 @@
 API REST de integração com o **TOTVS RM via SOAP**. Sem frontend, sem checkout, sem renderização HTML (exceção única e documentada: `/sso`).
 
 > **Exemplos prontos:** `docs/CURLS.md` (body + cURL de cada endpoint, colável no *Import cURL* do n8n) e `docs/postman_collection.json` (coleção Postman/Insomnia com variável `baseUrl`).
+>
+> **Página interativa:** `public/docs.html` — servida em `https://SEU-SERVIDOR/docs.html`. Lista todos os endpoints com body editável e gera o cURL pronto pra copiar.
+>
+> **Deploy / EasyPanel / variáveis de ambiente / troubleshooting:** `docs/DEPLOY-EASYPANEL.md`.
+>
+> **Base path:** a app é servida na **raiz** (`setBasePath('')`). As rotas são `/pessoas`, `/rm/test` etc., **sem** `/api`.
 
 ```
 www/api/
@@ -62,8 +68,8 @@ www/api/
 
 **Rota inexistente:** 404. **Erro interno:** 500.
 
-### Modo debug (`APP_DEBUG="true"` no .env)
-Todo erro de RM passa a incluir:
+### Modo debug (`APP_DEBUG=true`)
+Defina como **variável de ambiente** no EasyPanel (ou no `.env` — ver `docs/DEPLOY-EASYPANEL.md`). Todo erro de RM passa a incluir:
 ```json
 "debug": {
   "contexto":      { "CODCOLIGADA": "1", "CODSISTEMA": "S", "CODUSUARIO": "integra.eduvem" },
@@ -84,7 +90,7 @@ O `SoapClient` roda com `trace=true`; request/response brutos são sempre captur
 |---|---|
 | `GET /status` | Health check (sentença INT.EDUVEM.00001) |
 | `GET /rm/test` | Testa conexão/credenciais com o RM |
-| `GET /rm/schema/{dataserver}` | Schema parseado (tabelas, campos, chaves, FKs). `?raw=1` devolve o XSD bruto |
+| `GET /rm/schema/{dataserver}` | Schema parseado (tabelas, campos, chaves, FKs). `?xml=1` devolve o XSD bruto (alias antigo: `?raw=1`) |
 | `POST /rm/sql/{codsentenca}` | Executa sentença SQL cadastrada. Body: `{ "parametros": {"CPF_S": "..."}, "codcoligada": "0", "codsistema": "G" }` |
 | `POST /rm/read/{dataserver}` | ReadRecord. Body: `{ "chave": ["123"], "contexto": {} }` |
 | `POST /rm/view/{dataserver}` | ReadView. Body: `{ "filtro": "CODCOLIGADA=1", "contexto": {} }` |
@@ -234,7 +240,7 @@ Centralizadas em `ConsultaService` (constantes `SQL_*`): 00001 status, 00002 est
 2. **Erros transparentes:** toda falha do RM expõe `operacao`, `dataserver`, `retorno_rm` (e XMLs em debug). Nada de "erro interno" genérico.
 3. **Status HTTP corretos:** 422 (validação/fluxo), 502 (RM), 404, 500 — o legado devolvia 500 para tudo.
 4. **Log tolerante a falha:** gravação de log no RM nunca derruba o fluxo (fallback para error_log).
-5. **Removidos:** frontend completo (www), integração Eduvem (callback), `session_start`, dependências guzzle/phpdotenv, código morto (ReadView/GetSchema agora têm endpoints), bug do `InvalidArgumentException` sem import no Format.
+5. **Removidos:** frontend completo (www), integração Eduvem (callback), `session_start`, dependências guzzle/phpdotenv, código morto (ReadView/GetSchema agora têm endpoints), bug do `InvalidArgumentException` sem import no Format. *(Obs.: foi reintroduzido um leitor de `.env` mínimo e sem dependência — `src/Support/Env.php` — para o deploy em container; ver `docs/DEPLOY-EASYPANEL.md`.)*
 6. **Escape XML:** valores de pessoa/relatório agora passam por `htmlspecialchars` (o legado interpolava cru).
 7. **Eduzz:** não existia nenhuma integração no código (apenas no briefing).
 
