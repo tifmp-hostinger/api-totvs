@@ -55,8 +55,13 @@ final class CfoController
     {
         $data = (array) $request->getParsedBody();
 
-        $chave = $this->cfo->salvar($data);
+        $resultado = $this->cfo->criarFluxo($data);
 
-        return Json::success('Cliente/Fornecedor gravado com sucesso.', ['CHAVE' => $chave], 201);
+        $jaExistia = $resultado['jaExistia'] ?? false;
+        $mensagem  = $jaExistia
+            ? 'Cliente/Fornecedor já cadastrado.'
+            : 'Cliente/Fornecedor gravado com sucesso.';
+
+        return Json::success($mensagem, $resultado, $jaExistia ? 200 : 201);
     }
 }

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace FMP\RMApi\Services;
 
 use FMP\RMApi\Clients\RMSoapClient;
+use FMP\RMApi\Exceptions\FluxoException;
 use FMP\RMApi\Exceptions\RMException;
+use FMP\RMApi\Helpers\Validation;
 
 /**
  * Cliente/Fornecedor no RM (DataServer FinCFOBRData).
@@ -45,6 +47,61 @@ class CfoService
     public function buscarPorCpfRnm(string $cpf = '', string $rnm = ''): ?array
     {
         return $this->consulta->cliForPorCpfRnm($cpf, $rnm);
+    }
+
+    /**
+     * Cria o CFO rastreando etapas (igual à inscrição). Idempotente:
+     * se o documento já estiver cadastrado, não duplica (status JA_EXISTIA).
+     *
+     * @return array{chave:string, jaExistia:bool, etapas:array, cliente?:array}
+     */
+    public function criarFluxo(array $in): array
+    {
+        $etapas = [];
+        $add = function (string $etapa, string $detalhe, string $status = 'OK') use (&$etapas): void {
+            $etapas[] = ['etapa' => $etapa, 'status' => $status, 'detalhe' => $detalhe];
+        };
+
+        /* ---------- Validação ---------- */
+        Validation::ensureHasValue($in, 'NOME');
+        $doc = preg_replace('/\D/', '', (string) ($in['CGCCFO'] ?? $in['CPF'] ?? $in['CNPJ'] ?? ''));
+        $rnm = (string) ($in['RNM'] ?? '');
+        $add('VALIDAÇÃO', 'Dados de entrada validados');
+
+        /* ---------- Consulta (idempotência) ---------- */
+        // A sentença INT.EDUVEM.00009 é por CPF/RNM (pessoa física). Para CNPJ não
+        // há consulta equivalente, então segue direto para a criação.
+        $existente = null;
+        if ($doc !== '' && strlen($doc) === 11) {
+            $existente = $this->consulta->cliForPorCpfRnm($doc, $rnm);
+        } elseif ($rnm !== '') {
+            $existente = $this->consulta->cliForPorCpfRnm('', $rnm);
+        }
+
+        if ($existente !== null) {
+            $chave = ($existente['CODCOLCFO'] ?? self::CODCOLIGADA) . ';' . ($existente['CODCFO'] ?? '');
+            $add('CONSULTA', "Cliente/Fornecedor já existe (CODCFO {$existente['CODCFO']}); não será duplicado", 'JA_EXISTIA');
+            return ['chave' => $chave, 'jaExistia' => true, 'cliente' => $existente, 'etapas' => $etapas];
+        }
+        $add('CONSULTA', 'Documento não cadastrado; prosseguindo para a criação', 'NAO_ENCONTRADO');
+
+        /* ---------- Gravação ---------- */
+        try {
+            $chave = $this->salvar($in);
+        } catch (RMException $e) {
+            $f = new FluxoException(
+                'GRAVAÇÃO',
+                'Houve um erro ao gravar o cliente/fornecedor.',
+                "Erro ao gravar CFO: {$e->retornoRm}",
+                $e->xmlEnviado,
+                $e
+            );
+            $f->etapasConcluidas = $etapas;
+            throw $f;
+        }
+        $add('GRAVAÇÃO', "Cliente/Fornecedor gravado. Chave: {$chave}");
+
+        return ['chave' => $chave, 'jaExistia' => false, 'etapas' => $etapas];
     }
 
     /**

@@ -32,7 +32,8 @@ return [
     AlunoService::class => fn(ContainerInterface $c) => new AlunoService(
         $c->get(RMSoapClient::class),
         $c->get(ConsultaService::class),
-        $c->get('rm')
+        $c->get('rm'),
+        $c->get(Crypto::class)
     ),
 
     CfoService::class => fn(ContainerInterface $c) => new CfoService(

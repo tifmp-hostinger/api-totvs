@@ -130,8 +130,14 @@ Retorno do RM = `CODPESSOA` (numérico) ou mensagem de validação (exposta em `
 
 | Rota | Body | Retorno |
 |---|---|---|
-| `POST /alunos` | `{ "CODPESSOA": 123, "CODCOLIGADA": 1, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CPF": "...", "RNM": "" }` | 201 + `{ "CHAVE": "1;RA-000123" }` |
+| `POST /alunos` | `{ "CODPESSOA": 123, "CODCOLIGADA": 1, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CPF": "...", "RNM": "" }` | 201 + `{ chave, autoLogin, nextUrl, etapas }` |
+| `POST /alunos/cliente-fornecedor` | `{ "RA": "...", "CODCOLIGADA": 0, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CODCFO": "...", "CODCOLCFO": 0 }` ou `{ ..., "CPF": "..." }` | 200 + `{ chave, etapas }` |
 | `GET /alunos/{codcoligada}/{codpessoa}` | — | RA, CODUSUARIO, SENHAPADRAO, EXISTESUSUARIOFILIAL, DATAULTIMOACESSOVALIDO |
+
+**`POST /alunos` agora é orquestrado com rastreamento de etapas** (como a inscrição):
+`CLIENTE/FORNECEDOR` (valida o cliFor pelo CPF/RNM via `INT.EDUVEM.00009`) → `ALUNO` (EduAlunoData) → `USUÁRIO/FILIAL` (EduUsuarioFilialData) → `ACESSO` (GlbUsuarioData + SSO). Sucesso devolve `dados.etapas`; erro de RM lança `FluxoException` (422) com `etapa` + `etapas_concluidas`.
+
+`POST /alunos/cliente-fornecedor` lê o aluno pela PK (`CODCOLIGADA;RA`) para preservar `CODPESSOA`/`CODTIPOCURSO` e regrava o EduAlunoData com `CODCOLCFO`/`CODCFO`. Se o aluno não existir, retorna erro orientando a criá-lo antes.
 
 Contexto do SaveRecord educacional:
 ```
@@ -146,6 +152,8 @@ CODCOLIGADA={n};CODTIPOCURSO={n};CODFILIAL={n};CODSISTEMA=S;CODUSUARIO=integra.e
 | `POST /clientes-fornecedores` | `NOME` (obrig.), `CGCCFO` (CPF/CNPJ), `RUA`, `NUMERO`, `BAIRRO`, `CIDADE`, `CODETD`, `CEP`, `TELEFONE`, `EMAIL`... | 201 + `{ "CHAVE": "0;{CODCFO}" }` |
 
 Regras fixas na criação: **CODCOLIGADA=0**, **CODCFO=0** (o RM gera o código), **PAGREC=3**, **PESSOAFISOUJUR** derivado do documento (11 díg.=`F`, 14=`J`). Contexto do SaveRecord: `CODCOLIGADA=0;CODSISTEMA=F;CODUSUARIO=integra.eduvem`. CGCCFO/CEP/TELEFONE são normalizados p/ dígitos. Envia `<FCFO>` + `<FCFOCOMPL>` (chaves); não envia `<FCFOMX>`.
+
+`POST /clientes-fornecedores` é **rastreado por etapas** e **idempotente**: `VALIDAÇÃO` → `CONSULTA` (se o documento já existir, devolve `JA_EXISTIA` sem duplicar) → `GRAVAÇÃO`. Resposta: `{ chave, jaExistia, etapas }` (200 se já existia, 201 se criou).
 
 ### Inscrição (fluxo completo orquestrado)
 

@@ -47,6 +47,8 @@ return function (App $app): void {
 
     $app->group('/alunos', function (RouteCollectorProxy $alunos) {
         $alunos->post('', [AlunoController::class, 'salvar']);
+        // Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA).
+        $alunos->post('/cliente-fornecedor', [AlunoController::class, 'vincularCliente']);
         $alunos->get('/{codcoligada}/{codpessoa}', [AlunoController::class, 'buscar']);
     });
 

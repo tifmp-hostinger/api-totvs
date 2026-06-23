@@ -200,7 +200,7 @@ curl -X GET "$BASE_URL/pessoas/busca?cpf=12345678901" \
 
 ### `POST /alunos`
 
-Cria o aluno da pessoa na coligada. Retorna CHAVE = CODCOLIGADA;RA.
+Cria/atualiza o aluno com etapas rastreadas (igual à inscrição): CLIENTE/FORNECEDOR → ALUNO → USUÁRIO/FILIAL → ACESSO (SSO). Resposta traz `dados.etapas` (sucesso) ou `etapas_concluidas` (erro).
 
 **Tipo 1 — JSON**
 
@@ -233,6 +233,28 @@ curl -X POST "$BASE_URL/alunos" \
   --data-urlencode "RNM="
 ```
 
+### `POST /alunos/cliente-fornecedor`
+
+Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA). Informe `CODCFO`+`CODCOLCFO` ou um `CPF` para localizar. Lê o aluno pela PK antes de regravar.
+
+**Tipo 1 — JSON**
+
+```bash
+curl -X POST "$BASE_URL/alunos/cliente-fornecedor" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+  "RA": "000123",
+  "CODCOLIGADA": 0,
+  "CODTIPOCURSO": 2,
+  "CODFILIAL": 1,
+  "CODCFO": "",
+  "CODCOLCFO": 0,
+  "CPF": "517.420.330-08"
+}'
+```
+
 ### `GET /alunos/1/12345`
 
 Formato: /alunos/{codcoligada}/{codpessoa}.
@@ -258,7 +280,7 @@ curl -X GET "$BASE_URL/clientes-fornecedores/busca?cpf=12345678901" \
 
 ### `POST /clientes-fornecedores`
 
-Cria o CFO. Envia CODCFO=0 → o RM gera o código. Coligada sempre 0, PAGREC 3, categoria F/J automática pelo documento (CPF→F, CNPJ→J). CGCCFO/CEP/telefone aceitam máscara.
+Cria o CFO com etapas (VALIDAÇÃO → CONSULTA → GRAVAÇÃO) e idempotente (se já existir, devolve JA_EXISTIA sem duplicar). Envia CODCFO=0 → o RM gera; coligada 0, PAGREC 3, F/J automático pelo documento. CGCCFO/CEP/telefone aceitam máscara.
 
 **Tipo 1 — JSON**
 
