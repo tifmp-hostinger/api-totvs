@@ -7,6 +7,7 @@ namespace FMP\RMApi\Services;
 use FMP\RMApi\Clients\RMSoapClient;
 use FMP\RMApi\Exceptions\FluxoException;
 use FMP\RMApi\Exceptions\RMException;
+use FMP\RMApi\Exceptions\ValidationException;
 use FMP\RMApi\Helpers\Crypto;
 use FMP\RMApi\Helpers\Validation;
 use Throwable;
@@ -179,13 +180,26 @@ class AlunoService
         };
 
         // Gravação direta: só os dados do vínculo. Não roda o resto do fluxo.
-        $ra       = (string) Validation::ensureHasValue($in, 'RA');
-        $colAluno = (string) Validation::ensureHasValue($in, 'CODCOLIGADA'); // coligada do aluno (ex.: 1)
-        $colCfo   = (string) Validation::ensureHasValue($in, 'CODCOLCFO');   // coligada do CFO (ex.: 0)
-        $cfo      = (string) Validation::ensureHasValue($in, 'CODCFO');
+        // Obrigatório que ACEITA zero (CODCOLCFO costuma ser 0 = CFO global);
+        // ensureHasValue usa !empty() e rejeitaria 0/"0".
+        $obrig = function (string $k) use ($in) {
+            if (!array_key_exists($k, $in) || $in[$k] === null || $in[$k] === '') {
+                throw new ValidationException(
+                    "Não encontramos um valor que era esperado: {$k}",
+                    "Valor obrigatório não encontrado. Chave do valor esperado: {$k}",
+                    $in
+                );
+            }
+            return $in[$k];
+        };
+
+        $ra       = (string) $obrig('RA');
+        $colAluno = (string) $obrig('CODCOLIGADA'); // coligada do aluno (ex.: 1)
+        $colCfo   = (string) $obrig('CODCOLCFO');   // coligada do CFO (ex.: 0)
+        $cfo      = (string) $obrig('CODCFO');
         // O EduAlunoData exige o contexto educacional completo (coligada + filial + nível de ensino).
-        $codTipoCurso = Validation::ensureHasValue($in, 'CODTIPOCURSO');
-        $codFilial    = Validation::ensureHasValue($in, 'CODFILIAL');
+        $codTipoCurso = $obrig('CODTIPOCURSO');
+        $codFilial    = $obrig('CODFILIAL');
         $add('VALIDAÇÃO', 'Dados de entrada validados');
 
         $esc       = fn($v) => htmlspecialchars((string) $v, ENT_XML1, 'UTF-8');
