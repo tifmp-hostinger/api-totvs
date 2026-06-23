@@ -151,7 +151,7 @@ CODCOLIGADA={n};CODTIPOCURSO={n};CODFILIAL={n};CODSISTEMA=S;CODUSUARIO=integra.e
 | `GET /clientes-fornecedores/busca?cpf=...` (ou `?rnm=...`) | — | CFO (CODCOLCFO, CODCFO...) ou 404. Reusa `INT.EDUVEM.00009` |
 | `POST /clientes-fornecedores` | `NOME` (obrig.), `CGCCFO` (CPF/CNPJ), `RUA`, `NUMERO`, `BAIRRO`, `CIDADE`, `CODETD`, `CEP`, `TELEFONE`, `EMAIL`... | 201 + `{ "CHAVE": "0;{CODCFO}" }` |
 
-Regras fixas na criação: **CODCOLIGADA=0**, **CODCFO=0** (o RM gera o código), **PAGREC=3**, **PESSOAFISOUJUR** derivado do documento (11 díg.=`F`, 14=`J`). Contexto do SaveRecord: `CODCOLIGADA=0;CODSISTEMA=F;CODUSUARIO=integra.eduvem`. CGCCFO/CEP/TELEFONE são normalizados p/ dígitos. Envia `<FCFO>` + `<FCFOCOMPL>` (chaves); não envia `<FCFOMX>`.
+Regras fixas na criação: **CODCOLIGADA do registro = 0** (CFO global, vai no XML), **CODCFO=0** (o RM gera o código), **PAGREC=3**, **PESSOAFISOUJUR** derivado do documento (11 díg.=`F`, 14=`J`). **Contexto do SaveRecord: `CODCOLIGADA=1;CODSISTEMA=F;CODUSUARIO=integra.eduvem`** (a coligada 0 não permite CFO global). CGCCFO/CEP/TELEFONE são normalizados p/ dígitos. Envia `<FCFO>` + `<FCFOCOMPL>` (chaves); não envia `<FCFOMX>`.
 
 `POST /clientes-fornecedores` é **rastreado por etapas** e **idempotente**: `VALIDAÇÃO` → `CONSULTA` (se o documento já existir, devolve `JA_EXISTIA` sem duplicar) → `GRAVAÇÃO`. Resposta: `{ chave, jaExistia, etapas }` (200 se já existia, 201 se criou).
 

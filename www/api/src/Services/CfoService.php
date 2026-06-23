@@ -13,7 +13,8 @@ use FMP\RMApi\Helpers\Validation;
  * Cliente/Fornecedor no RM (DataServer FinCFODataBR).
  *
  * Regras confirmadas com a FMP:
- *  - CODCOLIGADA sempre 0;
+ *  - CODCOLIGADA do registro (XML) sempre 0 (cliente/fornecedor global);
+ *  - CONTEXTO do SaveRecord vai com CODCOLIGADA = 1 (a coligada 0 não permite CFO global);
  *  - na criação envia CODCFO = 0 para o RM gerar o código (igual ao RA do aluno);
  *  - PAGREC sempre 3 (cliente e fornecedor);
  *  - PESSOAFISOUJUR derivado do documento: 11 dígitos => F (CPF), 14 => J (CNPJ);
@@ -23,8 +24,11 @@ class CfoService
 {
     public const DATASERVER = 'FinCFODataBR';
 
-    /** Coligada fixa para CFO na FMP. */
+    /** Coligada do REGISTRO do CFO (vai no XML). 0 = cliente/fornecedor global. */
     private const CODCOLIGADA = '0';
+
+    /** Coligada usada no CONTEXTO do SaveRecord (a coligada 0 não permite CFO global). */
+    private const CODCOLIGADA_CONTEXTO = '1';
 
     /** Campos opcionais: só vão ao XML quando preenchidos (evita enviar tag vazia). */
     private const CAMPOS_OPCIONAIS = [
@@ -118,8 +122,10 @@ class CfoService
 
         $xml = self::buildXml($p);
 
+        // O REGISTRO do CFO é coligada 0 (global), mas o CONTEXTO do SaveRecord
+        // precisa rodar sob uma coligada que permita CFO global (1).
         $contexto = [
-            'CODCOLIGADA' => self::CODCOLIGADA,
+            'CODCOLIGADA' => self::CODCOLIGADA_CONTEXTO,
             'CODSISTEMA'  => 'F',
             'CODUSUARIO'  => $this->rmConfig['usuario_servico'] ?? 'integra.eduvem',
         ];
