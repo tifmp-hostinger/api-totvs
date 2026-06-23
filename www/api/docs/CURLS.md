@@ -9,7 +9,7 @@
 >
 > **Autenticação:** quando a env `API_KEY` está definida no servidor, todo request precisa do header `X-API-Key: $API_KEY` (ou `Authorization: Bearer $API_KEY`). Isentos: `GET /status` e `GET /sso/{token}`.
 >
-> **Verbos:** buscas/consultas usam **GET**; criação/alteração usam **POST**. (`POST /pessoas/busca` segue aceito por compatibilidade.)
+> **Verbos:** buscas/consultas usam **GET**; criação/alteração usam **POST**. Os parâmetros de busca (`cpf`/`rnm`) são aceitos em qualquer caixa.
 >
 > **Dois formatos de corpo (POST):** a API aceita os dois:
 > - **JSON** (`Content-Type: application/json`) → no n8n: *Body Content Type = JSON*.
@@ -187,7 +187,7 @@ curl -X GET "$BASE_URL/pessoas/12345" \
 
 ### `GET /pessoas/busca?cpf=12345678901`
 
-Busca por CPF ou RNM (use ?cpf= OU ?rnm=). Padrão GET. O POST /pessoas/busca segue aceito como compatibilidade.
+Busca por CPF ou RNM (use ?cpf= OU ?rnm=). Padrão GET. Aceita cpf/CPF em qualquer caixa.
 
 ```bash
 curl -X GET "$BASE_URL/pessoas/busca?cpf=12345678901" \

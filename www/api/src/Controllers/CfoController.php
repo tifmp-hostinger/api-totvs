@@ -22,7 +22,11 @@ final class CfoController
      */
     public function buscarPorDocumento(Request $request, Response $response, array $args = []): Response
     {
-        $data = array_merge((array) $request->getParsedBody(), $request->getQueryParams());
+        // Aceita CPF/RNM via query (GET) ou corpo, em qualquer caixa (cpf/CPF).
+        $data = [];
+        foreach (array_merge((array) $request->getParsedBody(), $request->getQueryParams()) as $k => $v) {
+            $data[strtoupper((string) $k)] = $v;
+        }
 
         $isForeigner = isset($data['RNM']) && !empty($data['RNM']);
 

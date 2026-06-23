@@ -38,10 +38,8 @@ return function (App $app): void {
 
     $app->group('/pessoas', function (RouteCollectorProxy $pessoas) {
         $pessoas->post('', [PessoaController::class, 'salvar']);
-        // Busca por documento: GET é o padrão (leitura). POST mantido como alias
-        // de compatibilidade para integrações já existentes (n8n).
+        // Busca por documento: GET (leitura). ?cpf=... ou ?rnm=...
         $pessoas->get('/busca', [PessoaController::class, 'buscarPorDocumento']);
-        $pessoas->post('/busca', [PessoaController::class, 'buscarPorDocumento']);
         $pessoas->get('/{codigo}', [PessoaController::class, 'buscar']);
     });
 

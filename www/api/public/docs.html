@@ -127,7 +127,7 @@ const endpoints = [
 
   {g:"Pessoa", method:"POST", path:"/pessoas", desc:"CODIGO=0/ausente cria; CODIGO>0 atualiza. CPF/CEP aceitam máscara (a API remove). Retorna CODPESSOA.", body:{CODIGO:0,NOME:"Fulano de Tal",DTNASCIMENTO:"1990-01-15",SEXO:"M",CPF:"123.456.789-01",CEP:"01310-100",TELEFONE1:"11987654321",EMAIL:"fulano@email.com"}},
   {g:"Pessoa", method:"GET", path:"/pessoas/{codigo}", desc:"ReadRecord RhuPessoaData pelo código.", params:{codigo:"12345"}},
-  {g:"Pessoa", method:"GET", path:"/pessoas/busca", desc:"Localiza por CPF ou RNM (preencha um). Busca = GET. (POST ainda aceito como compatibilidade.)", query:[{name:"cpf", val:"12345678901", label:"cpf"},{name:"rnm", val:"", label:"rnm"}]},
+  {g:"Pessoa", method:"GET", path:"/pessoas/busca", desc:"Localiza por CPF ou RNM (preencha um). Aceita cpf/CPF em qualquer caixa.", query:[{name:"cpf", val:"12345678901", label:"cpf"},{name:"rnm", val:"", label:"rnm"}]},
 
   {g:"Aluno", method:"POST", path:"/alunos", desc:"Cria o aluno da pessoa na coligada. Retorna CHAVE = CODCOLIGADA;RA.", body:{CODPESSOA:12345,CODCOLIGADA:1,CODTIPOCURSO:2,CODFILIAL:1,CPF:"12345678901",RNM:""}},
   {g:"Aluno", method:"GET", path:"/alunos/{codcoligada}/{codpessoa}", desc:"Retorna RA, CODUSUARIO, SENHAPADRAO…", params:{codcoligada:"1", codpessoa:"12345"}},

@@ -34,7 +34,10 @@ final class PessoaController
      */
     public function buscarPorDocumento(Request $request, Response $response, array $args = []): Response
     {
-        $data = (array) $request->getParsedBody();
+        // Aceita CPF/RNM via query (GET) ou corpo, em qualquer caixa (cpf/CPF).
+        $data = self::normalizarChaves(
+            array_merge((array) $request->getParsedBody(), $request->getQueryParams())
+        );
 
         $isForeigner = isset($data['RNM']) && !empty($data['RNM']);
 
@@ -66,5 +69,15 @@ final class PessoaController
         $codPessoa = $this->pessoaService->salvar($data);
 
         return Json::success('Pessoa gravada com sucesso.', ['CODPESSOA' => $codPessoa], 201);
+    }
+
+    /** Sobe as chaves para maiúsculas (CPF/RNM funcionam vindo como cpf/rnm na query). */
+    private static function normalizarChaves(array $data): array
+    {
+        $out = [];
+        foreach ($data as $k => $v) {
+            $out[strtoupper((string) $k)] = $v;
+        }
+        return $out;
     }
 }

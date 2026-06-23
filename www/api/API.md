@@ -106,7 +106,7 @@ O `SoapClient` roda com `trace=true`; request/response brutos são sempre captur
 |---|---|---|
 | `POST /pessoas` | Campos da PPessoa: `CODIGO` (0/ausente = criar), `NOME`, `DTNASCIMENTO`, `SEXO`, `CPF`, `EMAIL`, `TELEFONE1`, `RUA`, `NUMERO`, `BAIRRO`, `ESTADO`, `CIDADE`, `CEP`, `CODMUNICIPIO`, `IDPAIS`, `NROREGGERAL`... (CPF/CEP/TELEFONE1 são normalizados p/ dígitos) | 201 + `{ "CODPESSOA": "12345" }` |
 | `GET /pessoas/{codigo}` | — | dados completos da PPessoa |
-| `GET /pessoas/busca?cpf=...` (ou `?rnm=...`) | — | PPessoa ou 404. **POST /pessoas/busca** segue aceito como alias de compatibilidade |
+| `GET /pessoas/busca?cpf=...` (ou `?rnm=...`) | — | PPessoa ou 404. Aceita `cpf`/`CPF` em qualquer caixa |
 
 XML enviado ao RM (SaveRecord `RhuPessoaData`, sem contexto):
 ```xml
