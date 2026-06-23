@@ -104,9 +104,9 @@ O `SoapClient` roda com `trace=true`; request/response brutos são sempre captur
 
 | Rota | Body | Retorno |
 |---|---|---|
-| `POST /pessoas` | Campos da PPessoa: `CODIGO` (0/ausente = criar), `NOME`, `DTNASCIMENTO`, `SEXO`, `CPF`, `EMAIL`, `TELEFONE1`, `RUA`, `NUMERO`, `BAIRRO`, `ESTADO`, `CIDADE`, `CEP`, `CODMUNICIPIO`, `IDPAIS`, `NROREGGERAL`... | 201 + `{ "CODPESSOA": "12345" }` |
+| `POST /pessoas` | Campos da PPessoa: `CODIGO` (0/ausente = criar), `NOME`, `DTNASCIMENTO`, `SEXO`, `CPF`, `EMAIL`, `TELEFONE1`, `RUA`, `NUMERO`, `BAIRRO`, `ESTADO`, `CIDADE`, `CEP`, `CODMUNICIPIO`, `IDPAIS`, `NROREGGERAL`... (CPF/CEP/TELEFONE1 são normalizados p/ dígitos) | 201 + `{ "CODPESSOA": "12345" }` |
 | `GET /pessoas/{codigo}` | — | dados completos da PPessoa |
-| `POST /pessoas/busca` | `{ "CPF": "..." }` ou `{ "RNM": "A123456-7" }` | PPessoa ou 404 |
+| `GET /pessoas/busca?cpf=...` (ou `?rnm=...`) | — | PPessoa ou 404. **POST /pessoas/busca** segue aceito como alias de compatibilidade |
 
 XML enviado ao RM (SaveRecord `RhuPessoaData`, sem contexto):
 ```xml
@@ -137,6 +137,15 @@ Contexto do SaveRecord educacional:
 ```
 CODCOLIGADA={n};CODTIPOCURSO={n};CODFILIAL={n};CODSISTEMA=S;CODUSUARIO=integra.eduvem
 ```
+
+### Cliente/Fornecedor (FinCFOBRData)
+
+| Rota | Body / Query | Retorno |
+|---|---|---|
+| `GET /clientes-fornecedores/busca?cpf=...` (ou `?rnm=...`) | — | CFO (CODCOLCFO, CODCFO...) ou 404. Reusa `INT.EDUVEM.00009` |
+| `POST /clientes-fornecedores` | `NOME` (obrig.), `CGCCFO` (CPF/CNPJ), `RUA`, `NUMERO`, `BAIRRO`, `CIDADE`, `CODETD`, `CEP`, `TELEFONE`, `EMAIL`... | 201 + `{ "CHAVE": "0;{CODCFO}" }` |
+
+Regras fixas na criação: **CODCOLIGADA=0**, **CODCFO=0** (o RM gera o código), **PAGREC=3**, **PESSOAFISOUJUR** derivado do documento (11 díg.=`F`, 14=`J`). Contexto do SaveRecord: `CODCOLIGADA=0;CODSISTEMA=F;CODUSUARIO=integra.eduvem`. CGCCFO/CEP/TELEFONE são normalizados p/ dígitos. Envia `<FCFO>` + `<FCFOCOMPL>` (chaves); não envia `<FCFOMX>`.
 
 ### Inscrição (fluxo completo orquestrado)
 

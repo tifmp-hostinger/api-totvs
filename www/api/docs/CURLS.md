@@ -9,14 +9,15 @@
 >
 > **Autenticação:** quando a env `API_KEY` está definida no servidor, todo request precisa do header `X-API-Key: $API_KEY` (ou `Authorization: Bearer $API_KEY`). Isentos: `GET /status` e `GET /sso/{token}`.
 >
-> **Dois formatos de corpo (POST):** a API aceita os dois — escolha o que cair melhor:
+> **Verbos:** buscas/consultas usam **GET**; criação/alteração usam **POST**. (`POST /pessoas/busca` segue aceito por compatibilidade.)
+>
+> **Dois formatos de corpo (POST):** a API aceita os dois:
 > - **JSON** (`Content-Type: application/json`) → no n8n: *Body Content Type = JSON*.
-> - **Campos / form-urlencoded** (`--data-urlencode`) → no n8n importa como **"Using Fields Below"** (*Body Content Type = Form Urlencoded*).
+> - **Campos / form-urlencoded** (`--data-urlencode`) → no n8n importa como **"Using Fields Below"**.
 >
-> Corpos **aninhados** (ex.: `/rm/sql`, `/rm/read`, `/rm/save`) → use **JSON** (campos soltos não representam objetos/arrays direito).
+> Corpos **aninhados** (ex.: `/rm/sql`, `/rm/read`, `/rm/save`) → use **JSON**.
 >
-> **Página interativa:** `/docs.html` monta os dois formatos e injeta a chave automaticamente.
-> **Coleção:** `docs/postman_collection.json`.
+> **Página interativa:** `/docs.html`. **Coleção:** `docs/postman_collection.json`.
 
 
 ## Sistema
@@ -56,7 +57,7 @@ curl -X GET "$BASE_URL/rm/schema/RhuPessoaData" \
 
 ### `POST /rm/sql/INT.EDUVEM.00007`
 
-Executa uma sentença SQL cadastrada.
+Executa uma sentença SQL cadastrada. (Leitura, mas usa corpo com parâmetros → mantém POST.)
 
 **JSON** (corpo aninhado — use este formato)
 
@@ -77,7 +78,7 @@ curl -X POST "$BASE_URL/rm/sql/INT.EDUVEM.00007" \
 
 ### `POST /rm/read/RhuPessoaData`
 
-ReadRecord pela chave primária.
+ReadRecord pela chave primária. (Corpo aninhado → POST.)
 
 **JSON** (corpo aninhado — use este formato)
 
@@ -96,7 +97,7 @@ curl -X POST "$BASE_URL/rm/read/RhuPessoaData" \
 
 ### `POST /rm/view/GlbColigadaData`
 
-ReadView com filtro SQL.
+ReadView com filtro SQL. (Corpo aninhado → POST.)
 
 **JSON** (corpo aninhado — use este formato)
 
@@ -184,54 +185,14 @@ curl -X GET "$BASE_URL/pessoas/12345" \
   -H "Accept: application/json"
 ```
 
-### `POST /pessoas/busca`
+### `GET /pessoas/busca?cpf=12345678901`
 
-Localiza por CPF (brasileiro).
-
-**Tipo 1 — JSON**
+Busca por CPF ou RNM (use ?cpf= OU ?rnm=). Padrão GET. O POST /pessoas/busca segue aceito como compatibilidade.
 
 ```bash
-curl -X POST "$BASE_URL/pessoas/busca" \
+curl -X GET "$BASE_URL/pessoas/busca?cpf=12345678901" \
   -H "X-API-Key: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{
-  "CPF": "12345678901"
-}'
-```
-
-**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
-
-```bash
-curl -X POST "$BASE_URL/pessoas/busca" \
-  -H "X-API-Key: $API_KEY" \
-  -H "Accept: application/json" \
-  --data-urlencode "CPF=12345678901"
-```
-
-### `POST /pessoas/busca`
-
-Localiza por RNM (estrangeiro).
-
-**Tipo 1 — JSON**
-
-```bash
-curl -X POST "$BASE_URL/pessoas/busca" \
-  -H "X-API-Key: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{
-  "RNM": "A123456-7"
-}'
-```
-
-**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
-
-```bash
-curl -X POST "$BASE_URL/pessoas/busca" \
-  -H "X-API-Key: $API_KEY" \
-  -H "Accept: application/json" \
-  --data-urlencode "RNM=A123456-7"
+  -H "Accept: application/json"
 ```
 
 
@@ -280,6 +241,62 @@ Formato: /alunos/{codcoligada}/{codpessoa}.
 curl -X GET "$BASE_URL/alunos/1/12345" \
   -H "X-API-Key: $API_KEY" \
   -H "Accept: application/json"
+```
+
+
+## Cliente/Fornecedor
+
+### `GET /clientes-fornecedores/busca?cpf=12345678901`
+
+Consulta o CFO por CPF/RNM ANTES de criar (reusa INT.EDUVEM.00009). 404 = não existe, pode criar.
+
+```bash
+curl -X GET "$BASE_URL/clientes-fornecedores/busca?cpf=12345678901" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json"
+```
+
+### `POST /clientes-fornecedores`
+
+Cria o CFO. Envia CODCFO=0 → o RM gera o código. Coligada sempre 0, PAGREC 3, categoria F/J automática pelo documento (CPF→F, CNPJ→J). CGCCFO/CEP/telefone aceitam máscara.
+
+**Tipo 1 — JSON**
+
+```bash
+curl -X POST "$BASE_URL/clientes-fornecedores" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+  "NOME": "Felipe Machado da Silva",
+  "CGCCFO": "517.420.330-08",
+  "RUA": "Av. Ipiranga",
+  "NUMERO": "6681",
+  "BAIRRO": "Partenon",
+  "CIDADE": "Porto Alegre",
+  "CODETD": "RS",
+  "CEP": "90619-900",
+  "TELEFONE": "(51) 3333-6565",
+  "EMAIL": "felipe@exemplo.com"
+}'
+```
+
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
+
+```bash
+curl -X POST "$BASE_URL/clientes-fornecedores" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "NOME=Felipe Machado da Silva" \
+  --data-urlencode "CGCCFO=517.420.330-08" \
+  --data-urlencode "RUA=Av. Ipiranga" \
+  --data-urlencode "NUMERO=6681" \
+  --data-urlencode "BAIRRO=Partenon" \
+  --data-urlencode "CIDADE=Porto Alegre" \
+  --data-urlencode "CODETD=RS" \
+  --data-urlencode "CEP=90619-900" \
+  --data-urlencode "TELEFONE=(51) 3333-6565" \
+  --data-urlencode "EMAIL=felipe@exemplo.com"
 ```
 
 

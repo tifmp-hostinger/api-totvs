@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use FMP\RMApi\Controllers\AlunoController;
+use FMP\RMApi\Controllers\CfoController;
 use FMP\RMApi\Controllers\ContratoController;
 use FMP\RMApi\Controllers\CupomController;
 use FMP\RMApi\Controllers\EnderecoController;
@@ -37,6 +38,9 @@ return function (App $app): void {
 
     $app->group('/pessoas', function (RouteCollectorProxy $pessoas) {
         $pessoas->post('', [PessoaController::class, 'salvar']);
+        // Busca por documento: GET é o padrão (leitura). POST mantido como alias
+        // de compatibilidade para integrações já existentes (n8n).
+        $pessoas->get('/busca', [PessoaController::class, 'buscarPorDocumento']);
         $pessoas->post('/busca', [PessoaController::class, 'buscarPorDocumento']);
         $pessoas->get('/{codigo}', [PessoaController::class, 'buscar']);
     });
@@ -46,6 +50,15 @@ return function (App $app): void {
     $app->group('/alunos', function (RouteCollectorProxy $alunos) {
         $alunos->post('', [AlunoController::class, 'salvar']);
         $alunos->get('/{codcoligada}/{codpessoa}', [AlunoController::class, 'buscar']);
+    });
+
+    /* ---------- Cliente/Fornecedor (FinCFOBRData) ---------- */
+
+    $app->group('/clientes-fornecedores', function (RouteCollectorProxy $cfo) {
+        // Consulta (leitura) por CPF/RNM: GET ?cpf=... ou ?rnm=...
+        $cfo->get('/busca', [CfoController::class, 'buscarPorDocumento']);
+        // Criação: envia CODCFO=0; o RM gera o código.
+        $cfo->post('', [CfoController::class, 'salvar']);
     });
 
     /* ---------- Inscrição (fluxo completo orquestrado) ---------- */
