@@ -235,7 +235,7 @@ curl -X POST "$BASE_URL/alunos" \
 
 ### `POST /alunos/cliente-fornecedor`
 
-Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA). Informe `CODCFO`+`CODCOLCFO` e o `RA` que vai ser inserido junto ao seu `CODCOLIGADA`. Gravação direta (não roda o resto do fluxo).
+Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA). Informe `CODCFO`+`CODCOLCFO` e o `RA` junto ao seu `CODCOLIGADA`. `CODTIPOCURSO` e `CODFILIAL` são obrigatórios (contexto do EduAlunoData). Gravação direta.
 
 ```bash
 curl -X POST "$BASE_URL/alunos/cliente-fornecedor" \
@@ -245,6 +245,8 @@ curl -X POST "$BASE_URL/alunos/cliente-fornecedor" \
   -d '{
   "RA": "000123",
   "CODCOLIGADA": 1,
+  "CODTIPOCURSO": 2,
+  "CODFILIAL": 1,
   "CODCOLCFO": 0,
   "CODCFO": "12345"
 }'

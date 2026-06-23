@@ -130,7 +130,7 @@ const endpoints = [
   {g:"Pessoa", method:"GET", path:"/pessoas/busca", desc:"Localiza por CPF ou RNM (preencha um). Aceita cpf/CPF em qualquer caixa.", query:[{name:"cpf", val:"12345678901", label:"cpf"},{name:"rnm", val:"", label:"rnm"}]},
 
   {g:"Aluno", method:"POST", path:"/alunos", desc:"Cria/atualiza o aluno com etapas rastreadas (igual à inscrição): CLIENTE/FORNECEDOR → ALUNO → USUÁRIO/FILIAL → ACESSO (SSO). Resposta traz dados.etapas (sucesso) ou etapas_concluidas (erro).", body:{CODPESSOA:12345,CODCOLIGADA:1,CODTIPOCURSO:2,CODFILIAL:1,CPF:"12345678901",RNM:""}},
-  {g:"Aluno", method:"POST", path:"/alunos/cliente-fornecedor", desc:"Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA). Informe CODCFO+CODCOLCFO e o RA que vai ser inserido junto ao seu CODCOLIGADA.", body:{RA:"000123",CODCOLIGADA:1,CODCOLCFO:0,CODCFO:""}},
+  {g:"Aluno", method:"POST", path:"/alunos/cliente-fornecedor", desc:"Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA). Informe CODCFO+CODCOLCFO e o RA junto ao seu CODCOLIGADA. CODTIPOCURSO e CODFILIAL são exigidos pelo contexto do EduAlunoData.", body:{RA:"000123",CODCOLIGADA:1,CODTIPOCURSO:2,CODFILIAL:1,CODCOLCFO:0,CODCFO:""}},
   {g:"Aluno", method:"GET", path:"/alunos/{codcoligada}/{codpessoa}", desc:"Retorna RA, CODUSUARIO, SENHAPADRAO…", params:{codcoligada:"1", codpessoa:"12345"}},
 
   {g:"Cliente/Fornecedor", method:"GET", path:"/clientes-fornecedores/busca", desc:"Consulta o CFO por CPF/RNM ANTES de criar (reusa INT.EDUVEM.00009). 404 = não existe, pode criar.", query:[{name:"cpf", val:"12345678901", label:"cpf"},{name:"rnm", val:"", label:"rnm"}]},

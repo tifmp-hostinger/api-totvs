@@ -183,6 +183,9 @@ class AlunoService
         $colAluno = (string) Validation::ensureHasValue($in, 'CODCOLIGADA'); // coligada do aluno (ex.: 1)
         $colCfo   = (string) Validation::ensureHasValue($in, 'CODCOLCFO');   // coligada do CFO (ex.: 0)
         $cfo      = (string) Validation::ensureHasValue($in, 'CODCFO');
+        // O EduAlunoData exige o contexto educacional completo (coligada + filial + nível de ensino).
+        $codTipoCurso = Validation::ensureHasValue($in, 'CODTIPOCURSO');
+        $codFilial    = Validation::ensureHasValue($in, 'CODFILIAL');
         $add('VALIDAÇÃO', 'Dados de entrada validados');
 
         $esc       = fn($v) => htmlspecialchars((string) $v, ENT_XML1, 'UTF-8');
@@ -206,18 +209,8 @@ class AlunoService
         </EduAluno>
         XML;
 
-        // Contexto mínimo (coligada do aluno). CODTIPOCURSO/CODFILIAL são opcionais.
-        $contexto = [
-            'CODCOLIGADA' => $colAluno,
-            'CODSISTEMA'  => $this->rmConfig['contexto_padrao']['CODSISTEMA'] ?? 'S',
-            'CODUSUARIO'  => $this->rmConfig['usuario_servico'] ?? 'integra.eduvem',
-        ];
-        if (!empty($in['CODTIPOCURSO'])) {
-            $contexto['CODTIPOCURSO'] = $in['CODTIPOCURSO'];
-        }
-        if (!empty($in['CODFILIAL'])) {
-            $contexto['CODFILIAL'] = $in['CODFILIAL'];
-        }
+        // Contexto educacional completo (coligada + tipo de curso/nível + filial).
+        $contexto = $this->contexto($colAluno, $codTipoCurso, $codFilial);
 
         try {
             $result = $this->rm->saveRecord(self::DATASERVER_ALUNO, $xml, $contexto);
