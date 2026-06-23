@@ -20,6 +20,7 @@ use FMP\RMApi\Helpers\Validation;
  *  - PESSOAFISOUJUR derivado do documento: 11 dígitos => F (CPF), 14 => J (CNPJ);
  *  - contexto do SaveRecord usa CODSISTEMA = F (financeiro).
  */
+
 class CfoService
 {
     public const DATASERVER = 'FinCFODataBR';

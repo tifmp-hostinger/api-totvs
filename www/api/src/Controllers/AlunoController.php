@@ -45,8 +45,8 @@ final class AlunoController
 
     /**
      * POST /alunos/cliente-fornecedor — vincula um Cliente/Fornecedor já gravado
-     * a um aluno já existente (por RA + coligada).
-     * Body: { RA, CODCOLIGADA, CODTIPOCURSO, CODFILIAL, CODCFO? , CODCOLCFO? , CPF? }
+     * a um aluno existente. Gravação direta (não roda o resto do fluxo).
+     * Body: { RA, CODCOLIGADA (do aluno), CODCOLCFO, CODCFO }.
      */
     public function vincularCliente(Request $request, Response $response, array $args = []): Response
     {

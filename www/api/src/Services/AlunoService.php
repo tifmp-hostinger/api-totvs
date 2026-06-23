@@ -171,84 +171,59 @@ class AlunoService
             $etapas[] = ['etapa' => $etapa, 'status' => $status, 'detalhe' => $detalhe];
         };
 
-        $ra           = (string) Validation::ensureHasValue($in, 'RA');
-        $codColigada  = (string) Validation::ensureHasValue($in, 'CODCOLIGADA');
-        $codTipoCurso = Validation::ensureHasValue($in, 'CODTIPOCURSO');
-        $codFilial    = Validation::ensureHasValue($in, 'CODFILIAL');
+        // Gravação direta: só os dados do vínculo. Não roda o resto do fluxo.
+        $ra       = (string) Validation::ensureHasValue($in, 'RA');
+        $colAluno = (string) Validation::ensureHasValue($in, 'CODCOLIGADA'); // coligada do aluno (ex.: 1)
+        $colCfo   = (string) Validation::ensureHasValue($in, 'CODCOLCFO');   // coligada do CFO (ex.: 0)
+        $cfo      = (string) Validation::ensureHasValue($in, 'CODCFO');
         $add('VALIDAÇÃO', 'Dados de entrada validados');
 
-        /* ---------- Localiza o aluno pela PK ---------- */
-        try {
-            $record = $this->rm->readRecord(
-                self::DATASERVER_ALUNO,
-                [$codColigada, $ra],
-                $this->contexto($codColigada, $codTipoCurso, $codFilial)
-            );
-        } catch (RMException $e) {
-            throw $this->falha('ALUNO', 'Erro ao localizar o aluno.', $etapas, $e);
-        }
+        $esc       = fn($v) => htmlspecialchars((string) $v, ENT_XML1, 'UTF-8');
+        $raX       = $esc($ra);
+        $colAlunoX = $esc($colAluno);
+        $colCfoX   = $esc($colCfo);
+        $cfoX      = $esc($cfo);
 
-        $saluno = $record['SAluno'] ?? ($record['EduAluno']['SAluno'] ?? null);
-        $codPessoa = is_array($saluno) ? ($saluno['CODPESSOA'] ?? null) : null;
-
-        if ($codPessoa === null || $codPessoa === '') {
-            throw $this->falhaMsg(
-                'ALUNO',
-                "Aluno (RA {$ra}, coligada {$codColigada}) não encontrado. Crie o aluno antes de vincular o cliente.",
-                $etapas,
-                $record
-            );
-        }
-        // Preserva o tipo de curso do registro quando disponível.
-        $codTipoCursoReg = is_array($saluno) ? ($saluno['CODTIPOCURSO'] ?? $codTipoCurso) : $codTipoCurso;
-        $add('ALUNO', "Aluno RA {$ra} localizado (CODPESSOA {$codPessoa})", 'ENCONTRADO');
-
-        /* ---------- Resolve / valida o CFO ---------- */
-        if (!empty($in['CODCFO'])) {
-            $codCfo    = (string) $in['CODCFO'];
-            $codColCfo = (string) ($in['CODCOLCFO'] ?? $codColigada);
-        } else {
-            $doc = preg_replace('/\D/', '', (string) ($in['CPF'] ?? $in['CGCCFO'] ?? $in['DOC'] ?? ''));
-            $cliFor = $doc !== '' ? $this->consulta->cliForPorCpfRnm($doc, (string) ($in['RNM'] ?? '')) : null;
-            if ($cliFor === null) {
-                throw $this->falhaMsg(
-                    'CLIENTE/FORNECEDOR',
-                    'Cliente/Fornecedor não encontrado. Informe CODCFO ou um documento válido (grave o cliente primeiro).',
-                    $etapas,
-                    $in
-                );
-            }
-            $codCfo    = (string) $cliFor['CODCFO'];
-            $codColCfo = (string) $cliFor['CODCOLCFO'];
-        }
-        $add('CLIENTE/FORNECEDOR', "Cliente/Fornecedor {$codColCfo};{$codCfo} validado", 'ENCONTRADO');
-
-        /* ---------- Regrava o aluno com o CFO anexado ---------- */
         $xml = <<<XML
         <EduAluno>
             <SAluno>
-                <CODCOLIGADA>{$codColigada}</CODCOLIGADA>
-                <RA>{$ra}</RA>
-                <CODCOLCFO>{$codColCfo}</CODCOLCFO>
-                <CODCFO>{$codCfo}</CODCFO>
-                <CODPESSOA>{$codPessoa}</CODPESSOA>
-                <CODTIPOCURSO>{$codTipoCursoReg}</CODTIPOCURSO>
+                <CODCOLIGADA>{$colAlunoX}</CODCOLIGADA>
+                <RA>{$raX}</RA>
+                <CODCOLCFO>{$colCfoX}</CODCOLCFO>
+                <CODCFO>{$cfoX}</CODCFO>
             </SAluno>
             <SAlunoCompl>
-                <CODCOLIGADA>{$codColigada}</CODCOLIGADA>
-                <RA>{$ra}</RA>
+                <CODCOLIGADA>{$colAlunoX}</CODCOLIGADA>
+                <RA>{$raX}</RA>
             </SAlunoCompl>
         </EduAluno>
         XML;
 
-        $contexto = $this->contexto($codColigada, $codTipoCursoReg, $codFilial);
+        // Contexto mínimo (coligada do aluno). CODTIPOCURSO/CODFILIAL são opcionais.
+        $contexto = [
+            'CODCOLIGADA' => $colAluno,
+            'CODSISTEMA'  => $this->rmConfig['contexto_padrao']['CODSISTEMA'] ?? 'S',
+            'CODUSUARIO'  => $this->rmConfig['usuario_servico'] ?? 'integra.eduvem',
+        ];
+        if (!empty($in['CODTIPOCURSO'])) {
+            $contexto['CODTIPOCURSO'] = $in['CODTIPOCURSO'];
+        }
+        if (!empty($in['CODFILIAL'])) {
+            $contexto['CODFILIAL'] = $in['CODFILIAL'];
+        }
+
         try {
             $result = $this->rm->saveRecord(self::DATASERVER_ALUNO, $xml, $contexto);
         } catch (RMException $e) {
             throw $this->falha('VÍNCULO', 'Erro ao vincular o cliente/fornecedor ao aluno.', $etapas, $e);
         }
 
-        $add('VÍNCULO', "Cliente/Fornecedor {$codCfo} vinculado ao aluno RA {$ra}");
+        $parts = explode(';', $result, 2);
+        if (($parts[0] ?? '') !== $colAluno) {
+            throw $this->falhaMsg('VÍNCULO', 'O RM rejeitou o vínculo do cliente ao aluno.', $etapas, $result);
+        }
+
+        $add('VÍNCULO', "Cliente/Fornecedor {$colCfo};{$cfo} vinculado ao aluno RA {$ra} (coligada {$colAluno})");
 
         return ['chave' => $result, 'etapas' => $etapas];
     }

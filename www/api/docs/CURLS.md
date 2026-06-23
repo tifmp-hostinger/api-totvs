@@ -235,9 +235,7 @@ curl -X POST "$BASE_URL/alunos" \
 
 ### `POST /alunos/cliente-fornecedor`
 
-Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA). Informe `CODCFO`+`CODCOLCFO` ou um `CPF` para localizar. Lê o aluno pela PK antes de regravar.
-
-**Tipo 1 — JSON**
+Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA). Informe `CODCFO`+`CODCOLCFO` e o `RA` que vai ser inserido junto ao seu `CODCOLIGADA`. Gravação direta (não roda o resto do fluxo).
 
 ```bash
 curl -X POST "$BASE_URL/alunos/cliente-fornecedor" \
@@ -246,12 +244,9 @@ curl -X POST "$BASE_URL/alunos/cliente-fornecedor" \
   -H "Accept: application/json" \
   -d '{
   "RA": "000123",
-  "CODCOLIGADA": 0,
-  "CODTIPOCURSO": 2,
-  "CODFILIAL": 1,
-  "CODCFO": "",
+  "CODCOLIGADA": 1,
   "CODCOLCFO": 0,
-  "CPF": "517.420.330-08"
+  "CODCFO": "12345"
 }'
 ```
 
