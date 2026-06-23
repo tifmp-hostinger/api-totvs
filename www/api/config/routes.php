@@ -86,4 +86,18 @@ return function (App $app): void {
 
     /* ---------- Endereço ---------- */
 
-    $ap
+    $app->group('/enderecos', function (RouteCollectorProxy $enderecos) {
+        $enderecos->get('/estados', [EnderecoController::class, 'estados']);
+        $enderecos->get('/estados/{codestado}/cidades', [EnderecoController::class, 'cidades']);
+        $enderecos->get('/cidades/{codcidade}/bairros', [EnderecoController::class, 'bairros']);
+        $enderecos->get('/cep/{cep}', [EnderecoController::class, 'cep']);
+    });
+
+    /* ---------- Cupom ---------- */
+
+    $app->get('/cupons/{codoferta}/{codplano}/{cupom}', [CupomController::class, 'buscar']);
+
+    /* ---------- SSO (exceção HTML — ver SSOController) ---------- */
+
+    $app->get('/sso/{token}', [SSOController::class, 'signIn']);
+};
