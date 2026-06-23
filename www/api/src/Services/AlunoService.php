@@ -111,36 +111,43 @@ class AlunoService
             throw $this->falhaMsg('ALUNO', 'Não foi possível obter o usuário do aluno gravado.', $etapas, $student);
         }
 
-        /* ---------- Usuário/Filial (EduUsuarioFilialData) ---------- */
+        /* ---------- Usuário/Filial (EduUsuarioFilialData) — best-effort ----------
+         * O aluno já está criado; se este passo falhar (ex.: permissão do
+         * usuário de integração no RM), registramos como etapa ERRO e seguimos
+         * sem derrubar a criação do aluno.
+         */
         if (($student['EXISTESUSUARIOFILIAL'] ?? '') === 'N') {
             try {
                 $this->garantirUsuarioFilial($student['CODUSUARIO'], $codColigada, $codTipoCurso, $codFilial);
+                $add('USUÁRIO/FILIAL DO ALUNO', "Vínculo usuário/filial criado para {$student['CODUSUARIO']}");
             } catch (RMException $e) {
-                throw $this->falha('USUÁRIO/FILIAL DO ALUNO', 'Erro ao definir o usuário/filial do aluno.', $etapas, $e);
+                $add('USUÁRIO/FILIAL DO ALUNO', 'Aluno criado, mas não foi possível criar o vínculo usuário/filial: ' . $e->retornoRm, 'ERRO');
             }
-            $add('USUÁRIO/FILIAL DO ALUNO', "Vínculo usuário/filial criado para {$student['CODUSUARIO']}");
         } else {
             $add('USUÁRIO/FILIAL DO ALUNO', "Usuário/filial já existia para {$student['CODUSUARIO']}", 'JA_EXISTIA');
         }
 
-        /* ---------- Acesso / SSO (GlbUsuarioData) ---------- */
+        /* ---------- Acesso / SSO (GlbUsuarioData) — best-effort ----------
+         * Requer permissão de escrita no GlbUsuarioData. Se falhar, o aluno
+         * continua criado; apenas não geramos o SSO de primeiro acesso.
+         */
+        $autoLogin = false;
+        $nextUrl   = $this->rmConfig['portal']['login_url'] ?? '';
+
         $temSenhaPadrao = $this->temSenhaPadrao($student['CODUSUARIO'], (string) ($student['SENHAPADRAO'] ?? ''));
         $nuncaAcessou   = empty($student['DATAULTIMOACESSOVALIDO']);
 
         if ($nuncaAcessou || $temSenhaPadrao) {
             try {
                 $this->ajustarAcessoUsuario($student['CODUSUARIO'], (string) $student['SENHAPADRAO']);
+                $token     = $this->crypto->encrypt($student['CODUSUARIO'] . '$_$' . $student['SENHAPADRAO']);
+                $autoLogin = true;
+                $nextUrl   = sprintf('%s/sso/%s', $baseUrl, $token);
+                $add('ACESSO', "SSO de primeiro acesso gerado para {$student['CODUSUARIO']}");
             } catch (RMException $e) {
-                throw $this->falha('ACESSO', 'Erro ao ajustar o acesso do usuário.', $etapas, $e);
+                $add('ACESSO', 'Aluno criado, mas não foi possível preparar o SSO (acesso): ' . $e->retornoRm, 'ERRO');
             }
-
-            $token     = $this->crypto->encrypt($student['CODUSUARIO'] . '$_$' . $student['SENHAPADRAO']);
-            $autoLogin = true;
-            $nextUrl   = sprintf('%s/sso/%s', $baseUrl, $token);
-            $add('ACESSO', "SSO de primeiro acesso gerado para {$student['CODUSUARIO']}");
         } else {
-            $autoLogin = false;
-            $nextUrl   = $this->rmConfig['portal']['login_url'] ?? '';
             $add('ACESSO', "Aluno {$student['CODUSUARIO']} já alterou a senha. Login manual no portal");
         }
 
