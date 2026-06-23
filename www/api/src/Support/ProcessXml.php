@@ -715,7 +715,7 @@ class ProcessXml
                             <BloquearAltStatusInadimplentes i:nil="true" />
                             <CarregarLstDocumentosCadaAluno>true</CarregarLstDocumentosCadaAluno>
                             <CarregarLstHabilitacaoesCadaAluno>true</CarregarLstHabilitacaoesCadaAluno>
-                            <CarregarLstLancamentosCadaAluno>false</CarregarLstLancamentosCadaAluno>
+                            <CarregarLstLancamentosCadaAluno>true</CarregarLstLancamentosCadaAluno>
                             <CarregarLstMatricIsoladaCadaAluno>true</CarregarLstMatricIsoladaCadaAluno>
                             <CarregarLstMtzAplicadaCursoHabAluno>true</CarregarLstMtzAplicadaCursoHabAluno>
                             <CarregarLstOcorrenciasCadaAluno>true</CarregarLstOcorrenciasCadaAluno>
