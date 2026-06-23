@@ -10,7 +10,7 @@ use FMP\RMApi\Exceptions\RMException;
 use FMP\RMApi\Helpers\Validation;
 
 /**
- * Cliente/Fornecedor no RM (DataServer FinCFOBRData).
+ * Cliente/Fornecedor no RM (DataServer FinCFODataBR).
  *
  * Regras confirmadas com a FMP:
  *  - CODCOLIGADA sempre 0;
@@ -21,7 +21,7 @@ use FMP\RMApi\Helpers\Validation;
  */
 class CfoService
 {
-    public const DATASERVER = 'FinCFOBRData';
+    public const DATASERVER = 'FinCFODataBR';
 
     /** Coligada fixa para CFO na FMP. */
     private const CODCOLIGADA = '0';

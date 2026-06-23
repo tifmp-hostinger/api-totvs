@@ -144,7 +144,7 @@ Contexto do SaveRecord educacional:
 CODCOLIGADA={n};CODTIPOCURSO={n};CODFILIAL={n};CODSISTEMA=S;CODUSUARIO=integra.eduvem
 ```
 
-### Cliente/Fornecedor (FinCFOBRData)
+### Cliente/Fornecedor (FinCFODataBR)
 
 | Rota | Body / Query | Retorno |
 |---|---|---|
@@ -262,51 +262,4 @@ Centralizadas em `ConsultaService` (constantes `SQL_*`): 00001 status, 00002 est
 3. **Status HTTP corretos:** 422 (validação/fluxo), 502 (RM), 404, 500 — o legado devolvia 500 para tudo.
 4. **Log tolerante a falha:** gravação de log no RM nunca derruba o fluxo (fallback para error_log).
 5. **Removidos:** frontend completo (www), integração Eduvem (callback), `session_start`, dependências guzzle/phpdotenv, código morto (ReadView/GetSchema agora têm endpoints), bug do `InvalidArgumentException` sem import no Format. *(Obs.: foi reintroduzido um leitor de `.env` mínimo e sem dependência — `src/Support/Env.php` — para o deploy em container; ver `docs/DEPLOY-EASYPANEL.md`.)*
-6. **Escape XML:** valores de pessoa/relatório agora passam por `htmlspecialchars` (o legado interpolava cru).
-7. **Eduzz:** não existia nenhuma integração no código (apenas no briefing).
-
-## 5. Pendências recomendadas
-
-- Rodar `composer dump-autoload` no ambiente (o autoload do vendor foi ajustado manualmente para `FMP\RMApi\` → `src/`).
-- **Autenticação da API**: decidida como fora de escopo por ora. Os endpoints expõem dados pessoais (`/pessoas/busca`) e gravação genérica (`/rm/save`) — recomenda-se ao menos uma API key antes de exposição pública.
-- **Rotacionar as credenciais TOTVS** 
-## 6. Log de jobs de processo (INT.EDUVEM.00021)
-
-Quando um processo (matrícula no PL, enturmação, gerar lançamento) falha, o RM frequentemente devolve apenas o **JobId**. O erro real (detalhes, erros, parâmetros, resumo) fica no log do job, no Monitor de Jobs.
-
-A API tenta automaticamente buscar esse log pela sentença `INT.EDUVEM.00021` (parâmetro `JOBID_N`) e anexá-lo ao `retorno_rm` do erro. Para habilitar, cadastre a sentença no RM (Consultas SQL) retornando o texto do log do job. Modelo (confirme os nomes das tabelas do monitor de jobs na sua base com o DBA — variam por versão; procure por `SELECT name FROM sys.tables WHERE name LIKE '%JOB%'`):
-
-```sql
-/* INT.EDUVEM.00021 — texto do log de execução do job (:JOBID_N) */
-SELECT L.DESCRICAO AS TEXTO
-  FROM GJOBXLOG L (NOLOCK)
- WHERE L.IDJOB = :JOBID_N
- ORDER BY L.IDSEQ
-```
-
-Enquanto a sentença não existir, o erro orienta o cadastro e a consulta manual no Monitor de Jobs.
-
-## 7. Rastreamento de etapas no /inscricoes
-
-O `POST /inscricoes` devolve a lista de etapas executadas em `dados.etapas` (sucesso) ou `etapas_concluidas` (erro), com status `OK`, `JA_EXISTIA`, `ATUALIZADA/ATUALIZADO`. Etapas rastreadas: VALIDAÇÃO, OFERTA, PESSOA, ALUNO, USUÁRIO/FILIAL DO ALUNO, ACESSO, MATRÍCULA NO CURSO, MATRÍCULA NO PERÍODO LETIVO, ENTURMAÇÃO, CUPOM, LANÇAMENTO FINANCEIRO.
-
-Exemplo de erro com rastro:
-
-```json
-{
-  "sucesso": false,
-  "mensagem": "Houve um erro inesperado ao realizar sua matrícula.",
-  "etapa": "LANÇAMENTO FINANCEIRO",
-  "etapas_concluidas": [
-    { "etapa": "VALIDAÇÃO", "status": "OK", "detalhe": "Dados de entrada validados" },
-    { "etapa": "OFERTA", "status": "OK", "detalhe": "Oferta 1|1722 localizada (curso DIR, turma Cl.Consumidor, PL 389)" },
-    { "etapa": "PESSOA", "status": "OK", "detalhe": "Pessoa criada. CODPESSOA: 12345" },
-    { "etapa": "ALUNO", "status": "OK", "detalhe": "Aluno criado. Chave: 1;24001249" },
-    { "etapa": "ACESSO", "status": "OK", "detalhe": "SSO de primeiro acesso gerado para 24001249" },
-    { "etapa": "MATRÍCULA NO CURSO", "status": "OK", "detalhe": "Matrícula no curso realizada" },
-    { "etapa": "MATRÍCULA NO PERÍODO LETIVO", "status": "OK", "detalhe": "Matrícula no período letivo realizada. Contrato: 99462" },
-    { "etapa": "ENTURMAÇÃO", "status": "OK", "detalhe": "1 turma(s)/disciplina(s) processada(s)" }
-  ],
-  "retorno_rm": "Retorno do processo 'Gerar lançamento': 905512. ... LOG DO JOB 905512: *** ERROS SOBRE O PROCESSO *** Erro ao incluir lançamentos..."
-}
-```
+6. **Escape XML:** valores

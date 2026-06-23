@@ -4,7 +4,7 @@
 > rotas em `config/routes.php`, DI em `config/dependencies.php`.
 >
 > **Decisões aplicadas (confirmadas pela FMP):**
-> - DataServer **`FinCFOBRData`**; contexto **`CODSISTEMA=F`**.
+> - DataServer **`FinCFODataBR`**; contexto **`CODSISTEMA=F`**.
 > - **CODCOLIGADA sempre 0**; na criação **CODCFO=0** (o RM gera o código).
 > - **PAGREC sempre 3**; **PESSOAFISOUJUR** automático pelo documento (11 díg.=`F`, 14=`J`).
 > - Busca por **GET** (`/clientes-fornecedores/busca?cpf=` ou `?rnm=`); criação por **POST**.
@@ -12,7 +12,7 @@
 >
 > O texto abaixo é o desenho original (mantido como referência).
 
-DataServer alvo: **`FinCFOBRData`** (XML raiz `<FinCFOBR>` com `<FCFO>` + `<FCFOCOMPL>`).
+DataServer alvo: **`FinCFODataBR`** (XML raiz `<FinCFOBR>` com `<FCFO>` + `<FCFOCOMPL>`).
 Segue o mesmo padrão de `PessoaService` / `AlunoService`: Controller só fala HTTP, Service monta o XML e chama `RMSoapClient::saveRecord`.
 
 ---
@@ -22,7 +22,7 @@ Segue o mesmo padrão de `PessoaService` / `AlunoService`: Controller só fala H
 | Rota | O que faz |
 |---|---|
 | `POST /clientes-fornecedores/busca` | Consulta o CFO por CPF/RNM **antes** de criar. Reusa `INT.EDUVEM.00009` (a mesma do Aluno). Body: `{ "CPF": "..." }` ou `{ "RNM": "..." }` |
-| `POST /clientes-fornecedores` | Cria o CFO (`SaveRecord FinCFOBRData`). Retorna a chave `CODCOLIGADA;CODCFO` |
+| `POST /clientes-fornecedores` | Cria o CFO (`SaveRecord FinCFODataBR`). Retorna a chave `CODCOLIGADA;CODCFO` |
 
 (Uso de POST na busca para o documento não trafegar na URL/logs — igual ao `/pessoas/busca`.)
 
@@ -113,10 +113,10 @@ namespace FMP\RMApi\Services;
 use FMP\RMApi\Clients\RMSoapClient;
 use FMP\RMApi\Exceptions\RMException;
 
-/** Cliente/Fornecedor no RM (DataServer FinCFOBRData). */
+/** Cliente/Fornecedor no RM (DataServer FinCFODataBR). */
 class CfoService
 {
-    public const DATASERVER = 'FinCFOBRData';
+    public const DATASERVER = 'FinCFODataBR';
 
     public function __construct(
         private readonly RMSoapClient $rm,
@@ -322,7 +322,7 @@ curl -X POST "$BASE_URL/clientes-fornecedores" \
 
 ## 6. Decisões que preciso confirmar antes de codar em produção
 
-1. **DataServer**: é mesmo `FinCFOBRData`? (dá pra confirmar com `GET /rm/schema/FinCFOBRData` — se voltar o schema, está certo.)
+1. **DataServer**: é mesmo `FinCFODataBR`? (dá pra confirmar com `GET /rm/schema/FinCFODataBR` — se voltar o schema, está certo.)
 2. **CODCFO** (obrigatório): de onde vem o código?
    - (a) usar o **CPF/CNPJ** (só dígitos) como CODCFO;
    - (b) o n8n manda um CODCFO próprio;
