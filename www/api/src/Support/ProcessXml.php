@@ -269,7 +269,7 @@ class ProcessXml
                             <EmTransacao>false</EmTransacao>
                             <GeraManifesto>false</GeraManifesto>
                             <GerarContratoAssinado>false</GerarContratoAssinado>
-                            <GerarLancamento>Nao</GerarLancamento>
+                            <GerarLancamento>Sim</GerarLancamento>
                             <GerarLog>true</GerarLog>
                             <GerouContratoComPlano>true</GerouContratoComPlano>
                             <IDPS>0</IDPS>
