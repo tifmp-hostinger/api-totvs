@@ -84,9 +84,18 @@ class CfoService
         }
 
         if ($existente !== null) {
-            $chave = ($existente['CODCOLCFO'] ?? self::CODCOLIGADA) . ';' . ($existente['CODCFO'] ?? '');
-            $add('CONSULTA', "Cliente/Fornecedor já existe (CODCFO {$existente['CODCFO']}); não será duplicado", 'JA_EXISTIA');
-            return ['chave' => $chave, 'jaExistia' => true, 'cliente' => $existente, 'etapas' => $etapas];
+            $codColCfo = (string) ($existente['CODCOLCFO'] ?? self::CODCOLIGADA);
+            $codCfo    = (string) ($existente['CODCFO'] ?? '');
+            $chave     = $codColCfo . ';' . $codCfo;
+            $add('CONSULTA', "Cliente/Fornecedor já existe (CODCFO {$codCfo}); não será duplicado", 'JA_EXISTIA');
+            return [
+                'chave'     => $chave,
+                'CODCOLCFO' => $codColCfo,
+                'CODCFO'    => $codCfo,
+                'jaExistia' => true,
+                'cliente'   => $existente,
+                'etapas'    => $etapas,
+            ];
         }
         $add('CONSULTA', 'Documento não cadastrado; prosseguindo para a criação', 'NAO_ENCONTRADO');
 
@@ -106,7 +115,15 @@ class CfoService
         }
         $add('GRAVAÇÃO', "Cliente/Fornecedor gravado. Chave: {$chave}");
 
-        return ['chave' => $chave, 'jaExistia' => false, 'etapas' => $etapas];
+        // Separa a chave "CODCOLCFO;CODCFO" para uso direto (ex.: /alunos/cliente-fornecedor).
+        $parts = explode(';', $chave, 2);
+        return [
+            'chave'     => $chave,
+            'CODCOLCFO' => $parts[0] ?? self::CODCOLIGADA,
+            'CODCFO'    => $parts[1] ?? '',
+            'jaExistia' => false,
+            'etapas'    => $etapas,
+        ];
     }
 
     /**

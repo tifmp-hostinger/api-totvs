@@ -153,7 +153,7 @@ CODCOLIGADA={n};CODTIPOCURSO={n};CODFILIAL={n};CODSISTEMA=S;CODUSUARIO=integra.e
 
 Regras fixas na criação: **CODCOLIGADA do registro = 0** (CFO global, vai no XML), **CODCFO=0** (o RM gera o código), **PAGREC=3**, **PESSOAFISOUJUR** derivado do documento (11 díg.=`F`, 14=`J`). **Contexto do SaveRecord: `CODCOLIGADA=1;CODSISTEMA=F;CODUSUARIO=integra.eduvem`** (a coligada 0 não permite CFO global). CGCCFO/CEP/TELEFONE são normalizados p/ dígitos. Envia `<FCFO>` + `<FCFOCOMPL>` (chaves); não envia `<FCFOMX>`.
 
-`POST /clientes-fornecedores` é **rastreado por etapas** e **idempotente**: `VALIDAÇÃO` → `CONSULTA` (se o documento já existir, devolve `JA_EXISTIA` sem duplicar) → `GRAVAÇÃO`. Resposta: `{ chave, jaExistia, etapas }` (200 se já existia, 201 se criou).
+`POST /clientes-fornecedores` é **rastreado por etapas** e **idempotente**: `VALIDAÇÃO` → `CONSULTA` (se o documento já existir, devolve `JA_EXISTIA` sem duplicar) → `GRAVAÇÃO`. Aqui "documento" = o **CPF/CNPJ** (`CGCCFO`). Resposta: `{ chave, CODCOLCFO, CODCFO, jaExistia, etapas }` (200 se já existia, 201 se criou). `CODCOLCFO`/`CODCFO` já vêm separados (use-os no `/alunos/cliente-fornecedor`).
 
 ### Inscrição (fluxo completo orquestrado)
 
