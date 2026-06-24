@@ -269,7 +269,7 @@ class ProcessXml
                             <EmTransacao>false</EmTransacao>
                             <GeraManifesto>false</GeraManifesto>
                             <GerarContratoAssinado>false</GerarContratoAssinado>
-                            <GerarLancamento>Sim</GerarLancamento>
+                            <GerarLancamento>Nao</GerarLancamento>
                             <GerarLog>true</GerarLog>
                             <GerouContratoComPlano>true</GerouContratoComPlano>
                             <IDPS>0</IDPS>
@@ -715,7 +715,7 @@ class ProcessXml
                             <BloquearAltStatusInadimplentes i:nil="true" />
                             <CarregarLstDocumentosCadaAluno>true</CarregarLstDocumentosCadaAluno>
                             <CarregarLstHabilitacaoesCadaAluno>true</CarregarLstHabilitacaoesCadaAluno>
-                            <CarregarLstLancamentosCadaAluno>true</CarregarLstLancamentosCadaAluno>
+                            <CarregarLstLancamentosCadaAluno>false</CarregarLstLancamentosCadaAluno>
                             <CarregarLstMatricIsoladaCadaAluno>true</CarregarLstMatricIsoladaCadaAluno>
                             <CarregarLstMtzAplicadaCursoHabAluno>true</CarregarLstMtzAplicadaCursoHabAluno>
                             <CarregarLstOcorrenciasCadaAluno>true</CarregarLstOcorrenciasCadaAluno>
