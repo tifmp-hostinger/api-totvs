@@ -8,6 +8,8 @@ API REST de integração com o **TOTVS RM via SOAP**. Sem frontend, sem checkout
 >
 > **Painel de controle de rotas:** `public/admin.html` — servido em `https://SEU-SERVIDOR/admin.html`. Ativa/desativa qualquer rota em tempo real, mostra estatísticas de uso e executa chamadas de teste pela interface. Detalhes na seção 7.
 >
+> **Central de Gestão (usuário final):** `public/app.html` — servido em `https://SEU-SERVIDOR/app.html`. Aplicação de gerenciamento para o usuário final: consulta pessoas/alunos/CFO/ofertas, valida cupons, navega endereços, envia inscrições (com linha do tempo de etapas), cadastros e matrículas por etapa — tudo com resultados renderizados como fichas e tabelas, sem JSON. Usa a mesma API key (pedida na tela de conexão).
+>
 > **Deploy / EasyPanel / variáveis de ambiente / troubleshooting:** `docs/DEPLOY-EASYPANEL.md`.
 >
 > **Base path:** a app é servida na **raiz** (`setBasePath('')`). As rotas são `/pessoas`, `/rm/test` etc., **sem** `/api`.
