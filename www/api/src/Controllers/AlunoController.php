@@ -6,14 +6,17 @@ namespace FMP\RMApi\Controllers;
 
 use FMP\RMApi\Helpers\Json;
 use FMP\RMApi\Services\AlunoService;
+use FMP\RMApi\Services\FichaAlunoService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Routing\RouteContext;
 
 final class AlunoController
 {
-    public function __construct(private readonly AlunoService $alunoService)
-    {
+    public function __construct(
+        private readonly AlunoService $alunoService,
+        private readonly FichaAlunoService $fichaService
+    ) {
     }
 
     /** GET /alunos/{codcoligada}/{codpessoa} */
@@ -26,6 +29,33 @@ final class AlunoController
         }
 
         return Json::success('Cadastro de aluno encontrado.', $aluno);
+    }
+
+    /**
+     * GET /alunos/ficha — Ficha 360º do aluno (cadastro + acadêmico + acesso +
+     * financeiro e, se ?oferta=... for informada, matrícula + contrato +
+     * lançamentos). Ponto de partida: ?cpf= / ?rnm= / ?codpessoa= (+ ?codcoligada,
+     * padrão 1). Cada seção degrada com elegância; 404 só quando a pessoa não existe.
+     */
+    public function ficha(Request $request, Response $response, array $args = []): Response
+    {
+        $q = $request->getQueryParams();
+
+        $codColigada = trim((string) ($q['codcoligada'] ?? $q['CODCOLIGADA'] ?? '1')) ?: '1';
+        $filtro = [
+            'cpf'       => (string) ($q['cpf'] ?? $q['CPF'] ?? ''),
+            'rnm'       => (string) ($q['rnm'] ?? $q['RNM'] ?? ''),
+            'codpessoa' => (string) ($q['codpessoa'] ?? $q['CODPESSOA'] ?? ''),
+        ];
+        $oferta = (string) ($q['oferta'] ?? $q['OFERTA'] ?? '');
+
+        $ficha = $this->fichaService->montar($codColigada, $filtro, $oferta);
+
+        if ($ficha === null) {
+            return Json::notFound('Não foi encontrada nenhuma pessoa para os dados informados.');
+        }
+
+        return Json::success('Ficha do aluno montada com sucesso.', $ficha);
     }
 
     /**

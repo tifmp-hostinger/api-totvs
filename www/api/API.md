@@ -137,6 +137,7 @@ Retorno do RM = `CODPESSOA` (numérico) ou mensagem de validação (exposta em `
 | `POST /alunos` | `{ "CODPESSOA": 123, "CODCOLIGADA": 1, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CPF": "...", "RNM": "" }` | 201 + `{ chave, autoLogin, nextUrl, etapas }` |
 | `POST /alunos/cliente-fornecedor` | `{ "RA": "...", "CODCOLIGADA": 1, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CODCOLCFO": 0, "CODCFO": "..." }` | 200 + `{ chave, etapas }` |
 | `GET /alunos/{codcoligada}/{codpessoa}` | — | RA, CODUSUARIO, SENHAPADRAO, EXISTESUSUARIOFILIAL, DATAULTIMOACESSOVALIDO |
+| `GET /alunos/ficha?cpf=...` (ou `?rnm=` / `?codpessoa=`; `&codcoligada=1`; `&oferta=OF...`) | — | **Ficha 360º** agregada: identificação + KPIs + seções (cadastro, acadêmico/acesso, financeiro/CFO e — com `oferta` — matrícula no curso, contrato e lançamentos). Cada seção degrada com status próprio; 404 só quando a pessoa não existe |
 
 **`POST /alunos` agora é orquestrado com rastreamento de etapas** (como a inscrição):
 `CLIENTE/FORNECEDOR` (valida o cliFor pelo CPF/RNM via `INT.EDUVEM.00009`) → `ALUNO` (EduAlunoData) → `USUÁRIO/FILIAL` (EduUsuarioFilialData) → `ACESSO` (GlbUsuarioData + SSO). Sucesso devolve `dados.etapas`; erro de RM lança `FluxoException` (422) com `etapa` + `etapas_concluidas`.

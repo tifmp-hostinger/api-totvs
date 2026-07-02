@@ -155,6 +155,20 @@ final class RouteCatalog
                 'descricao' => 'Retorna RA, CODUSUARIO, SENHAPADRAO, EXISTESUSUARIOFILIAL, último acesso.',
                 'exemplo' => ['params' => ['codcoligada' => '1', 'codpessoa' => '12345']],
             ],
+            [
+                'id' => 'alunos.ficha', 'metodo' => 'GET', 'padrao' => '/alunos/ficha',
+                'grupo' => 'Aluno',
+                'descricao' => 'Ficha 360º: cadastro + acadêmico/acesso + financeiro (e, com ?oferta=, matrícula + contrato + lançamentos). Ponto de partida: cpf, rnm ou codpessoa.',
+                'exemplo' => [
+                    'query' => [
+                        ['name' => 'cpf', 'val' => '12345678901', 'label' => 'cpf'],
+                        ['name' => 'rnm', 'val' => '', 'label' => 'rnm'],
+                        ['name' => 'codpessoa', 'val' => '', 'label' => 'codpessoa'],
+                        ['name' => 'codcoligada', 'val' => '1', 'label' => 'codcoligada'],
+                        ['name' => 'oferta', 'val' => '', 'label' => 'oferta (opcional)'],
+                    ],
+                ],
+            ],
 
             /* ---------- Cliente/Fornecedor ---------- */
             [

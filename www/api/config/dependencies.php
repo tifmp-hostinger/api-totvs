@@ -11,6 +11,7 @@ use FMP\RMApi\Services\BolsaService;
 use FMP\RMApi\Services\CfoService;
 use FMP\RMApi\Services\ConsultaService;
 use FMP\RMApi\Services\ContratoService;
+use FMP\RMApi\Services\FichaAlunoService;
 use FMP\RMApi\Services\InscricaoService;
 use FMP\RMApi\Services\LancamentoService;
 use FMP\RMApi\Services\LogService;
@@ -53,6 +54,11 @@ return [
         $c->get(RMSoapClient::class),
         $c->get(ConsultaService::class),
         $c->get('rm')
+    ),
+
+    FichaAlunoService::class => fn(ContainerInterface $c) => new FichaAlunoService(
+        $c->get(PessoaService::class),
+        $c->get(ConsultaService::class)
     ),
 
     MatriculaService::class => fn(ContainerInterface $c) => new MatriculaService(

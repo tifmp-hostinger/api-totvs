@@ -104,6 +104,29 @@
   .st-info{background:#fdf3e3;color:var(--warn)} .marc.st-info{background:var(--warn)}
   .st-err{background:#fdeaea;color:var(--err)} .marc.st-err{background:var(--err)}
 
+  /* ---------- Ficha 360 ---------- */
+  .id360{display:flex;align-items:center;gap:16px;background:var(--ink);color:#fff;border-radius:16px;padding:18px 22px;margin:0 0 14px;flex-wrap:wrap}
+  .id360 .av{width:52px;height:52px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:"Noto Serif",serif;font-size:22px;font-weight:600;flex:0 0 auto}
+  .id360 .nome{font-family:"Noto Serif",serif;font-style:italic;font-size:21px;font-weight:600;line-height:1.2}
+  .id360 .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+  .id360 .tag{font-family:var(--mono);font-size:11.5px;background:#2f2e2c;color:#cfcbbf;border-radius:999px;padding:3px 11px}
+  .id360 .tag b{color:#fff;font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:0 0 18px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 16px;border-left:4px solid var(--sand)}
+  .kpi.ok{border-left-color:var(--ok)} .kpi.warn{border-left-color:var(--warn)} .kpi.neutro{border-left-color:var(--sand)}
+  .kpi .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8a8678}
+  .kpi .v{font-size:17px;font-weight:600;margin-top:3px;line-height:1.25}
+  .kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)}
+  .sec360{background:#fff;border:1px solid var(--line);border-radius:16px;margin:0 0 14px;overflow:hidden}
+  .sec360 > .sh{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);background:#faf9f6;flex-wrap:wrap}
+  .sec360 .sh h4{font-family:"Noto Serif",serif;font-style:italic;font-size:16px;margin:0;flex:1;min-width:180px}
+  .sec360 .fonte{font-family:var(--mono);font-size:10.5px;color:#8a8678}
+  .sec360 .sb{padding:16px 18px}
+  .sec360 .aviso{font-size:13px;color:var(--ink-2);background:#faf7ee;border:1px dashed var(--sand);border-radius:10px;padding:10px 14px}
+  .sec360.st-INDISPONIVEL .aviso{background:#fdf0f0;border-color:#f2c7c7;color:#7f1d1d}
+  .sec360 .ficha{border:0;border-radius:0} .sec360 .ficha .cel{border:0;border-top:1px solid #f0eee7}
+  .sec360 .tbl-wrap{border:0;border-radius:0}
+
   details.tec{margin-top:12px}
   details.tec summary{font-size:12px;color:#8a8678;cursor:pointer}
   details.tec pre{background:var(--ink);color:#f3f1ea;border-radius:12px;padding:14px;font-family:var(--mono);font-size:12px;overflow:auto;max-height:380px;margin:8px 0 0}
@@ -141,6 +164,7 @@
   <nav id="nav">
     <a href="#/inicio" data-mod="inicio"><span class="ico">&#8962;</span> In&iacute;cio</a>
     <div class="sep">Consultas</div>
+    <a href="#/ficha" data-mod="ficha"><span class="ico">&#9673;</span> Ficha 360 do Aluno</a>
     <a href="#/pessoas" data-mod="pessoas"><span class="ico">&#9786;</span> Pessoas</a>
     <a href="#/alunos" data-mod="alunos"><span class="ico">&#127891;</span> Alunos</a>
     <a href="#/cfo" data-mod="cfo"><span class="ico">&#128188;</span> Clientes/Fornecedores</a>
@@ -172,11 +196,31 @@
     <section class="modulo" data-mod="inicio" data-titulo="Central de <b>Gest&atilde;o Acad&ecirc;mica</b>">
       <p class="intro">Consulte pessoas, alunos e ofertas, acompanhe inscri&ccedil;&otilde;es e execute opera&ccedil;&otilde;es acad&ecirc;micas do TOTVS RM &mdash; sem precisar mexer em JSON ou conhecer a API.</p>
       <div class="atalhos">
+        <div class="atalho" data-vai="ficha"><div class="ico">&#9673;</div><h4>Ficha 360 do aluno</h4><p>Cadastro, acesso ao portal, financeiro e matr&iacute;cula numa tela s&oacute;.</p></div>
         <div class="atalho" data-vai="pessoas"><div class="ico">&#9786;</div><h4>Localizar pessoa</h4><p>Busque por CPF, RNM ou c&oacute;digo e veja a ficha completa.</p></div>
         <div class="atalho" data-vai="alunos"><div class="ico">&#127891;</div><h4>Situa&ccedil;&atilde;o do aluno</h4><p>RA, usu&aacute;rio de acesso e &uacute;ltimo acesso ao portal.</p></div>
         <div class="atalho" data-vai="ofertas"><div class="ico">&#128218;</div><h4>Ofertas &amp; planos</h4><p>Detalhes da oferta, planos de pagamento e valida&ccedil;&atilde;o de cupom.</p></div>
         <div class="atalho" data-vai="inscricao"><div class="ico">&#9998;</div><h4>Nova inscri&ccedil;&atilde;o</h4><p>Fluxo completo com acompanhamento de cada etapa.</p></div>
       </div>
+    </section>
+
+    <!-- ================= FICHA 360 ================= -->
+    <section class="modulo" data-mod="ficha" data-titulo="Ficha <b>360 do Aluno</b>">
+      <p class="intro">Tudo que a integra&ccedil;&atilde;o consegue extrair do TOTVS RM sobre um aluno, reunido numa tela: cadastro civil, situa&ccedil;&atilde;o acad&ecirc;mica e de acesso ao portal, v&iacute;nculo financeiro e &mdash; ao informar uma oferta &mdash; matr&iacute;cula, contrato e lan&ccedil;amentos.</p>
+      <div class="painel">
+        <h3>Abrir ficha</h3>
+        <div class="form">
+          <div class="campo"><label>Buscar por</label>
+            <select id="f-tipo"><option value="cpf">CPF</option><option value="rnm">RNM (estrangeiro)</option><option value="codpessoa">C&oacute;digo da pessoa</option></select>
+          </div>
+          <div class="campo"><label id="f-doc-l">CPF</label><input id="f-doc" class="cod" placeholder="somente n&uacute;meros" /></div>
+          <div class="campo"><label>Coligada</label><input id="f-col" class="cod" value="1" style="min-width:90px" /></div>
+          <div class="campo"><label>Oferta (opcional)</label><input id="f-oferta" class="cod" placeholder="OF2026-001 &mdash; libera matr&iacute;cula/financeiro" style="min-width:200px" /></div>
+          <button class="btn" id="f-abrir">Montar ficha</button><span class="spin" id="f-spin"></span>
+        </div>
+        <div class="dica">Sem a oferta, a ficha traz cadastro + acad&ecirc;mico + financeiro. Informe a oferta para incluir a matr&iacute;cula no curso, o contrato e os lan&ccedil;amentos daquele curso.</div>
+      </div>
+      <div class="res" id="f-res"></div>
     </section>
 
     <!-- ================= PESSOAS ================= -->
@@ -554,6 +598,63 @@ async function testarConexao(silencioso){
   }
 }
 $("#testarConex").addEventListener("click", ()=> testarConexao(false));
+
+/* ---------------- Ficha 360 ---------------- */
+$("#f-tipo").addEventListener("change", ()=>{
+  $("#f-doc-l").textContent = {cpf:"CPF", rnm:"RNM", codpessoa:"Código da pessoa"}[$("#f-tipo").value];
+});
+function pill360(status){
+  const map = { OK:["st-ok","OK"], NAO_ENCONTRADO:["st-info","não encontrado"],
+    NAO_CONSULTADO:["st-info","não consultado"], INDISPONIVEL:["st-err","indisponível"] };
+  const par = map[status] || ["st-info", String(status||"").toLowerCase()];
+  return '<span class="pill ' + par[0] + '">' + esc(par[1]) + "</span>";
+}
+function renderFicha360(el, r){
+  if(!r.ok){ el.innerHTML = erroHtml(r); return; }
+  const d = (r.corpo && r.corpo.dados) || {};
+  const id = d.identificacao || {};
+  const iniciais = String(id.NOME || "?").trim().split(/\s+/).map(p => p[0] || "").slice(0,2).join("").toUpperCase();
+  let html = '<div class="id360">' +
+    '<div class="av">' + esc(iniciais || "?") + "</div>" +
+    '<div><div class="nome">' + esc(id.NOME || "—") + '</div><div class="meta">' +
+      '<span class="tag">Cód. pessoa <b>' + esc(id.CODPESSOA || "—") + "</b></span>" +
+      (id.RA ? '<span class="tag">RA <b>' + esc(id.RA) + "</b></span>" : "") +
+      '<span class="tag">Doc <b>' + esc(id.DOCUMENTO || "—") + "</b></span>" +
+      (id.CODUSUARIO ? '<span class="tag">Portal <b>' + esc(id.CODUSUARIO) + "</b></span>" : "") +
+      '<span class="tag">Coligada <b>' + esc(id.CODCOLIGADA || "—") + "</b></span>" +
+    "</div></div></div>";
+
+  if(Array.isArray(d.kpis) && d.kpis.length){
+    html += '<div class="kpis">' + d.kpis.map(k =>
+      '<div class="kpi ' + esc(k.tom || "neutro") + '"><div class="k">' + esc(k.rotulo) +
+      '</div><div class="v">' + esc(k.valor) + "</div></div>").join("") + "</div>";
+  }
+
+  (d.secoes || []).forEach(s => {
+    let corpo = "";
+    if(s.formato === "ficha" && s.dados && typeof s.dados === "object") corpo = fichaHtml(s.dados);
+    else if(s.formato === "tabela" && Array.isArray(s.dados) && s.dados.length) corpo = tabelaHtml(s.dados);
+    if(!corpo) corpo = '<div class="aviso">' + esc(s.aviso || "Sem dados para exibir.") + "</div>";
+    else if(s.aviso) corpo = '<div class="aviso" style="margin-bottom:12px">' + esc(s.aviso) + "</div>" + corpo;
+    html += '<div class="sec360 st-' + esc(s.status) + '">' +
+      '<div class="sh"><h4>' + esc(s.titulo) + "</h4>" +
+        (s.fonte ? '<span class="fonte">' + esc(s.fonte) + "</span>" : "") + pill360(s.status) +
+      "</div><div class=\"sb\">" + corpo + "</div></div>";
+  });
+
+  html += tecnicoHtml(r.corpo);
+  el.innerHTML = html;
+}
+$("#f-abrir").addEventListener("click", ()=> rodar("#f-spin", $("#f-abrir"), async ()=>{
+  const tipo = $("#f-tipo").value, doc = $("#f-doc").value.trim();
+  if(!doc){ toast("Informe o " + ({cpf:"CPF", rnm:"RNM", codpessoa:"código da pessoa"}[tipo]) + ".", "err"); return; }
+  const params = new URLSearchParams();
+  params.set(tipo, doc);
+  params.set("codcoligada", $("#f-col").value.trim() || "1");
+  const of = $("#f-oferta").value.trim(); if(of) params.set("oferta", of);
+  const r = await api("GET", "/alunos/ficha?" + params.toString());
+  renderFicha360($("#f-res"), r);
+}));
 
 /* ---------------- Pessoas ---------------- */
 $("#p-tipo").addEventListener("change", ()=>{

@@ -50,6 +50,8 @@ return function (App $app): void {
         $alunos->post('', [AlunoController::class, 'salvar']);
         // Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA).
         $alunos->post('/cliente-fornecedor', [AlunoController::class, 'vincularCliente']);
+        // Ficha 360º (rota fixa antes da rota com parâmetros para não colidir).
+        $alunos->get('/ficha', [AlunoController::class, 'ficha']);
         $alunos->get('/{codcoligada}/{codpessoa}', [AlunoController::class, 'buscar']);
     });
 
