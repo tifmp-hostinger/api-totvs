@@ -245,6 +245,20 @@ final class RouteCatalog
                 ],
             ],
 
+            /* ---------- Financeiro ---------- */
+            [
+                'id' => 'financeiro.baixa', 'metodo' => 'POST', 'padrao' => '/financeiro/baixas',
+                'grupo' => 'Financeiro',
+                'descricao' => 'Baixa (quita) um lançamento financeiro no RM (processo FinLanBaixaProc). Grava movimento real na conta/caixa.',
+                'exemplo' => [
+                    'body' => [
+                        'IDLAN' => '123456', 'VALORBAIXA' => '465.00', 'CODCXA' => '1',
+                        'TIPOFORMAPAGTO' => 'Dinheiro', 'CODCOLIGADA' => 1, 'CODFILIAL' => 1,
+                        'DATABAIXA' => '2026-07-13', 'HISTORICOBAIXA' => 'Baixa via API', 'TIPOBAIXA' => 'Completa',
+                    ],
+                ],
+            ],
+
             /* ---------- Oferta ---------- */
             [
                 'id' => 'ofertas.buscar', 'metodo' => 'GET', 'padrao' => '/ofertas/{codoferta}',

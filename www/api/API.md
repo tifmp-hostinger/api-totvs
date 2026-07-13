@@ -209,6 +209,29 @@ Retorno:
 `POST /contratos` — body: `NOME, CPF, ESTADO, CIDADE (código), BAIRRO (código), RUA, NUMERO, COMPLEMENTO, NACIONALIDADE, NASCIMENTO (Y-m-d)`.
 Pipeline: `GenerateReport` (relatório **1664**, coligada 0) → `GetGeneratedReportSize` → `GetFileChunk`. Retorna `{ "CONTEUDO": <conteúdo do PDF como o RM devolve> }`.
 
+### Financeiro — Baixa de lançamento
+
+`POST /financeiro/baixas` — **baixa (quita) um lançamento financeiro** no RM (processo `FinLanBaixaProc`, via `wsProcess`/`ExecuteWithParams`). É a contrapartida da geração de lançamentos: pega uma parcela em aberto (`IDLAN`) e registra o recebimento numa conta/caixa. **Grava movimento real no RM.**
+
+Body:
+```json
+{
+  "IDLAN": "123456",              // obrigatório — id do lançamento a baixar
+  "VALORBAIXA": "465.00",         // obrigatório — aceita "465,00" ou "465.00"
+  "CODCXA": "1",                  // obrigatório — conta/caixa (ou env FIN_CODCXA_PADRAO)
+  "TIPOFORMAPAGTO": "Dinheiro",   // obrigatório — Dinheiro|Cheque|Cartao|CartaoCredito|CartaoDebito|Transferencia|DebitoConta|Boleto|Pix|Outros
+  "CODCOLIGADA": 1,               // opcional (default 1)
+  "CODFILIAL": 1,                 // opcional (default 1)
+  "DATABAIXA": "2026-07-13",      // opcional (default hoje, Y-m-d)
+  "HISTORICOBAIXA": "Baixa via API", // opcional
+  "TIPOBAIXA": "Completa"         // opcional — "Completa" (default) ou "Parcial"
+}
+```
+
+Valores fixos herdados da captura do RM (não parametrizados): `CodMoeda=R$`, `CotacaoBaixa=1`, item `TipoBaixa=BaixaManual`, `OrigemValor*=BaseDados`, `TipoTransacao/PagRec=WCF`, `CompensarExtratoBaixa=Parametrizacao`, contexto `CODSISTEMA=F`. O `CODUSUARIO` vem do usuário de serviço (config). O XML do processo é montado em `Support/ProcessXml::baixaLancamento()`, fiel ao payload capturado (`FinLanBaixaParamsProc`).
+
+Retorno (200): `{ IDLAN, CODCOLIGADA, VALORBAIXADO, DATABAIXA, CODCXA, FORMAPAGTO, TIPOBAIXA, retorno_rm, log_job }`. Erro do RM → **502** com `retorno_rm` (e o log do job, quando o RM devolve só o JobId e a sentença `INT.EDUVEM.00021` está cadastrada).
+
 ### Consultas
 
 | Rota | Sentença |

@@ -7,6 +7,7 @@ use FMP\RMApi\Controllers\SSOController;
 use FMP\RMApi\Helpers\Crypto;
 use FMP\RMApi\Services\RouteControlService;
 use FMP\RMApi\Services\AlunoService;
+use FMP\RMApi\Services\BaixaService;
 use FMP\RMApi\Services\BolsaService;
 use FMP\RMApi\Services\CfoService;
 use FMP\RMApi\Services\ConsultaService;
@@ -59,6 +60,12 @@ return [
     FichaAlunoService::class => fn(ContainerInterface $c) => new FichaAlunoService(
         $c->get(PessoaService::class),
         $c->get(ConsultaService::class)
+    ),
+
+    BaixaService::class => fn(ContainerInterface $c) => new BaixaService(
+        $c->get(RMSoapClient::class),
+        $c->get(ConsultaService::class),
+        $c->get('rm')
     ),
 
     MatriculaService::class => fn(ContainerInterface $c) => new MatriculaService(
