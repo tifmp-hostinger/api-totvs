@@ -138,7 +138,14 @@ class BaixaService
             tipoBaixa: $tipoBaixa
         );
 
-        $retorno = $this->rm->executeWithParams(self::PROCESSO, $xml);
+        // Nome do process server e operação SOAP configuráveis (o RM pode expor
+        // a baixa sob outro nome/operação conforme a versão — ver config/rm.php).
+        $processo = (string) ($this->rmConfig['baixa']['processo'] ?? self::PROCESSO);
+        $operacao = (string) ($this->rmConfig['baixa']['operacao'] ?? 'ExecuteWithParams');
+
+        $retorno = $operacao === 'ExecuteWithXMLParams'
+            ? $this->rm->executeWithXmlParams($processo, $xml)
+            : $this->rm->executeWithParams($processo, $xml);
 
         // Processos do RM às vezes retornam apenas o JobId; se o retorno for um
         // id numérico diferente de "1", tenta anexar o log do job (Monitor de
@@ -156,6 +163,7 @@ class BaixaService
             'CODCXA'        => $codCxa,
             'FORMAPAGTO'    => $formaPagto,
             'TIPOBAIXA'     => $tipoBaixa,
+            'PROCESSO'      => $processo,
             'retorno_rm'    => $retorno,
             'log_job'       => $logJob,
         ];

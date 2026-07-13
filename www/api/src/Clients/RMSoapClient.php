@@ -125,6 +125,33 @@ class RMSoapClient
     }
 
     /**
+     * Heurística para detectar retorno de processo que NÃO é sucesso.
+     *
+     * O wsProcess do RM devolve uma string: "1"/JobId numérico em sucesso, mas
+     * em falha pode devolver a própria mensagem de erro SEM a palavra "error"
+     * (ex.: "Classe não encontrada: FinLanBaixaProc", stack traces .NET,
+     * "não foi possível..."). Tratar isso como sucesso mascara a falha, então
+     * checamos um conjunto de assinaturas típicas de erro do RM.
+     */
+    private static function pareceErroDeProcesso(string $retorno): bool
+    {
+        $r = mb_strtolower(trim($retorno));
+
+        $assinaturas = [
+            'error', 'exception', 'classe não', 'classe nao', 'não encontrad',
+            'nao encontrad', 'not found', 'stack trace', 'nullreference',
+            'could not', 'falha ao', 'não foi possível', 'nao foi possivel',
+            'system.',
+        ];
+        foreach ($assinaturas as $sig) {
+            if (str_contains($r, $sig)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Contexto no formato esperado pelo RM: "CHAVE=VALOR;CHAVE=VALOR".
      */
     public static function buildContext(array $parameters): string
@@ -404,7 +431,7 @@ class RMSoapClient
 
         $resultValue = (string) $result->ExecuteWithXmlParamsResult;
 
-        if (str_contains(strtolower($resultValue), 'error')) {
+        if (self::pareceErroDeProcesso($resultValue)) {
             throw new RMException(
                 'Erro ao executar processo no RM',
                 operacao: 'ExecuteWithXMLParams',
@@ -455,7 +482,7 @@ class RMSoapClient
 
         $resultValue = (string) $resultValue;
 
-        if (str_contains(strtolower($resultValue), 'error')) {
+        if (self::pareceErroDeProcesso($resultValue)) {
             throw new RMException(
                 'Erro ao executar processo no RM',
                 operacao: 'ExecuteWithParams',

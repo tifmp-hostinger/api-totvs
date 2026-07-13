@@ -28,6 +28,17 @@ return [
     // Usuário de serviço
     'usuario_servico' => Env::get('TOTVS_WS_USER', 'integra.eduvem'),
 
+    // Baixa de lançamento (FinLanBaixaProc). Nome do process server e operação
+    // SOAP configuráveis por env — o RM pode expor a baixa sob outro nome/
+    // operação conforme a versão. Ajuste sem redeploy de código.
+    //   FIN_BAIXA_PROCESSO: ProcessServerName (default abaixo)
+    //   FIN_BAIXA_OPERACAO: ExecuteWithParams (default) | ExecuteWithXMLParams
+    //   FIN_CODCXA_PADRAO : conta/caixa default quando não vier no corpo
+    'baixa' => [
+        'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinLanBaixaProc'),
+        'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithParams'),
+    ],
+
     // Relatório contrato
     'relatorio_contrato' => [
         'codcoligada' => '0',

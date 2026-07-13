@@ -225,6 +225,14 @@ Body:
 
 Valores fixos herdados da captura do RM (não parametrizados): `CodMoeda=R$`, `CotacaoBaixa=1`, item `TipoBaixa=BaixaManual`, `OrigemValor*=BaseDados`, `TipoTransacao/PagRec=WCF`, `CompensarExtratoBaixa=Parametrizacao`, contexto `CODSISTEMA=F`. O `CODUSUARIO` vem do usuário de serviço (config). O XML do processo é montado em `Support/ProcessXml::baixaLancamento()`, fiel ao payload capturado (`FinLanBaixaParamsProc`).
 
+**Nome do processo / operação configuráveis (env):** o `ProcessServerName` e a operação SOAP são ajustáveis sem redeploy — o RM pode expor a baixa sob outro nome/operação conforme a versão. Se o RM devolver **`Classe não encontrada: <nome>`**, o nome está errado para a sua instância: ajuste `FIN_BAIXA_PROCESSO` (e, se preciso, `FIN_BAIXA_OPERACAO=ExecuteWithXMLParams`). Retornos com assinatura de erro do RM (`classe não encontrada`, `exception`, stack trace .NET etc.) agora resultam em **502**, não em falso `sucesso`.
+
+| Env | Default | Uso |
+|---|---|---|
+| `FIN_BAIXA_PROCESSO` | `FinLanBaixaProc` | `ProcessServerName` do processo de baixa no RM |
+| `FIN_BAIXA_OPERACAO` | `ExecuteWithParams` | operação SOAP (`ExecuteWithParams` ou `ExecuteWithXMLParams`) |
+| `FIN_CODCXA_PADRAO` | — | conta/caixa default quando `CODCXA` não vem no corpo |
+
 Retorno (200): `{ IDLAN, CODCOLIGADA, VALORBAIXADO, DATABAIXA, CODCXA, FORMAPAGTO, TIPOBAIXA, retorno_rm, log_job }`. Erro do RM → **502** com `retorno_rm` (e o log do job, quando o RM devolve só o JobId e a sentença `INT.EDUVEM.00021` está cadastrada).
 
 ### Financeiro — Geração de lançamentos
