@@ -20,7 +20,8 @@ use FMP\RMApi\Support\ProcessXml;
  */
 class BaixaService
 {
-    public const PROCESSO = 'FinLanBaixaProc';
+    /** Fallback do ProcessServerName (o efetivo vem de config rm.baixa.processo / env FIN_BAIXA_PROCESSO). */
+    public const PROCESSO = 'FinLanBaixaData';
 
     /** Formas de pagamento aceitas pelo RM (enum FinTipoFormaPagto). */
     private const FORMAS_PAGAMENTO = [

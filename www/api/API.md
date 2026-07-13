@@ -229,11 +229,11 @@ Valores fixos herdados da captura do RM (não parametrizados): `CodMoeda=R$`, `C
 
 | Env | Default | Uso |
 |---|---|---|
-| `FIN_BAIXA_PROCESSO` | `FinLanBaixaProc` | `ProcessServerName` do processo de baixa no RM |
+| `FIN_BAIXA_PROCESSO` | `FinLanBaixaData` | `ProcessServerName` do processo de baixa no RM (a confirmar na instância) |
 | `FIN_BAIXA_OPERACAO` | `ExecuteWithParams` | operação SOAP (`ExecuteWithParams` ou `ExecuteWithXMLParams`) |
 | `FIN_CODCXA_PADRAO` | — | conta/caixa default quando `CODCXA` não vem no corpo |
 
-**Descobrindo o `ProcessServerName` correto.** O default `FinLanBaixaProc` **não existe** na instância testada (o RM devolveu `Classe não encontrada`). O nome varia por versão/patch — a fonte autoritativa é o **seu** RM. Descubra por inspeção **read-only** (sem executar baixa): (a) **Monitor de Jobs** de uma baixa já feita → coluna *Classe de Processo*; ou (b) tela **"Baixar"** → *Salvar parâmetros como XML* e **cancele** antes de confirmar (isso revela o `ProcessServerName` **e** o elemento-raiz correto do XML). Candidatos levantados (convenção local + pesquisa, **não confirmados** aqui):
+**Descobrindo o `ProcessServerName` correto.** O primeiro nome tentado (`FinLanBaixaProc`) **não existe** na instância (o RM devolveu `Classe não encontrada`); o default passou para **`FinLanBaixaData`** (indicado pela equipe do RM, **a confirmar**). O nome varia por versão/patch — a fonte autoritativa é o **seu** RM. Descubra por inspeção **read-only** (sem executar baixa): (a) **Monitor de Jobs** de uma baixa já feita → coluna *Classe de Processo*; ou (b) tela **"Baixar"** → *Salvar parâmetros como XML* e **cancele** antes de confirmar (isso revela o `ProcessServerName` **e** o elemento-raiz correto do XML). Candidatos levantados (convenção local + pesquisa, **não confirmados** aqui):
 
 | Candidato | Reaproveita o XML atual (`<FinLanBaixaParamsProc>`)? | Observação |
 |---|---|---|

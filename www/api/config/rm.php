@@ -38,16 +38,17 @@ return [
     //   (a) Monitor de Jobs de uma baixa já feita → coluna "Classe de Processo"; ou
     //   (b) tela "Baixar" → "Salvar parâmetros como XML" e CANCELE antes de confirmar
     //       (revela o ProcessServerName E o elemento-raiz correto do XML).
-    // Candidatos (convenção local + pesquisa; NÃO confirmados nesta instância):
-    //   1) FinLanBaixaProcData    — reaproveita o XML atual <FinLanBaixaParamsProc> (só troca env)
-    //   2) FinLanBaixaTBCData      — idem (pode ser o DataServer, não o processo)
-    //   3) FinTBCBaixaDataProcess  — EXIGE outro XML (<FinTBCBaixaParamsProc>); não é só renomear
+    // Default atual: FinLanBaixaData (nome indicado pela equipe do RM; reaproveita
+    // o XML <FinLanBaixaParamsProc>). Ainda a CONFIRMAR na instância — se der
+    // "Classe não encontrada", tente os candidatos: FinLanBaixaProcData,
+    // FinLanBaixaTBCData, ou FinTBCBaixaDataProcess (este EXIGE outro XML,
+    // <FinTBCBaixaParamsProc>, não é só renomear).
     // Operação recomendada: ExecuteWithXMLParams (os processos que funcionam usam-na
     // — MatriculaService/LancamentoService — e força separador decimal '.').
     // NUNCA teste nomes em produção: nome errado é inofensivo, mas o nome CERTO
     // EXECUTA uma baixa real. Confirme antes; teste em homologação/sandbox.
     'baixa' => [
-        'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinLanBaixaProc'),
+        'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinLanBaixaData'),
         'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithParams'),
     ],
 
