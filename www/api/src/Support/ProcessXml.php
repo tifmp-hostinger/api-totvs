@@ -1417,298 +1417,202 @@ XML;
     }
 
     /**
-     * Processo "Baixar Lançamento" (ProcessServerName FinLanBaixaData):
-     * baixa (quita) um lançamento (IdLan) numa conta/caixa, com forma de
-     * pagamento.
+     * Preenche o template canônico do FinLanBaixaParamsProc (obtido do próprio
+     * RM via GetSchema) com os dados de uma baixa, e devolve o strXmlParams.
      *
-     * Reproduz o ENVELOPE de processo real do RM (capturado via "Salvar
-     * parâmetros como XML"), com valores de sessão neutralizados (ExecutionId,
-     * ScheduleDateTime, HostName, Ip, NetworkUser, JobID). O ponto-chave: o RM
-     * identifica QUAIS registros baixar pelo <PrimaryKeyList> (CODCOLIGADA,
-     * IDLAN) — sem isso, o processo devolve "Os lançamentos devem ser
-     * informados". Os blocos pesados do payload da UI (ItensBaixa.contabil,
-     * rateios, LancamentoLiquido, e o <Lancamentos> com FinLancamentoBaixaResult)
-     * são COMPUTADOS pelo RM a partir do PrimaryKeyList + PagtoPorLan +
-     * FormasPagamento, então enviamos apenas os campos de entrada.
+     * Por que assim: o contrato do processo é enorme e cheio de campos/enums
+     * obrigatórios. Reproduzi-lo à mão gera itens que não desserializam (e o RM
+     * responde "Os lançamentos devem ser informados"). Partindo do template do
+     * próprio RM, garantimos a estrutura exata — só trocamos os valores dinâmicos
+     * e esvaziamos as listas de saída/placeholder.
      *
-     * @param string $valorBaixa   já formatado com ponto decimal ("2000.00")
-     * @param string $dataBaixa    data ISO ("Y-m-d")
-     * @param string $tipoBaixa    "Completa" | "Parcial" | "Simplificada"
+     * @param string $template  XML devolvido por GetSchema('FinLanBaixaData')
+     * @param array<string,string> $d  IDLAN, VALOR, CODCOLIGADA, CODFILIAL, CODCXA,
+     *        DATABAIXA (Y-m-d), TIPOFORMAPAGTO, HISTORICO, USUARIO, TIPOBAIXA, CHAPA
      */
-    public static function baixaLancamento(
-        string|int $codColigada,
-        string|int $codFilial,
-        string|int $idLan,
-        string $valorBaixa,
-        string|int $codCxa,
-        string $tipoFormaPagto,
-        string $dataBaixa,
-        string $historico,
-        string $codUsuario,
-        string $tipoBaixa = 'Simplificada',
-        string|int $chapaFuncionario = '-1'
-    ): string {
-        $hist    = htmlspecialchars($historico, ENT_XML1, 'UTF-8');
-        $formaPg = htmlspecialchars($tipoFormaPagto, ENT_XML1, 'UTF-8');
-        $usuario = htmlspecialchars($codUsuario, ENT_XML1, 'UTF-8');
-        $tpBaixa = htmlspecialchars($tipoBaixa, ENT_XML1, 'UTF-8');
-        $chapa   = htmlspecialchars((string) $chapaFuncionario, ENT_XML1, 'UTF-8');
+    public static function preencherBaixa(string $template, array $d): string
+    {
+        $idLan   = (string) ($d['IDLAN'] ?? '0');
+        $valor   = (string) ($d['VALOR'] ?? '0');
+        $col     = (string) ($d['CODCOLIGADA'] ?? '1');
+        $fil     = (string) ($d['CODFILIAL'] ?? '1');
+        $cxa     = (string) ($d['CODCXA'] ?? '');
+        $data    = ((string) ($d['DATABAIXA'] ?? date('Y-m-d'))) . 'T00:00:00-03:00';
+        $forma   = (string) ($d['TIPOFORMAPAGTO'] ?? 'Dinheiro');
+        $hist    = (string) ($d['HISTORICO'] ?? '');
+        $usuario = (string) ($d['USUARIO'] ?? '');
+        $tipoBx  = (string) ($d['TIPOBAIXA'] ?? 'Simplificada');
+        $chapa   = (string) ($d['CHAPA'] ?? '-1');
 
-        $executionId = self::guid();
-        $scheduleDateTime = date('Y-m-d\TH:i:s.0000000P');
-        // O RM espera DateTime no formato ISO com offset; a data da baixa é
-        // meia-noite. DataCaixa fica "vazia" (0001-01-01) pois não usamos o
-        // módulo de caixa (IsModuloDeCaixa=false), igual ao XML capturado.
-        $dataBaixaFull = $dataBaixa . 'T00:00:00-03:00';
+        // DOMDocument não engole a declaração utf-16 com bytes utf-8: troca p/ utf-8
+        // ao carregar e restaura utf-16 (o que o RM espera) ao devolver.
+        $xmlIn = preg_replace('/encoding="utf-16"/i', 'encoding="utf-8"', $template, 1);
 
-        $xml = <<<XML
-                <?xml version="1.0" encoding="utf-16"?>
-                <FinLanBaixaParamsProc z:Id="i1" xmlns="http://www.totvs.com.br/RM/" xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
-                  <ActionModule xmlns="http://www.totvs.com/">F</ActionModule>
-                  <ActionName xmlns="http://www.totvs.com/">FinLanBaixaAction</ActionName>
-                  <CanParallelize xmlns="http://www.totvs.com/">true</CanParallelize>
-                  <CanSendMail xmlns="http://www.totvs.com/">false</CanSendMail>
-                  <CanWaitSchedule xmlns="http://www.totvs.com/">false</CanWaitSchedule>
-                  <CodUsuario xmlns="http://www.totvs.com/">{$usuario}</CodUsuario>
-                  <ConnectionId i:nil="true" xmlns="http://www.totvs.com/" />
-                  <ConnectionString i:nil="true" xmlns="http://www.totvs.com/" />
-                  <Context z:Id="i2" xmlns="http://www.totvs.com/" xmlns:a="http://www.totvs.com.br/RM/">
-                    <a:_params xmlns:b="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$EXERCICIOFISCAL</b:Key>
-                        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">1</b:Value>
-                      </b:KeyValueOfanyTypeanyType>
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$CODTIPOCURSO</b:Key>
-                        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">2</b:Value>
-                      </b:KeyValueOfanyTypeanyType>
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$CODCOLIGADA</b:Key>
-                        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">{$codColigada}</b:Value>
-                      </b:KeyValueOfanyTypeanyType>
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$CODSISTEMA</b:Key>
-                        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">S</b:Value>
-                      </b:KeyValueOfanyTypeanyType>
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$CODUSUARIO</b:Key>
-                        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">{$usuario}</b:Value>
-                      </b:KeyValueOfanyTypeanyType>
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$CODFILIAL</b:Key>
-                        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">{$codFilial}</b:Value>
-                      </b:KeyValueOfanyTypeanyType>
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$CHAPAFUNCIONARIO</b:Key>
-                        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">{$chapa}</b:Value>
-                      </b:KeyValueOfanyTypeanyType>
-                      <b:KeyValueOfanyTypeanyType>
-                        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">\$CODUSUARIOSERVICO</b:Key>
-                        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema" />
-                      </b:KeyValueOfanyTypeanyType>
-                    </a:_params>
-                    <a:Environment>DotNet</a:Environment>
-                  </Context>
-                  <CustomData i:nil="true" xmlns="http://www.totvs.com/" />
-                  <DisableIsolateProcess xmlns="http://www.totvs.com/">false</DisableIsolateProcess>
-                  <DriverType i:nil="true" xmlns="http://www.totvs.com/" />
-                  <ExecutionId xmlns="http://www.totvs.com/">{$executionId}</ExecutionId>
-                  <FailureMessage xmlns="http://www.totvs.com/">Falha na execução do processo</FailureMessage>
-                  <FriendlyLogs i:nil="true" xmlns="http://www.totvs.com/" />
-                  <HideProgressDialog xmlns="http://www.totvs.com/">false</HideProgressDialog>
-                  <HostName xmlns="http://www.totvs.com/">integra-rm-api</HostName>
-                  <Initialized xmlns="http://www.totvs.com/">true</Initialized>
-                  <Ip xmlns="http://www.totvs.com/">127.0.0.1</Ip>
-                  <IsolateProcess xmlns="http://www.totvs.com/">false</IsolateProcess>
-                  <JobID xmlns="http://www.totvs.com/">
-                    <Children />
-                    <ExecID>1</ExecID>
-                    <ID>1</ID>
-                    <IsPriorityJob>false</IsPriorityJob>
-                  </JobID>
-                  <JobServerHostName xmlns="http://www.totvs.com/">integra-rm-api</JobServerHostName>
-                  <MasterActionName xmlns="http://www.totvs.com/">FinLanAction</MasterActionName>
-                  <MaximumQuantityOfPrimaryKeysPerProcess xmlns="http://www.totvs.com/">1000</MaximumQuantityOfPrimaryKeysPerProcess>
-                  <MinimumQuantityOfPrimaryKeysPerProcess xmlns="http://www.totvs.com/">1</MinimumQuantityOfPrimaryKeysPerProcess>
-                  <NetworkUser xmlns="http://www.totvs.com/">integra</NetworkUser>
-                  <NotifyEmail xmlns="http://www.totvs.com/">false</NotifyEmail>
-                  <NotifyEmailList i:nil="true" xmlns="http://www.totvs.com/" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
-                  <NotifyFluig xmlns="http://www.totvs.com/">false</NotifyFluig>
-                  <OnlineMode xmlns="http://www.totvs.com/">false</OnlineMode>
-                  <PrimaryKeyList xmlns="http://www.totvs.com/" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
-                    <a:ArrayOfanyType>
-                      <a:anyType i:type="b:int" xmlns:b="http://www.w3.org/2001/XMLSchema">{$codColigada}</a:anyType>
-                      <a:anyType i:type="b:int" xmlns:b="http://www.w3.org/2001/XMLSchema">{$idLan}</a:anyType>
-                    </a:ArrayOfanyType>
-                  </PrimaryKeyList>
-                  <PrimaryKeyNames xmlns="http://www.totvs.com/" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
-                    <a:string>CODCOLIGADA</a:string>
-                    <a:string>IDLAN</a:string>
-                  </PrimaryKeyNames>
-                  <PrimaryKeyTableName xmlns="http://www.totvs.com/">FLAN</PrimaryKeyTableName>
-                  <ProcessName xmlns="http://www.totvs.com/">Baixar Lançamento</ProcessName>
-                  <QuantityOfSplits xmlns="http://www.totvs.com/">0</QuantityOfSplits>
-                  <SaveLogInDatabase xmlns="http://www.totvs.com/">true</SaveLogInDatabase>
-                  <SaveParamsExecution xmlns="http://www.totvs.com/">false</SaveParamsExecution>
-                  <ScheduleDateTime xmlns="http://www.totvs.com/">{$scheduleDateTime}</ScheduleDateTime>
-                  <Scheduler xmlns="http://www.totvs.com/">JobMonitor</Scheduler>
-                  <SendMail xmlns="http://www.totvs.com/">false</SendMail>
-                  <ServerName xmlns="http://www.totvs.com/">FinLanBaixaData</ServerName>
-                  <ServiceInterface i:type="b:RuntimeType" z:FactoryType="c:UnitySerializationHolder" xmlns="http://www.totvs.com/" xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:b="-mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089-System-System.RuntimeType" xmlns:c="-mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089-System-System.UnitySerializationHolder">
-                    <Data i:type="d:string" xmlns="" xmlns:d="http://www.w3.org/2001/XMLSchema">RM.Fin.Lan.IFinLanBaixaData</Data>
-                    <UnityType i:type="d:int" xmlns="" xmlns:d="http://www.w3.org/2001/XMLSchema">4</UnityType>
-                    <AssemblyName i:type="d:string" xmlns="" xmlns:d="http://www.w3.org/2001/XMLSchema">RM.Fin.Lan.Intf, Version=12.1.2510.167, Culture=neutral, PublicKeyToken=null</AssemblyName>
-                  </ServiceInterface>
-                  <ShouldParallelize xmlns="http://www.totvs.com/">false</ShouldParallelize>
-                  <ShowReExecuteButton xmlns="http://www.totvs.com/">true</ShowReExecuteButton>
-                  <StatusMessage i:nil="true" xmlns="http://www.totvs.com/" />
-                  <SuccessMessage xmlns="http://www.totvs.com/">Processo executado com sucesso</SuccessMessage>
-                  <SyncExecution xmlns="http://www.totvs.com/">false</SyncExecution>
-                  <UseJobMonitor xmlns="http://www.totvs.com/">true</UseJobMonitor>
-                  <UserName xmlns="http://www.totvs.com/">{$usuario}</UserName>
-                  <WaitSchedule xmlns="http://www.totvs.com/">false</WaitSchedule>
-                  <CodColigada>{$codColigada}</CodColigada>
-                  <CodMoeda>R\$</CodMoeda>
-                  <ContabilizarPosBaixa>false</ContabilizarPosBaixa>
-                  <CotacaoBaixa>1</CotacaoBaixa>
-                  <DataBaixa>{$dataBaixaFull}</DataBaixa>
-                  <DataSistema>{$dataBaixaFull}</DataSistema>
-                  <HistoricoBaixa>{$hist}</HistoricoBaixa>
-                  <MotivoBxProtheus i:nil="true" />
-                  <TipoGeracaoExtrato>ExtratoParaCadaLancamento</TipoGeracaoExtrato>
-                  <UsarDataVencimentoBaixa>false</UsarDataVencimentoBaixa>
-                  <BaixaCredDevVinculado>false</BaixaCredDevVinculado>
-                  <CodColCxa>{$codColigada}</CodColCxa>
-                  <CodColCxaCaixa>-1</CodColCxaCaixa>
-                  <CodCxa>{$codCxa}</CodCxa>
-                  <CodCxaCaixa i:nil="true" />
-                  <DataCaixa>0001-01-01T00:00:00</DataCaixa>
-                  <FormasPagamento>
-                    <FinFormaPagtoBaixaParamsProc>
-                      <Cartao />
-                      <Cheque />
-                      <CodColCxa>{$codColigada}</CodColCxa>
-                      <CodColProp>{$codColigada}</CodColProp>
-                      <CodColigada>{$codColigada}</CodColigada>
-                      <CodCxa>{$codCxa}</CodCxa>
-                      <CodFilial>{$codFilial}</CodFilial>
-                      <CodFormaPagto i:nil="true" />
-                      <CodImg>0</CodImg>
-                      <CodUsuario i:nil="true" />
-                      <CompensarExtratoBaixa>Parametrizacao</CompensarExtratoBaixa>
-                      <Contabilizacao xmlns:a="http://schemas.datacontract.org/2004/07/RM.Fin.Lan" />
-                      <DataCompensacaoExtrato i:nil="true" />
-                      <DescFormaPagto>{$formaPg}</DescFormaPagto>
-                      <IdFormaPagto>1</IdFormaPagto>
-                      <IdLan>0</IdLan>
-                      <IdPagto>1</IdPagto>
-                      <IdParcelamento>0</IdParcelamento>
-                      <Img i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Drawing" />
-                      <ImprimeCheque>false</ImprimeCheque>
-                      <MotivoBxProtheus i:nil="true" />
-                      <Mutuo />
-                      <OpcaoParcelamento>1</OpcaoParcelamento>
-                      <PagRec i:nil="true" />
-                      <SequencialPagto>0</SequencialPagto>
-                      <TipoFormaPagto>{$formaPg}</TipoFormaPagto>
-                      <TipoTransacao>WCF</TipoTransacao>
-                      <Valor>{$valorBaixa}</Valor>
-                    </FinFormaPagtoBaixaParamsProc>
-                  </FormasPagamento>
-                  <IdFormaPagto>1</IdFormaPagto>
-                  <IdSessaoCaixa>-1</IdSessaoCaixa>
-                  <IdTransacaoPIX i:nil="true" />
-                  <IsBoleto>false</IsBoleto>
-                  <IsHabilitaPIX>false</IsHabilitaPIX>
-                  <IsHabilitaTEF>false</IsHabilitaTEF>
-                  <IsModuloDeCaixa>false</IsModuloDeCaixa>
-                  <ItensBaixa>
-                    <FinItemBaixa>
-                      <ServicoAlteracaoRepasse>false</ServicoAlteracaoRepasse>
-                      <CodColCxa>{$codColigada}</CodColCxa>
-                      <CodColigada>{$codColigada}</CodColigada>
-                      <CodCxa>{$codCxa}</CodCxa>
-                      <CodFilial>{$codFilial}</CodFilial>
-                      <CompensarExtratoBaixa>Parametrizacao</CompensarExtratoBaixa>
-                      <CotacaoBaixa>1</CotacaoBaixa>
-                      <DataBaixa>{$dataBaixaFull}</DataBaixa>
-                      <IdBaixa>-1</IdBaixa>
-                      <IdFormaPagto>1</IdFormaPagto>
-                      <IdLan>{$idLan}</IdLan>
-                      <IdPagto>1</IdPagto>
-                      <IdParcelamento>0</IdParcelamento>
-                      <NaoIncluirBaixa>false</NaoIncluirBaixa>
-                      <OpcaoParcelamento>1</OpcaoParcelamento>
-                      <OrigemValorCap>BaseDados</OrigemValorCap>
-                      <OrigemValorDesconto>BaseDados</OrigemValorDesconto>
-                      <OrigemValorJuros>BaseDados</OrigemValorJuros>
-                      <OrigemValorMulta>BaseDados</OrigemValorMulta>
-                      <PagRec>Receber</PagRec>
-                      <SequencialPagto>0</SequencialPagto>
-                      <TipoBaixa>BaixaManual</TipoBaixa>
-                      <TipoFormaPagto>{$formaPg}</TipoFormaPagto>
-                      <TipoTransacao>WCF</TipoTransacao>
-                      <Usuario>{$usuario}</Usuario>
-                      <ValorBaixa>{$valorBaixa}</ValorBaixa>
-                      <ValorCap>0</ValorCap>
-                      <ValorDesconto>0</ValorDesconto>
-                      <ValorJuros>0</ValorJuros>
-                      <ValorMulta>0</ValorMulta>
-                      <ValorOriginal>{$valorBaixa}</ValorOriginal>
-                    </FinItemBaixa>
-                  </ItensBaixa>
-                  <Lancamentos>
-                    <FinLancamentoBaixaResult>
-                      <Coligada>{$codColigada}</Coligada>
-                      <ID>{$idLan}</ID>
-                      <CodColigada>{$codColigada}</CodColigada>
-                      <IdBaixa>0</IdBaixa>
-                      <IdLan>{$idLan}</IdLan>
-                      <ServicoAlteracaoRepasse>false</ServicoAlteracaoRepasse>
-                      <ValorBaixado>0.00</ValorBaixado>
-                      <ValorLiquido>{$valorBaixa}</ValorLiquido>
-                      <ValorOriginal>{$valorBaixa}</ValorOriginal>
-                      <ValordaBaixadoLancto>{$valorBaixa}</ValordaBaixadoLancto>
-                    </FinLancamentoBaixaResult>
-                  </Lancamentos>
-                  <ListBaixaGeradas />
-                  <ListContabilLan />
-                  <ListaBaixas />
-                  <ListaIdBoletoBaixa i:nil="true" />
-                  <MotivoBxProtheus i:nil="true" />
-                  <MudouData>true</MudouData>
-                  <MudouMoeda>true</MudouMoeda>
-                  <MudouTipoBaixa>true</MudouTipoBaixa>
-                  <MudouTipoExtrato>true</MudouTipoExtrato>
-                  <NSUTransacaoPIX i:nil="true" />
-                  <NaoVisualizarValoresEContabilidade>false</NaoVisualizarValoresEContabilidade>
-                  <NumDocExtrato i:nil="true" />
-                  <OrigemContabilizacao>EventoContabil</OrigemContabilizacao>
-                  <PagtoPorLan>
-                    <FinPagtoLanParamsProc>
-                      <CodFormaPagto i:nil="true" />
-                      <IdFormaPagto>1</IdFormaPagto>
-                      <IdLan>{$idLan}</IdLan>
-                      <IdPagto>1</IdPagto>
-                      <IdParcela>1</IdParcela>
-                      <MotivoBxProtheus i:nil="true" />
-                      <Valor>{$valorBaixa}</Valor>
-                    </FinPagtoLanParamsProc>
-                  </PagtoPorLan>
-                  <ReajusteParcelaTIN>DataBaixa</ReajusteParcelaTIN>
-                  <RetencoesAcumuladas />
-                  <RetencoesAcumuladasRateio />
-                  <TIDTransacaoPIX i:nil="true" />
-                  <TipoBaixa>{$tpBaixa}</TipoBaixa>
-                  <TransacoesSiTef />
-                  <Troco>0</Troco>
-                  <UsarDataBaixaReajuste>true</UsarDataBaixaReajuste>
-                  <Usuario>{$usuario}</Usuario>
-                  <ValidaOrcExcedido>false</ValidaOrcExcedido>
-                  <_usarDataVencimentoBaixa>false</_usarDataVencimentoBaixa>
-                </FinLanBaixaParamsProc>
-XML;
+        $doc = new \DOMDocument();
+        $doc->preserveWhiteSpace = false;
+        $doc->formatOutput = false;
+        if (!@$doc->loadXML($xmlIn)) {
+            throw new \RuntimeException('Template de baixa (GetSchema) não é um XML válido.');
+        }
+        $root = $doc->documentElement;
 
-        return self::dedent($xml);
+        // ---- raiz (campos escalares da baixa) ----
+        self::setFilho($root, 'CodColigada', $col);
+        self::setFilho($root, 'CotacaoBaixa', '1');
+        self::setFilho($root, 'DataBaixa', $data);
+        self::setFilho($root, 'DataSistema', $data);
+        self::setFilho($root, 'HistoricoBaixa', $hist);
+        self::setFilho($root, 'CodColCxa', $col);
+        self::setFilho($root, 'CodCxa', $cxa);
+        self::setFilho($root, 'Usuario', $usuario);
+        self::setFilho($root, 'TipoBaixa', $tipoBx);
+
+        // ---- Context: params por chave ----
+        if ($ctx = self::filho($root, 'Context')) {
+            if ($params = self::filho($ctx, '_params')) {
+                $map = ['$CODCOLIGADA' => $col, '$CODFILIAL' => $fil, '$CHAPAFUNCIONARIO' => $chapa, '$CODUSUARIO' => $usuario];
+                foreach ($params->childNodes as $kv) {
+                    if (!$kv instanceof \DOMElement) {
+                        continue;
+                    }
+                    $chave = self::filho($kv, 'Key');
+                    $val   = self::filho($kv, 'Value');
+                    if ($chave && $val && array_key_exists(trim($chave->textContent), $map)) {
+                        self::apenasTexto($val, $map[trim($chave->textContent)]);
+                    }
+                }
+            }
+        }
+
+        // ---- PrimaryKeyList/Names: placeholder do schema -> esvazia ----
+        self::esvaziar(self::filho($root, 'PrimaryKeyList'));
+        self::esvaziar(self::filho($root, 'PrimaryKeyNames'));
+
+        // ---- FormasPagamento > FinFormaPagtoBaixaParamsProc ----
+        if (($fp = self::filho($root, 'FormasPagamento')) && ($fpi = self::primeiroElemento($fp))) {
+            self::setFilho($fpi, 'CodColCxa', $col);
+            self::setFilho($fpi, 'CodColProp', $col);
+            self::setFilho($fpi, 'CodColigada', $col);
+            self::setFilho($fpi, 'CodCxa', $cxa);
+            self::setFilho($fpi, 'CodFilial', $fil);
+            self::setFilho($fpi, 'DescFormaPagto', $forma);
+            self::setFilho($fpi, 'TipoFormaPagto', $forma);
+            self::setFilho($fpi, 'Valor', $valor);
+            // sub-objetos complexos (DataSets) -> esvazia p/ não mandar lixo
+            foreach (['Cartao', 'Cheque', 'Mutuo', 'Contabilizacao'] as $sub) {
+                self::esvaziar(self::filho($fpi, $sub));
+            }
+        }
+
+        // ---- ItensBaixa > FinItemBaixa (escalares; nested já vem vazio) ----
+        if (($ib = self::filho($root, 'ItensBaixa')) && ($item = self::primeiroElemento($ib))) {
+            self::setFilho($item, 'CodColCxa', $col);
+            self::setFilho($item, 'CodColigada', $col);
+            self::setFilho($item, 'CodCxa', $cxa);
+            self::setFilho($item, 'CodFilial', $fil);
+            self::setFilho($item, 'DataBaixa', $data);
+            self::setFilho($item, 'IdLan', $idLan);
+            self::setFilho($item, 'ValorBaixa', $valor);
+            self::setFilho($item, 'ValorOriginal', $valor);
+            self::setFilho($item, 'Usuario', $usuario);
+            self::setFilho($item, 'CotacaoBaixa', '1');
+            self::setFilho($item, 'TipoFormaPagto', $forma);
+            self::setFilho($item, 'PagRec', 'Receber');
+        }
+
+        // ---- Lancamentos > FinLancamentoBaixaResult (escalares; esvazia nested) ----
+        if (($lc = self::filho($root, 'Lancamentos')) && ($res = self::primeiroElemento($lc))) {
+            self::setFilho($res, 'Coligada', $col);
+            self::setFilho($res, 'ID', $idLan);
+            self::setFilho($res, 'CodColigada', $col);
+            self::setFilho($res, 'IdLan', $idLan);
+            self::setFilho($res, 'CodFilial', $fil);
+            self::setFilho($res, 'ValorLiquido', $valor);
+            self::setFilho($res, 'ValorOriginal', $valor);
+            self::setFilho($res, 'ValorOriginalIndexado', $valor);
+            self::setFilho($res, 'ValordaBaixadoLancto', $valor);
+            // listas internas com o "monstro" contábil/rateio -> RM recomputa
+            foreach (['ListaDeItemBaixa', 'ListTributos', 'ListaVaLorIntegracaoLancamento', 'RatCCusto', 'RatDepto'] as $l) {
+                self::esvaziar(self::filho($res, $l));
+            }
+        }
+
+        // ---- PagtoPorLan > FinPagtoLanParamsProc ----
+        if (($pl = self::filho($root, 'PagtoPorLan')) && ($pli = self::primeiroElemento($pl))) {
+            self::setFilho($pli, 'IdLan', $idLan);
+            self::setFilho($pli, 'Valor', $valor);
+        }
+
+        // ---- listas de saída/placeholder -> esvazia ----
+        foreach ([
+            'ListBaixaGeradas', 'ListContabilLan', 'ListaBaixas', 'ListaIdBoletoBaixa',
+            'RetencoesAcumuladas', 'RetencoesAcumuladasRateio', 'TransacoesSiTef',
+        ] as $l) {
+            self::esvaziar(self::filho($root, $l));
+        }
+
+        $out = $doc->saveXML();
+        // restaura a declaração utf-16 esperada pelo RM
+        return preg_replace('/encoding="utf-8"/i', 'encoding="utf-16"', $out, 1);
+    }
+
+    /** Primeiro filho DOMElement com o localName dado (namespace-agnóstico). */
+    private static function filho(\DOMElement $pai, string $local): ?\DOMElement
+    {
+        foreach ($pai->childNodes as $n) {
+            if ($n instanceof \DOMElement && $n->localName === $local) {
+                return $n;
+            }
+        }
+        return null;
+    }
+
+    /** Primeiro filho DOMElement qualquer (o item de uma lista). */
+    private static function primeiroElemento(\DOMElement $pai): ?\DOMElement
+    {
+        foreach ($pai->childNodes as $n) {
+            if ($n instanceof \DOMElement) {
+                return $n;
+            }
+        }
+        return null;
+    }
+
+    /** Define o texto de um filho (por localName), preservando atributos (i:type). */
+    private static function setFilho(\DOMElement $pai, string $local, string $valor): void
+    {
+        $el = self::filho($pai, $local);
+        if ($el !== null) {
+            self::apenasTexto($el, $valor);
+        }
+    }
+
+    /** Substitui o conteúdo do elemento por um único nó de texto; remove i:nil. */
+    private static function apenasTexto(\DOMElement $el, string $valor): void
+    {
+        while ($el->firstChild) {
+            $el->removeChild($el->firstChild);
+        }
+        if ($el->hasAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil')) {
+            $el->removeAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil');
+        }
+        $el->appendChild($el->ownerDocument->createTextNode($valor));
+    }
+
+    /** Remove todos os filhos-elemento (esvazia uma lista/objeto). */
+    private static function esvaziar(?\DOMElement $el): void
+    {
+        if ($el === null) {
+            return;
+        }
+        $filhos = [];
+        foreach ($el->childNodes as $n) {
+            if ($n instanceof \DOMElement) {
+                $filhos[] = $n;
+            }
+        }
+        foreach ($filhos as $f) {
+            $el->removeChild($f);
+        }
     }
 }

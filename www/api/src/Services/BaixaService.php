@@ -126,23 +126,33 @@ class BaixaService
         $historico   = (string) ($in['HISTORICOBAIXA'] ?? '');
         $codUsuario  = (string) ($this->rmConfig['usuario_servico'] ?? 'integra.eduvem');
 
-        $xml = ProcessXml::baixaLancamento(
-            codColigada: $codColigada,
-            codFilial: $codFilial,
-            idLan: (string) $idLan,
-            valorBaixa: $valorBaixa,
-            codCxa: $codCxa,
-            tipoFormaPagto: $formaPagto,
-            dataBaixa: $dataBaixa,
-            historico: $historico,
-            codUsuario: $codUsuario,
-            tipoBaixa: $tipoBaixa
-        );
-
         // Nome do process server e operação SOAP configuráveis (o RM pode expor
         // a baixa sob outro nome/operação conforme a versão — ver config/rm.php).
         $processo = (string) ($this->rmConfig['baixa']['processo'] ?? self::PROCESSO);
         $operacao = (string) ($this->rmConfig['baixa']['operacao'] ?? 'ExecuteWithParams');
+
+        // O contrato do FinLanBaixaParamsProc é enorme e cheio de enums/campos
+        // obrigatórios — reproduzi-lo à mão gera itens que não desserializam no RM
+        // ("Os lançamentos devem ser informados"). Buscamos o template canônico do
+        // próprio RM (GetSchema) e só preenchemos os campos dinâmicos.
+        $template = $this->rm->getSchema($processo, [
+            'CODCOLIGADA' => (string) $codColigada,
+            'CODFILIAL'   => (string) $codFilial,
+        ]);
+
+        $xml = ProcessXml::preencherBaixa($template, [
+            'IDLAN'          => (string) $idLan,
+            'VALOR'          => $valorBaixa,
+            'CODCOLIGADA'    => (string) $codColigada,
+            'CODFILIAL'      => (string) $codFilial,
+            'CODCXA'         => $codCxa,
+            'DATABAIXA'      => $dataBaixa,
+            'TIPOFORMAPAGTO' => $formaPagto,
+            'HISTORICO'      => $historico,
+            'USUARIO'        => $codUsuario,
+            'TIPOBAIXA'      => $tipoBaixa,
+            'CHAPA'          => '-1',
+        ]);
 
         $retorno = $operacao === 'ExecuteWithXMLParams'
             ? $this->rm->executeWithXmlParams($processo, $xml)
