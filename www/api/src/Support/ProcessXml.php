@@ -1415,4 +1415,167 @@ XML;
 
         return self::dedent($xml);
     }
+
+    /**
+     * Processo "Baixa de lançamento financeiro" (FinLanBaixaProc):
+     * baixa (quita) um lançamento (IdLan) numa conta/caixa, com forma de
+     * pagamento. Reproduz fielmente o payload capturado do RM
+     * (FinLanBaixaParamsProc), parametrizando apenas os campos dinâmicos.
+     *
+     * Valores fixos herdados da captura (mantidos de propósito):
+     *  CodMoeda=R$, CotacaoBaixa=1, item TipoBaixa=BaixaManual,
+     *  OrigemValor*=BaseDados, TipoTransacao/PagRec=WCF,
+     *  CompensarExtratoBaixa=Parametrizacao, $CODSISTEMA=F.
+     *
+     * @param string $valorBaixa   já formatado com ponto decimal ("465.00")
+     * @param string $dataBaixa    data ISO ("Y-m-d")
+     * @param string $tipoBaixa    "Completa" ou "Parcial"
+     */
+    public static function baixaLancamento(
+        string|int $codColigada,
+        string|int $codFilial,
+        string|int $idLan,
+        string $valorBaixa,
+        string|int $codCxa,
+        string $tipoFormaPagto,
+        string $dataBaixa,
+        string $historico,
+        string $codUsuario,
+        string $tipoBaixa = 'Completa',
+        string|int $chapaFuncionario = '-1'
+    ): string {
+        $hist    = htmlspecialchars($historico, ENT_XML1, 'UTF-8');
+        $formaPg = htmlspecialchars($tipoFormaPagto, ENT_XML1, 'UTF-8');
+        $usuario = htmlspecialchars($codUsuario, ENT_XML1, 'UTF-8');
+        $tpBaixa = htmlspecialchars($tipoBaixa, ENT_XML1, 'UTF-8');
+
+        $xml = <<<XML
+                <?xml version="1.0" encoding="utf-16"?>
+                <FinLanBaixaParamsProc xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/" xmlns="http://www.totvs.com.br/RM/">
+                  <Context xmlns:d2p1="http://www.totvs.com.br/RM/" z:Id="i2" xmlns="http://www.totvs.com/">
+                    <d2p1:_params xmlns:d3p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODCOLIGADA</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:int">{$codColigada}</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODFILIAL</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:int">{$codFilial}</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODSISTEMA</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">F</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODUSUARIO</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">{$usuario}</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CHAPAFUNCIONARIO</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">{$chapaFuncionario}</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$EXERCICIOFISCAL</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:int">1</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODTIPOCURSO</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:int">1</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$RHTIPOUSR</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">01</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$EDUTIPOUSR</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">-1</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODLOCPRT</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:int">-1</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODUNIDADEBIB</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:int">-1</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODIGOEXTERNO</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">-1</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$IDPRJ</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:int">-1</d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                      <d3p1:KeyValueOfanyTypeanyType>
+                        <d3p1:Key xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string">\$CODUSUARIOSERVICO</d3p1:Key>
+                        <d3p1:Value xmlns:d5p1="http://www.w3.org/2001/XMLSchema" i:type="d5p1:string"></d3p1:Value>
+                      </d3p1:KeyValueOfanyTypeanyType>
+                    </d2p1:_params>
+                    <d2p1:Environment>WebServices</d2p1:Environment>
+                  </Context>
+                  <CodColigada>{$codColigada}</CodColigada>
+                  <DataBaixa>{$dataBaixa}</DataBaixa>
+                  <CodMoeda>R\$</CodMoeda>
+                  <CotacaoBaixa>1</CotacaoBaixa>
+                  <HistoricoBaixa>{$hist}</HistoricoBaixa>
+                  <TipoBaixa>{$tpBaixa}</TipoBaixa>
+                  <ContabilizarPosBaixa>false</ContabilizarPosBaixa>
+                  <UsarDataVencimentoBaixa>false</UsarDataVencimentoBaixa>
+                  <CodColCxa>{$codColigada}</CodColCxa>
+                  <CodCxa>{$codCxa}</CodCxa>
+                  <DataCaixa>{$dataBaixa}</DataCaixa>
+                  <Usuario>{$usuario}</Usuario>
+                  <ItensBaixa>
+                    <FinItemBaixa>
+                      <CodColigada>{$codColigada}</CodColigada>
+                      <IdLan>{$idLan}</IdLan>
+                      <DataBaixa>{$dataBaixa}</DataBaixa>
+                      <ValorBaixa>{$valorBaixa}</ValorBaixa>
+                      <ValorJuros>0</ValorJuros>
+                      <ValorMulta>0</ValorMulta>
+                      <ValorDesconto>0</ValorDesconto>
+                      <ValorCap>0</ValorCap>
+                      <TipoBaixa>BaixaManual</TipoBaixa>
+                      <CodColCxa>{$codColigada}</CodColCxa>
+                      <CodCxa>{$codCxa}</CodCxa>
+                      <OrigemValorJuros>BaseDados</OrigemValorJuros>
+                      <OrigemValorMulta>BaseDados</OrigemValorMulta>
+                      <OrigemValorDesconto>BaseDados</OrigemValorDesconto>
+                      <OrigemValorCap>BaseDados</OrigemValorCap>
+                      <TipoTransacao>WCF</TipoTransacao>
+                      <PagRec>WCF</PagRec>
+                    </FinItemBaixa>
+                  </ItensBaixa>
+                  <FormasPagamento>
+                    <FinFormaPagtoBaixaParamsProc>
+                      <CodColigada>{$codColigada}</CodColigada>
+                      <IdLan>{$idLan}</IdLan>
+                      <TipoFormaPagto>{$formaPg}</TipoFormaPagto>
+                      <Valor>{$valorBaixa}</Valor>
+                      <CodColCxa>{$codColigada}</CodColCxa>
+                      <CodCxa>{$codCxa}</CodCxa>
+                      <TipoTransacao>WCF</TipoTransacao>
+                      <CompensarExtratoBaixa>Parametrizacao</CompensarExtratoBaixa>
+                    </FinFormaPagtoBaixaParamsProc>
+                  </FormasPagamento>
+                  <BaixaCredDevVinculado>false</BaixaCredDevVinculado>
+                  <IsBoleto>false</IsBoleto>
+                  <IsHabilitaPIX>false</IsHabilitaPIX>
+                  <IsHabilitaTEF>false</IsHabilitaTEF>
+                  <IsModuloDeCaixa>false</IsModuloDeCaixa>
+                  <MudouData>true</MudouData>
+                  <MudouMoeda>true</MudouMoeda>
+                  <MudouTipoBaixa>true</MudouTipoBaixa>
+                  <MudouTipoExtrato>true</MudouTipoExtrato>
+                  <OrigemContabilizacao>EventoContabil</OrigemContabilizacao>
+                  <ValidaOrcExcedido>false</ValidaOrcExcedido>
+                  <NaoVisualizarValoresEContabilidade>false</NaoVisualizarValoresEContabilidade>
+                  <UsarDataBaixaReajuste>true</UsarDataBaixaReajuste>
+                  <ReajusteParcelaTIN>DataBaixa</ReajusteParcelaTIN>
+                  <_usarDataVencimentoBaixa>false</_usarDataVencimentoBaixa>
+                </FinLanBaixaParamsProc>
+XML;
+
+        return self::dedent($xml);
+    }
 }

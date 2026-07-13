@@ -417,6 +417,57 @@ class RMSoapClient
         return $resultValue;
     }
 
+    /**
+     * Operação-irmã do ExecuteWithXMLParams (mesma assinatura:
+     * ProcessServerName + strXmlParams). Alguns processos financeiros do RM
+     * — como FinLanBaixaProc (baixa de lançamento) — são disparados por esta
+     * operação. O nome do elemento de retorno varia conforme a versão do WSDL,
+     * então a extração é resiliente: usa ExecuteWithParamsResult quando existe
+     * e, senão, cai para a primeira propriedade da resposta.
+     */
+    public function executeWithParams(string $processServerName, string $xmlParams): string
+    {
+        $result = $this->call(
+            RMWSType::Process,
+            'ExecuteWithParams',
+            [
+                'ExecuteWithParams' => [
+                    'ProcessServerName' => $processServerName,
+                    'strXmlParams'      => $xmlParams,
+                ],
+            ],
+            dataServer: $processServerName,
+            xmlEnviado: $xmlParams
+        );
+
+        $resultValue = $result->ExecuteWithParamsResult
+            ?? (is_object($result) ? (array_values(get_object_vars($result))[0] ?? null) : null);
+
+        if ($resultValue === null) {
+            throw new RMException(
+                'Formato de resposta inesperado do ExecuteWithParams',
+                operacao: 'ExecuteWithParams',
+                dataServer: $processServerName,
+                xmlEnviado: $xmlParams,
+                retornoRm: json_encode($result)
+            );
+        }
+
+        $resultValue = (string) $resultValue;
+
+        if (str_contains(strtolower($resultValue), 'error')) {
+            throw new RMException(
+                'Erro ao executar processo no RM',
+                operacao: 'ExecuteWithParams',
+                dataServer: $processServerName,
+                xmlEnviado: $xmlParams,
+                retornoRm: $resultValue
+            );
+        }
+
+        return $resultValue;
+    }
+
     /* =====================================================================
      * wsReport
      * ===================================================================== */

@@ -7,6 +7,7 @@ use FMP\RMApi\Controllers\CfoController;
 use FMP\RMApi\Controllers\ContratoController;
 use FMP\RMApi\Controllers\CupomController;
 use FMP\RMApi\Controllers\EnderecoController;
+use FMP\RMApi\Controllers\FinanceiroController;
 use FMP\RMApi\Controllers\InscricaoController;
 use FMP\RMApi\Controllers\MatriculaController;
 use FMP\RMApi\Controllers\OfertaController;
@@ -76,6 +77,13 @@ return function (App $app): void {
     /* ---------- Contrato ---------- */
 
     $app->post('/contratos', [ContratoController::class, 'gerar']);
+
+    /* ---------- Financeiro (processos wsProcess) ---------- */
+
+    $app->group('/financeiro', function (RouteCollectorProxy $fin) {
+        // Baixa (quitação) de lançamento: processo FinLanBaixaProc.
+        $fin->post('/baixas', [FinanceiroController::class, 'baixar']);
+    });
 
     /* ---------- Oferta ---------- */
 
