@@ -20,7 +20,7 @@ namespace FMP\RMApi\Support;
 class ProcessXml
 {
     /** Template canônico do FinLanBaixaParamsProc (GetSchema do próprio RM). */
-    private const TEMPLATE_BAIXA = __DIR__ . '/../../resources/fin/FinLanBaixaParamsProc.template.xml';
+    private const TEMPLATE_BAIXA = __DIR__ . '/../../resources/fin/FinLanBaixaParamsProc.real.template.xml';
 
     /**
      * Remove a indentação comum do heredoc e qualquer espaço em branco
@@ -1422,20 +1422,36 @@ XML;
     /**
      * Processo "Baixar Lançamento" (ProcessServerName FinLanBaixaData).
      *
-     * Em vez de montar o gigantesco FinLanBaixaParamsProc à mão — o que gerava
-     * itens que não desserializavam no RM ("Os lançamentos devem ser informados")
-     * por faltar campos/enums obrigatórios —, partimos do template canônico do
-     * próprio RM (GetSchema, salvo em resources/fin/) e só trocamos os campos
-     * dinâmicos, esvaziando as listas de exemplo/saída. Assim a estrutura e os
-     * enums obrigatórios ficam exatos e a coleção Lancamentos chega válida.
+     * Estratégia: REPLAY do XML de uma baixa REAL executada com sucesso pela
+     * tela do RM nesta instância (resources/fin/FinLanBaixaParamsProc.real.template.xml),
+     * trocando apenas os campos dinâmicos por placeholders ({{IDLAN}} em 43
+     * pontos, {{VALOR2}}/{{VALOR4}}, {{CODCXA}}, {{DATA}}, {{FORMAPAGTO}},
+     * {{TIPOBAIXA}}, {{HISTBAIXA}}, {{USUARIO}}, {{CODCOLIGADA}}/{{CODFILIAL}}/
+     * {{CHAPA}} no Context/PK, {{EXECID}}/{{SCHEDULE}} da sessão). Nenhuma
+     * manipulação DOM: o corpo permanece byte a byte igual ao que o RM aceitou.
      *
-     * O RM lê os valores reais do lançamento (cap/juros/multa/desconto) do banco
-     * pelo IDLAN (OrigemValor*=BaseDados no template), então basta a PK correta
-     * (FLAN = CODCOLIGADA+IDLAN) + os parâmetros da baixa.
+     * Por quê: montar/minimizar o payload (à mão e via template do GetSchema)
+     * sempre caía em "Os lançamentos devem ser informados". Causa encontrada
+     * comparando com o export real: o FinLancamentoBaixaResult tem membros
+     * DUPLICADOS por herança .NET (CodColigada/IdLan aparecem 2x — base e
+     * derivada) e objetos aninhados (Valores, ValorLiquidoCalculado) que também
+     * carregam a identidade — no export real o IDLAN aparece em 12+ pontos só
+     * dentro de <Lancamentos>; nós preenchíamos 1. Além disso os elos
+     * IdPagto=1/IdFormaPagto=1 precisam casar entre FormasPagamento, ItensBaixa
+     * e PagtoPorLan (estavam 0). O replay preserva tudo por construção.
+     *
+     * Observações do template capturado (baixa de mensalidade em Dinheiro):
+     *  - Contabilização/rateios/CCusto/natureza vêm do capturado; o RM
+     *    recarrega/recalcula da base pelo IDLAN (OrigemValor*=BaseDados).
+     *  - Boleto foi neutralizado (ListaIdBoletoBaixa vazia, IsBoleto=false,
+     *    IdBoleto nil) — o RM resolve o boleto do lançamento pelo IDLAN.
+     *  - IdBaixa pré-alocado pela tela (100001) virou -1 (nova baixa).
+     *  - Literais de coligada/filial=1 no corpo (instância single-coligada);
+     *    Context e PrimaryKeyList são parametrizados de verdade.
      *
      * @param string $valorBaixa  já com ponto decimal ("2000.00")
      * @param string $dataBaixa   ISO "Y-m-d"
-     * @param string $tipoBaixa   "Completa" | "Parcial" | "Simplificada"
+     * @param string $tipoBaixa   "Simplificada" | "Completa" | "Parcial"
      */
     public static function baixaLancamento(
         string|int $codColigada,
@@ -1455,279 +1471,29 @@ XML;
             throw new \RuntimeException('Template da baixa não encontrado: ' . self::TEMPLATE_BAIXA);
         }
 
-        $col  = (string) $codColigada;
-        $fil  = (string) $codFilial;
-        $lan  = (string) $idLan;
-        $cxa  = (string) $codCxa;
-        $data = $dataBaixa . 'T00:00:00-03:00';
+        $esc = static fn (string $v): string => htmlspecialchars($v, ENT_XML1, 'UTF-8');
 
-        // DOMDocument não engole a declaração utf-16 com bytes utf-8: troca p/ utf-8
-        // ao carregar e restaura utf-16 (o que o RM espera) ao devolver.
-        $xmlIn = preg_replace('/encoding="utf-16"/i', 'encoding="utf-8"', $template, 1);
+        $xml = strtr($template, [
+            '{{EXECID}}'      => self::guid(),
+            '{{SCHEDULE}}'    => date('Y-m-d\TH:i:s.0000000P'),
+            '{{USUARIO}}'     => $esc($codUsuario),
+            '{{VALOR4}}'      => number_format((float) $valorBaixa, 4, '.', ''),
+            '{{VALOR2}}'      => number_format((float) $valorBaixa, 2, '.', ''),
+            '{{IDLAN}}'       => (string) $idLan,
+            '{{CODCXA}}'      => $esc((string) $codCxa),
+            '{{DATA}}'        => $dataBaixa,
+            '{{FORMAPAGTO}}'  => $esc($tipoFormaPagto),
+            '{{TIPOBAIXA}}'   => $esc($tipoBaixa),
+            '{{HISTBAIXA}}'   => $esc($historico),
+            '{{CODCOLIGADA}}' => (string) $codColigada,
+            '{{CODFILIAL}}'   => (string) $codFilial,
+            '{{CHAPA}}'       => $esc((string) $chapaFuncionario),
+        ]);
 
-        $doc = new \DOMDocument();
-        $doc->preserveWhiteSpace = false;
-        $doc->formatOutput = false;
-        if (!@$doc->loadXML($xmlIn)) {
-            throw new \RuntimeException('Template da baixa (GetSchema) não é um XML válido.');
-        }
-        $root = $doc->documentElement;
-
-        // ---- Context / _params: params de ambiente por chave ----
-        if (($ctx = self::filho($root, 'Context')) && ($params = self::filho($ctx, '_params'))) {
-            $map = [
-                '$CODCOLIGADA'      => $col,
-                '$CODFILIAL'        => $fil,
-                '$CHAPAFUNCIONARIO' => (string) $chapaFuncionario,
-                '$CODUSUARIO'       => $codUsuario,
-            ];
-            foreach ($params->childNodes as $kv) {
-                if (!$kv instanceof \DOMElement) {
-                    continue;
-                }
-                $k = self::filho($kv, 'Key');
-                $v = self::filho($kv, 'Value');
-                if ($k && $v && array_key_exists(trim($k->textContent), $map)) {
-                    self::apenasTexto($v, $map[trim($k->textContent)]);
-                }
-            }
+        if (str_contains($xml, '{{')) {
+            throw new \RuntimeException('Template da baixa com placeholder não resolvido.');
         }
 
-        // ---- PrimaryKeyList / PrimaryKeyNames: PK do lançamento (FLAN) ----
-        self::preencherPrimaryKey($root, $col, $lan);
-
-        // ---- escalares da raiz ----
-        self::setFilho($root, 'CodColigada', $col);
-        self::setFilho($root, 'CotacaoBaixa', '1');
-        self::setFilho($root, 'DataBaixa', $data);
-        self::setFilho($root, 'DataSistema', $data);
-        self::setFilho($root, 'HistoricoBaixa', $historico);
-        self::setFilho($root, 'CodColCxa', $col);
-        self::setFilho($root, 'CodCxa', $cxa);
-        self::setFilho($root, 'Usuario', $codUsuario);
-        self::setFilho($root, 'TipoBaixa', $tipoBaixa);
-
-        // ---- FormasPagamento > FinFormaPagtoBaixaParamsProc ----
-        if (($fp = self::filho($root, 'FormasPagamento')) && ($fpi = self::primeiroElemento($fp))) {
-            self::setFilho($fpi, 'CodColCxa', $col);
-            self::setFilho($fpi, 'CodColProp', $col);
-            self::setFilho($fpi, 'CodColigada', $col);
-            self::setFilho($fpi, 'CodCxa', $cxa);
-            self::setFilho($fpi, 'CodFilial', $fil);
-            self::setFilho($fpi, 'DescFormaPagto', $tipoFormaPagto);
-            self::setFilho($fpi, 'TipoFormaPagto', $tipoFormaPagto);
-            self::setFilho($fpi, 'Valor', $valorBaixa);
-            // sub-objetos complexos (DataSets) -> esvazia p/ não mandar lixo
-            foreach (['Cartao', 'Cheque', 'Mutuo', 'Contabilizacao'] as $sub) {
-                self::esvaziar(self::filho($fpi, $sub));
-            }
-        }
-
-        // ---- ItensBaixa > FinItemBaixa (escalares; listas internas já vêm vazias) ----
-        if (($ib = self::filho($root, 'ItensBaixa')) && ($item = self::primeiroElemento($ib))) {
-            self::setFilho($item, 'CodColCxa', $col);
-            self::setFilho($item, 'CodColigada', $col);
-            self::setFilho($item, 'CodCxa', $cxa);
-            self::setFilho($item, 'CodFilial', $fil);
-            self::setFilho($item, 'DataBaixa', $data);
-            self::setFilho($item, 'DataContabilizBx', $data);
-            self::setFilho($item, 'IdLan', $lan);
-            self::setFilho($item, 'ValorBaixa', $valorBaixa);
-            self::setFilho($item, 'ValorOriginal', $valorBaixa);
-            self::setFilho($item, 'Usuario', $codUsuario);
-            self::setFilho($item, 'CotacaoBaixa', '1');
-            self::setFilho($item, 'TipoFormaPagto', $tipoFormaPagto);
-            self::setFilho($item, 'PagRec', 'Receber');
-            // Liga o item ao registro FLAN. A framework do RM identifica o
-            // lançamento por este mapa de PK; sem ele a lista interna de
-            // lançamentos fica vazia -> "Os lançamentos devem ser informados".
-            self::preencherCamposComplementares($item, $col, $lan);
-        }
-
-        // ---- Lancamentos > FinLancamentoBaixaResult (escalares; esvazia listas-monstro) ----
-        if (($lc = self::filho($root, 'Lancamentos')) && ($res = self::primeiroElemento($lc))) {
-            self::setFilho($res, 'Coligada', $col);
-            self::setFilho($res, 'ID', $lan);
-            self::setFilho($res, 'CodColigada', $col);
-            self::setFilho($res, 'IdLan', $lan);
-            self::setFilho($res, 'CodFilial', $fil);
-            self::setFilho($res, 'PagRec', 'Receber');
-            self::setFilho($res, 'ValorLiquido', $valorBaixa);
-            self::setFilho($res, 'ValorOriginal', $valorBaixa);
-            self::setFilho($res, 'ValorOriginalIndexado', $valorBaixa);
-            self::setFilho($res, 'ValordaBaixadoLancto', $valorBaixa);
-            // o "monstro" contábil/rateio/tributos -> RM recomputa a partir do IDLAN
-            foreach (['ListTributos', 'ListaDeItemBaixa', 'ListaVaLorIntegracaoLancamento', 'RatCCusto', 'RatDepto'] as $l) {
-                self::esvaziar(self::filho($res, $l));
-            }
-        }
-
-        // ---- PagtoPorLan > FinPagtoLanParamsProc ----
-        if (($pl = self::filho($root, 'PagtoPorLan')) && ($pli = self::primeiroElemento($pl))) {
-            self::setFilho($pli, 'IdLan', $lan);
-            self::setFilho($pli, 'Valor', $valorBaixa);
-        }
-
-        // ---- listas de saída/placeholder -> esvazia (o RM preenche) ----
-        foreach ([
-            'ListBaixaGeradas', 'ListContabilLan', 'ListaBaixas', 'ListaIdBoletoBaixa',
-            'RetencoesAcumuladas', 'RetencoesAcumuladasRateio', 'TransacoesSiTef',
-        ] as $l) {
-            self::esvaziar(self::filho($root, $l));
-        }
-
-        $out = $doc->saveXML();
-        // restaura a declaração utf-16 esperada pelo RM
-        return preg_replace('/encoding="utf-8"/i', 'encoding="utf-16"', $out, 1);
-    }
-
-    /**
-     * Preenche PrimaryKeyList/PrimaryKeyNames com a PK do lançamento no FLAN
-     * (CODCOLIGADA + IDLAN), clonando os moldes do template para preservar os
-     * namespaces/atributos (i:type) exatos que o RM espera.
-     */
-    private static function preencherPrimaryKey(\DOMElement $root, string $col, string $lan): void
-    {
-        // PrimaryKeyList: UMA linha (um registro FLAN) com as colunas da PK
-        // na ordem de PrimaryKeyNames -> [CODCOLIGADA, IDLAN]. É ArrayOfArrayOfanyType:
-        // cada <ArrayOfanyType> é um registro; os <anyType> dentro são as colunas.
-        if ($pkl = self::filho($root, 'PrimaryKeyList')) {
-            $rowMolde = self::primeiroElemento($pkl);                          // <ArrayOfanyType>
-            $anyMolde = $rowMolde ? self::primeiroElemento($rowMolde) : null;  // <anyType int>
-            if ($rowMolde !== null && $anyMolde !== null) {
-                $row = $rowMolde->cloneNode(false); // ArrayOfanyType vazio (mantém namespaces)
-                foreach ([$col, $lan] as $val) {
-                    $any = $anyMolde->cloneNode(true);
-                    self::apenasTexto($any, $val);
-                    $row->appendChild($any);
-                }
-                self::esvaziar($pkl);
-                $pkl->appendChild($row);
-            }
-        }
-
-        // PrimaryKeyNames: [CODCOLIGADA, IDLAN]
-        if ($pkn = self::filho($root, 'PrimaryKeyNames')) {
-            $molde = self::primeiroElemento($pkn); // <string>COLUNAPK</string>
-            if ($molde !== null) {
-                $clones = [];
-                foreach (['CODCOLIGADA', 'IDLAN'] as $nome) {
-                    $c = $molde->cloneNode(true);
-                    self::apenasTexto($c, $nome);
-                    $clones[] = $c;
-                }
-                self::esvaziar($pkn);
-                foreach ($clones as $c) {
-                    $pkn->appendChild($c);
-                }
-            }
-        }
-    }
-
-    /**
-     * Preenche o CamposComplementares de um FinItemBaixa com o mapa de PK do
-     * registro FLAN (CODCOLIGADA, IDLAN, IDBAIXA=-1 + REC* nulos), reproduzindo
-     * o dicionário que o RM envia quando a baixa é feita pela tela. É por esse
-     * mapa que a framework identifica o lançamento a baixar.
-     */
-    private static function preencherCamposComplementares(\DOMElement $item, string $col, string $lan): void
-    {
-        $cc = self::filho($item, 'CamposComplementares');
-        if ($cc === null) {
-            return;
-        }
-
-        $arrNs = 'http://schemas.microsoft.com/2003/10/Serialization/Arrays';
-        $xsNs  = 'http://www.w3.org/2001/XMLSchema';
-        $xsiNs = 'http://www.w3.org/2001/XMLSchema-instance';
-        $doc   = $cc->ownerDocument;
-
-        if ($cc->hasAttributeNS($xsiNs, 'nil')) {
-            $cc->removeAttributeNS($xsiNs, 'nil');
-        }
-        self::esvaziar($cc);
-
-        $addPar = static function (string $key, ?string $tipo, ?string $valor) use ($doc, $cc, $arrNs, $xsNs, $xsiNs): void {
-            $kv = $doc->createElementNS($arrNs, 'a:KeyValueOfstringanyType');
-            $kv->appendChild($doc->createElementNS($arrNs, 'a:Key', $key));
-            $v = $doc->createElementNS($arrNs, 'a:Value');
-            if ($valor === null) {
-                $v->setAttributeNS($xsiNs, 'i:nil', 'true');
-            } else {
-                $v->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:b', $xsNs);
-                $v->setAttributeNS($xsiNs, 'i:type', 'b:' . $tipo);
-                $v->appendChild($doc->createTextNode($valor));
-            }
-            $kv->appendChild($v);
-            $cc->appendChild($kv);
-        };
-
-        $addPar('CODCOLIGADA', 'short', $col);
-        $addPar('IDLAN', 'int', $lan);
-        $addPar('IDBAIXA', 'int', '-1');
-        $addPar('RECCREATEDBY', null, null);
-        $addPar('RECCREATEDON', null, null);
-        $addPar('RECMODIFIEDBY', null, null);
-        $addPar('RECMODIFIEDON', null, null);
-    }
-
-    /** Primeiro filho DOMElement com o localName dado (namespace-agnóstico). */
-    private static function filho(\DOMElement $pai, string $local): ?\DOMElement
-    {
-        foreach ($pai->childNodes as $n) {
-            if ($n instanceof \DOMElement && $n->localName === $local) {
-                return $n;
-            }
-        }
-        return null;
-    }
-
-    /** Primeiro filho DOMElement qualquer (o item de uma lista). */
-    private static function primeiroElemento(\DOMElement $pai): ?\DOMElement
-    {
-        foreach ($pai->childNodes as $n) {
-            if ($n instanceof \DOMElement) {
-                return $n;
-            }
-        }
-        return null;
-    }
-
-    /** Define o texto de um filho (por localName), preservando atributos (i:type). */
-    private static function setFilho(\DOMElement $pai, string $local, string $valor): void
-    {
-        $el = self::filho($pai, $local);
-        if ($el !== null) {
-            self::apenasTexto($el, $valor);
-        }
-    }
-
-    /** Substitui o conteúdo do elemento por um único nó de texto; remove i:nil. */
-    private static function apenasTexto(\DOMElement $el, string $valor): void
-    {
-        while ($el->firstChild) {
-            $el->removeChild($el->firstChild);
-        }
-        if ($el->hasAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil')) {
-            $el->removeAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil');
-        }
-        $el->appendChild($el->ownerDocument->createTextNode($valor));
-    }
-
-    /** Remove todos os filhos-elemento (esvazia uma lista/objeto). */
-    private static function esvaziar(?\DOMElement $el): void
-    {
-        if ($el === null) {
-            return;
-        }
-        $filhos = [];
-        foreach ($el->childNodes as $n) {
-            if ($n instanceof \DOMElement) {
-                $filhos[] = $n;
-            }
-        }
-        foreach ($filhos as $f) {
-            $el->removeChild($f);
-        }
+        return $xml;
     }
 }
