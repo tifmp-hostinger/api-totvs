@@ -6,6 +6,7 @@ namespace FMP\RMApi\Services;
 
 use FMP\RMApi\Clients\RMSoapClient;
 use FMP\RMApi\Exceptions\RMException;
+use FMP\RMApi\Exceptions\ValidationException;
 use FMP\RMApi\Support\ProcessXml;
 
 /**
@@ -30,6 +31,49 @@ class LancamentoService
      *
      * Retorna ['gerados' => bool, 'ja_existiam' => bool].
      */
+    /**
+     * Geração de lançamentos a partir de RA + OFERTA (rota autônoma, fora do
+     * fluxo de inscrição). Resolve a oferta (INT.EDUVEM.00006) e o contrato do
+     * aluno no período letivo (INT.EDUVEM.00014) e delega para gerar().
+     *
+     * @return array{gerados:bool, ja_existiam:bool, CODCONTRATO:string, RA:string, OFERTA:string}
+     * @throws ValidationException oferta inexistente ou aluno sem contrato
+     * @throws RMException          falha do RM ao gerar
+     */
+    public function gerarPorRaOferta(string $ra, string $offer): array
+    {
+        $oferta = $this->consulta->oferta($offer);
+        if ($oferta === null) {
+            throw new ValidationException(
+                "Oferta '{$offer}' não encontrada.",
+                'Geração de lançamentos: oferta inexistente',
+                ['OFERTA' => $offer]
+            );
+        }
+
+        $pl = $this->consulta->matriculaPeriodoLetivo($offer, $ra);
+        if ($pl === null || empty($pl['CODCONTRATO'])) {
+            throw new ValidationException(
+                "O aluno (RA {$ra}) não possui contrato no período letivo desta oferta. "
+                    . 'Faça a matrícula no período letivo (que gera o contrato) antes de gerar os lançamentos.',
+                'Geração de lançamentos: aluno sem contrato',
+                ['RA' => $ra, 'OFERTA' => $offer]
+            );
+        }
+
+        $codContrato = (string) $pl['CODCONTRATO'];
+
+        $res = $this->gerar(
+            $oferta['CODCOLIGADA'],
+            $oferta['CODFILIAL'],
+            $oferta['IDPERLET'],
+            $ra,
+            $codContrato
+        );
+
+        return $res + ['CODCONTRATO' => $codContrato, 'RA' => $ra, 'OFERTA' => $offer];
+    }
+
     public function gerar(
         string|int $codColigada,
         string|int $codFilial,

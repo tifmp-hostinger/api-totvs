@@ -227,6 +227,14 @@ Valores fixos herdados da captura do RM (não parametrizados): `CodMoeda=R$`, `C
 
 Retorno (200): `{ IDLAN, CODCOLIGADA, VALORBAIXADO, DATABAIXA, CODCXA, FORMAPAGTO, TIPOBAIXA, retorno_rm, log_job }`. Erro do RM → **502** com `retorno_rm` (e o log do job, quando o RM devolve só o JobId e a sentença `INT.EDUVEM.00021` está cadastrada).
 
+### Financeiro — Geração de lançamentos
+
+`POST /financeiro/lancamentos` — **gera os lançamentos financeiros do contrato do aluno** (processo `EduGerarLancFromContratoSliceableData`). É a mesma etapa que a inscrição executa no final, agora **exposta como rota autônoma** (não roda o resto do fluxo). **Idempotente**: se os lançamentos já existem, não regera.
+
+Body: `{ "RA": "000123", "OFERTA": "OF2026-001" }`.
+
+Resolve internamente a oferta (`INT.EDUVEM.00006`) e o contrato do aluno no período letivo (`INT.EDUVEM.00014`); dispara o processo e confirma a criação com retentativas (o job roda assíncrono). Pré-requisito: o aluno já ter contrato no PL daquela oferta (senão **422**). Retorno (200): `{ gerados, ja_existiam, CODCONTRATO, RA, OFERTA }`.
+
 ### Consultas
 
 | Rota | Sentença |
@@ -238,6 +246,14 @@ Retorno (200): `{ IDLAN, CODCOLIGADA, VALORBAIXADO, DATABAIXA, CODCXA, FORMAPAGT
 | `GET /enderecos/cidades/{codcidade}/bairros` | INT.EDUVEM.00004 |
 | `GET /enderecos/cep/{cep}` | INT.EDUVEM.00005 |
 | `GET /cupons/{codoferta}/{codplano}/{cupom}` | INT.EDUVEM.00016 |
+
+### Cupom — Aplicação (bolsa)
+
+`POST /cupons/aplicar` — **aplica o cupom (bolsa) ao contrato do aluno** (`EduBolsaAlunoData`). Mesma etapa da inscrição, agora **autônoma** e **idempotente** (se já aplicado, não duplica).
+
+Body: `{ "RA": "000123", "OFERTA": "OF2026-001", "PLANOPAGAMENTO": "PP01", "CUPOM": "PROMO10" }`.
+
+Valida o cupom (`INT.EDUVEM.00016`) e resolve oferta (`00006`) + contrato no PL (`00014`) pelo RA. Cupom inválido, oferta inexistente ou aluno sem contrato → **422**. Retorno (200): `{ aplicada, ja_existia, CODBOLSA, CODCONTRATO, CUPOM }`.
 
 ### SSO (exceção HTML)
 

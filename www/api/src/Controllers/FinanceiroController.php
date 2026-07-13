@@ -6,6 +6,7 @@ namespace FMP\RMApi\Controllers;
 
 use FMP\RMApi\Helpers\Json;
 use FMP\RMApi\Services\BaixaService;
+use FMP\RMApi\Services\LancamentoService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -14,8 +15,10 @@ use Psr\Http\Message\ServerRequestInterface as Request;
  */
 final class FinanceiroController
 {
-    public function __construct(private readonly BaixaService $baixaService)
-    {
+    public function __construct(
+        private readonly BaixaService $baixaService,
+        private readonly LancamentoService $lancamentoService
+    ) {
     }
 
     /**
@@ -31,5 +34,29 @@ final class FinanceiroController
         $dados = $this->baixaService->baixar($body);
 
         return Json::success('Baixa de lançamento enviada ao RM.', $dados);
+    }
+
+    /**
+     * POST /financeiro/lancamentos — gera os lançamentos financeiros do
+     * contrato do aluno (processo EduGerarLancFromContratoSliceableData).
+     * Autônomo (não roda o fluxo de inscrição) e idempotente.
+     * Body: { "RA": "...", "OFERTA": "..." }.
+     */
+    public function gerarLancamentos(Request $request, Response $response): Response
+    {
+        $body = (array) $request->getParsedBody();
+        $ra    = trim((string) ($body['RA'] ?? ''));
+        $offer = trim((string) ($body['OFERTA'] ?? ''));
+
+        if ($ra === '' || $offer === '') {
+            return Json::error('Informe RA e OFERTA para gerar os lançamentos.', [], 422);
+        }
+
+        $dados = $this->lancamentoService->gerarPorRaOferta($ra, $offer);
+
+        return Json::success(
+            $dados['ja_existiam'] ? 'Lançamentos já existiam para o contrato.' : 'Lançamentos gerados com sucesso.',
+            $dados
+        );
     }
 }

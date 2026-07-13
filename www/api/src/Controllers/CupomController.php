@@ -30,4 +30,29 @@ final class CupomController
 
         return Json::success('Cupom obtido com sucesso', $cupom);
     }
+
+    /**
+     * POST /cupons/aplicar — aplica um cupom (bolsa) ao contrato do aluno.
+     * Autônomo (não roda o fluxo de inscrição) e idempotente.
+     * Body: { "RA", "OFERTA", "PLANOPAGAMENTO", "CUPOM" }.
+     */
+    public function aplicar(Request $request, Response $response): Response
+    {
+        $body  = (array) $request->getParsedBody();
+        $ra    = trim((string) ($body['RA'] ?? ''));
+        $offer = trim((string) ($body['OFERTA'] ?? ''));
+        $plano = trim((string) ($body['PLANOPAGAMENTO'] ?? $body['CODPLANO'] ?? ''));
+        $cupom = trim((string) ($body['CUPOM'] ?? ''));
+
+        if ($ra === '' || $offer === '' || $plano === '' || $cupom === '') {
+            return Json::error('Informe RA, OFERTA, PLANOPAGAMENTO e CUPOM para aplicar o cupom.', [], 422);
+        }
+
+        $dados = $this->bolsaService->aplicarPorRaOferta($ra, $offer, $plano, $cupom);
+
+        return Json::success(
+            $dados['ja_existia'] ? 'Cupom já estava aplicado ao contrato.' : 'Cupom aplicado com sucesso.',
+            $dados
+        );
+    }
 }

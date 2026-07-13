@@ -83,6 +83,8 @@ return function (App $app): void {
     $app->group('/financeiro', function (RouteCollectorProxy $fin) {
         // Baixa (quitação) de lançamento: processo FinLanBaixaProc.
         $fin->post('/baixas', [FinanceiroController::class, 'baixar']);
+        // Geração de lançamentos do contrato (autônoma): EduGerarLancFromContratoSliceableData.
+        $fin->post('/lancamentos', [FinanceiroController::class, 'gerarLancamentos']);
     });
 
     /* ---------- Oferta ---------- */
@@ -103,6 +105,8 @@ return function (App $app): void {
 
     /* ---------- Cupom ---------- */
 
+    // Aplicação (bolsa) do cupom ao contrato do aluno — autônoma.
+    $app->post('/cupons/aplicar', [CupomController::class, 'aplicar']);
     $app->get('/cupons/{codoferta}/{codplano}/{cupom}', [CupomController::class, 'buscar']);
 
     /* ---------- SSO (exceção HTML — ver SSOController) ---------- */

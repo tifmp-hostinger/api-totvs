@@ -146,6 +146,7 @@ const endpoints = [
   {g:"Contrato", method:"POST", path:"/contratos", desc:"GenerateReport 1664 → GetGeneratedReportSize → GetFileChunk. Retorna CONTEUDO (PDF).", hint:"CIDADE e BAIRRO são códigos; a API resolve via INT.EDUVEM.00010/00020.", body:{NOME:"Fulano de Tal",CPF:"12345678901",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NACIONALIDADE:"Brasileira",NASCIMENTO:"1990-01-15"}},
 
   {g:"Financeiro", method:"POST", path:"/financeiro/baixas", desc:"Baixa (quita) um lançamento financeiro no RM (processo FinLanBaixaProc). GRAVA movimento real na conta/caixa. Contrapartida da geração de lançamentos.", hint:"VALORBAIXA aceita 465,00 ou 465.00. TIPOFORMAPAGTO: Dinheiro|Cheque|Cartao|CartaoCredito|CartaoDebito|Transferencia|DebitoConta|Boleto|Pix|Outros. CODCXA pode vir do env FIN_CODCXA_PADRAO.", body:{IDLAN:"123456",VALORBAIXA:"465.00",CODCXA:"1",TIPOFORMAPAGTO:"Dinheiro",CODCOLIGADA:1,CODFILIAL:1,DATABAIXA:"2026-07-13",HISTORICOBAIXA:"Baixa via API",TIPOBAIXA:"Completa"}},
+  {g:"Financeiro", method:"POST", path:"/financeiro/lancamentos", desc:"Gera os lançamentos financeiros do contrato do aluno (EduGerarLancFromContratoSliceableData). Autônomo (não roda a inscrição) e idempotente. Resolve oferta (00006) + contrato (00014) pelo RA+OFERTA.", hint:"O aluno precisa já ter contrato no período letivo desta oferta. Se já existirem lançamentos, não regera.", body:{RA:"000123",OFERTA:"OF2026-001"}},
 
   {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}", desc:"Dados da oferta (INT.EDUVEM.00006).", params:{codoferta:"OF2026-001"}},
   {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}/planos-pagamento", desc:"Planos de pagamento (INT.EDUVEM.00013).", params:{codoferta:"OF2026-001"}},
@@ -156,6 +157,7 @@ const endpoints = [
   {g:"Endereço", method:"GET", path:"/enderecos/cep/{cep}", desc:"Endereço por CEP (INT.EDUVEM.00005).", params:{cep:"01310100"}},
 
   {g:"Cupom", method:"GET", path:"/cupons/{codoferta}/{codplano}/{cupom}", desc:"Valida cupom (INT.EDUVEM.00016).", params:{codoferta:"OF2026-001",codplano:"PP01",cupom:"PROMO10"}},
+  {g:"Cupom", method:"POST", path:"/cupons/aplicar", desc:"Aplica o cupom (bolsa) ao contrato do aluno (EduBolsaAlunoData). Autônomo (não roda a inscrição) e idempotente. Valida o cupom e resolve oferta+contrato pelo RA.", hint:"O aluno precisa já ter contrato no período letivo desta oferta.", body:{RA:"000123",OFERTA:"OF2026-001",PLANOPAGAMENTO:"PP01",CUPOM:"PROMO10"}},
 
   {g:"SSO (exceção HTML)", method:"GET", path:"/sso/{token}", desc:"Único endpoint HTML — auto-login no Portal. Isento de API key. O token vem em dados.nextUrl de POST /inscricoes.", params:{token:"TOKEN_GERADO_PELA_INSCRICAO"}}
 ];

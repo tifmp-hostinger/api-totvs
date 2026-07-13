@@ -6,6 +6,7 @@ namespace FMP\RMApi\Services;
 
 use FMP\RMApi\Clients\RMSoapClient;
 use FMP\RMApi\Exceptions\RMException;
+use FMP\RMApi\Exceptions\ValidationException;
 
 /**
  * Cupons de desconto → bolsas do aluno (EduBolsaAlunoData).
@@ -27,6 +28,56 @@ class BolsaService
     public function validarCupom(string $codOferta, string $codPlanoPgto, string $cupom): ?array
     {
         return $this->consulta->cupom($codOferta, $codPlanoPgto, $cupom);
+    }
+
+    /**
+     * Aplica um cupom a partir de RA + OFERTA + PLANO (rota autônoma, fora do
+     * fluxo de inscrição). Valida o cupom (INT.EDUVEM.00016), resolve a oferta
+     * (00006) e o contrato do aluno no PL (00014) e delega para aplicar().
+     *
+     * @return array{aplicada:bool, ja_existia:bool, CODBOLSA:mixed, CODCONTRATO:string, CUPOM:string}
+     * @throws ValidationException oferta/cupom inválidos ou aluno sem contrato
+     * @throws RMException          falha do RM ao gravar a bolsa
+     */
+    public function aplicarPorRaOferta(string $ra, string $offer, string $codPlanoPgto, string $cupom): array
+    {
+        $oferta = $this->consulta->oferta($offer);
+        if ($oferta === null) {
+            throw new ValidationException(
+                "Oferta '{$offer}' não encontrada.",
+                'Aplicação de cupom: oferta inexistente',
+                ['OFERTA' => $offer]
+            );
+        }
+
+        $cupomDetails = $this->validarCupom($offer, $codPlanoPgto, $cupom);
+        if ($cupomDetails === null) {
+            throw new ValidationException(
+                "Cupom '{$cupom}' inválido para esta oferta e plano de pagamento.",
+                'Aplicação de cupom: cupom inválido',
+                ['OFERTA' => $offer, 'PLANOPAGAMENTO' => $codPlanoPgto, 'CUPOM' => $cupom]
+            );
+        }
+
+        $pl = $this->consulta->matriculaPeriodoLetivo($offer, $ra);
+        if ($pl === null || empty($pl['CODCONTRATO'])) {
+            throw new ValidationException(
+                "O aluno (RA {$ra}) não possui contrato no período letivo desta oferta. "
+                    . 'Faça a matrícula no período letivo (que gera o contrato) antes de aplicar o cupom.',
+                'Aplicação de cupom: aluno sem contrato',
+                ['RA' => $ra, 'OFERTA' => $offer]
+            );
+        }
+
+        $codContrato = (string) $pl['CODCONTRATO'];
+
+        $res = $this->aplicar($cupomDetails, $ra, $codContrato, $oferta);
+
+        return $res + [
+            'CODBOLSA'    => $cupomDetails['CODBOLSA'] ?? null,
+            'CODCONTRATO' => $codContrato,
+            'CUPOM'       => $cupom,
+        ];
     }
 
     /**
