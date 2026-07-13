@@ -77,7 +77,7 @@
 <div class="controls">
   <div class="field">
     <label for="base">URL base do servi&ccedil;o</label>
-    <input id="base" value="https://fmp-api-totvs.3wmyqq.easypanel.host" spellcheck="false" />
+    <input id="base" value="https://api-totvs.fmp.edu.br" spellcheck="false" />
   </div>
   <div class="field">
     <label for="apikey">API key (header X-API-Key)</label>
@@ -144,6 +144,8 @@ const endpoints = [
   {g:"Matrícula (etapas)", method:"POST", path:"/matriculas/disciplinas", desc:"Processo 'Matricular aluno nas disciplinas' por turma da oferta.", body:{RA:"000123",OFERTA:"OF2026-001"}},
 
   {g:"Contrato", method:"POST", path:"/contratos", desc:"GenerateReport 1664 → GetGeneratedReportSize → GetFileChunk. Retorna CONTEUDO (PDF).", hint:"CIDADE e BAIRRO são códigos; a API resolve via INT.EDUVEM.00010/00020.", body:{NOME:"Fulano de Tal",CPF:"12345678901",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NACIONALIDADE:"Brasileira",NASCIMENTO:"1990-01-15"}},
+
+  {g:"Financeiro", method:"POST", path:"/financeiro/baixas", desc:"Baixa (quita) um lançamento financeiro no RM (processo FinLanBaixaProc). GRAVA movimento real na conta/caixa. Contrapartida da geração de lançamentos.", hint:"VALORBAIXA aceita 465,00 ou 465.00. TIPOFORMAPAGTO: Dinheiro|Cheque|Cartao|CartaoCredito|CartaoDebito|Transferencia|DebitoConta|Boleto|Pix|Outros. CODCXA pode vir do env FIN_CODCXA_PADRAO.", body:{IDLAN:"123456",VALORBAIXA:"465.00",CODCXA:"1",TIPOFORMAPAGTO:"Dinheiro",CODCOLIGADA:1,CODFILIAL:1,DATABAIXA:"2026-07-13",HISTORICOBAIXA:"Baixa via API",TIPOBAIXA:"Completa"}},
 
   {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}", desc:"Dados da oferta (INT.EDUVEM.00006).", params:{codoferta:"OF2026-001"}},
   {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}/planos-pagamento", desc:"Planos de pagamento (INT.EDUVEM.00013).", params:{codoferta:"OF2026-001"}},
