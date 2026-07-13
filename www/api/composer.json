@@ -19,5 +19,8 @@
         "psr-4": {
             "FMP\\RMApi\\": "src/"
         }
+    },
+    "scripts": {
+        "test": "php tests/run.php"
     }
 }
