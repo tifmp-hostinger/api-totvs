@@ -22,6 +22,9 @@ class ProcessXml
     /** Template canônico do FinLanBaixaParamsProc (GetSchema do próprio RM). */
     private const TEMPLATE_BAIXA = __DIR__ . '/../../resources/fin/FinLanBaixaParamsProc.real.template.xml';
 
+    /** Template do FinTBCBaixaParamsProc (GetSchema) — baixa via WS suportada pela TOTVS. */
+    private const TEMPLATE_BAIXA_TBC = __DIR__ . '/../../resources/fin/FinTBCBaixaParamsProc.template.xml';
+
     /**
      * Remove a indentação comum do heredoc e qualquer espaço em branco
      * antes da declaração <?xml ...?> — o desserializador .NET do RM exige
@@ -1492,6 +1495,64 @@ XML;
 
         if (str_contains($xml, '{{')) {
             throw new \RuntimeException('Template da baixa com placeholder não resolvido.');
+        }
+
+        return $xml;
+    }
+
+    /**
+     * Processo "Baixa via TBC" (ProcessServerName FinTBCBaixaDataProcess) —
+     * o caminho OFICIAL da TOTVS para baixa via WebService (TDN "Baixa Via
+     * Web Service"). Ao contrário do FinLanBaixaData (processo da tela, que
+     * espera as coleções pré-carregadas em memória pela interface e por isso
+     * responde "Os lançamentos devem ser informados" via WS), o contrato TBC é
+     * pequeno e auto-suficiente: identidade do lançamento em
+     * Lancamentos>FinTBCBaixaLancamento (CodColigada, IdLan) + Pagamentos
+     * (caixa, forma de pagamento, valor). O RM carrega o resto da base.
+     *
+     * Template: resources/fin/FinTBCBaixaParamsProc.template.xml (GetSchema da
+     * própria instância), com Cartao/Cheques/Partidas de exemplo esvaziados e
+     * contabilização por EventoContabil (o RM calcula).
+     *
+     * Pré-requisito da TOTVS: base no "Novo Modelo de Baixa".
+     *
+     * @param string $valorBaixa     já com ponto decimal ("2000.00")
+     * @param string $dataBaixa      ISO "Y-m-d"
+     * @param string|int $idFormaPagto id da Forma de Pagamento cadastrada no RM
+     *                               (FFORMAPAGTO; 1 = Dinheiro na base FMP)
+     */
+    public static function baixaLancamentoTbc(
+        string|int $codColigada,
+        string|int $codFilial,
+        string|int $idLan,
+        string $valorBaixa,
+        string|int $codCxa,
+        string $dataBaixa,
+        string $historico,
+        string|int $idFormaPagto = 1,
+        string|int $chapaFuncionario = '-1'
+    ): string {
+        $template = @file_get_contents(self::TEMPLATE_BAIXA_TBC);
+        if ($template === false || trim($template) === '') {
+            throw new \RuntimeException('Template da baixa TBC não encontrado: ' . self::TEMPLATE_BAIXA_TBC);
+        }
+
+        $esc = static fn (string $v): string => htmlspecialchars($v, ENT_XML1, 'UTF-8');
+
+        $xml = strtr($template, [
+            '{{CODCOLIGADA}}'  => (string) $codColigada,
+            '{{CODFILIAL}}'    => (string) $codFilial,
+            '{{CHAPA}}'        => $esc((string) $chapaFuncionario),
+            '{{IDLAN}}'        => (string) $idLan,
+            '{{DATA}}'         => $dataBaixa . 'T00:00:00-03:00',
+            '{{HISTBAIXA}}'    => $esc($historico),
+            '{{CODCXA}}'       => $esc((string) $codCxa),
+            '{{IDFORMAPAGTO}}' => (string) $idFormaPagto,
+            '{{VALOR}}'        => number_format((float) $valorBaixa, 2, '.', ''),
+        ]);
+
+        if (str_contains($xml, '{{')) {
+            throw new \RuntimeException('Template da baixa TBC com placeholder não resolvido.');
         }
 
         return $xml;

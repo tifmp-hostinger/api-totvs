@@ -126,24 +126,41 @@ class BaixaService
         $dataBaixa   = trim((string) ($in['DATABAIXA'] ?? '')) ?: date('Y-m-d');
         $historico   = (string) ($in['HISTORICOBAIXA'] ?? '');
         $codUsuario  = (string) ($this->rmConfig['usuario_servico'] ?? 'integra.eduvem');
-
-        $xml = ProcessXml::baixaLancamento(
-            codColigada: $codColigada,
-            codFilial: $codFilial,
-            idLan: (string) $idLan,
-            valorBaixa: $valorBaixa,
-            codCxa: $codCxa,
-            tipoFormaPagto: $formaPagto,
-            dataBaixa: $dataBaixa,
-            historico: $historico,
-            codUsuario: $codUsuario,
-            tipoBaixa: $tipoBaixa
-        );
+        // Forma de pagamento CADASTRADA no RM (FFORMAPAGTO). No contrato TBC o
+        // meio de pagamento é este id (1 = Dinheiro na base FMP); TIPOFORMAPAGTO
+        // permanece como validação/documentação da intenção.
+        $idFormaPagto = trim((string) ($in['IDFORMAPAGTO'] ?? '1'));
 
         // Nome do process server e operação SOAP configuráveis (o RM pode expor
         // a baixa sob outro nome/operação conforme a versão — ver config/rm.php).
         $processo = (string) ($this->rmConfig['baixa']['processo'] ?? self::PROCESSO);
         $operacao = (string) ($this->rmConfig['baixa']['operacao'] ?? 'ExecuteWithParams');
+
+        // Builder conforme o processo: TBC (contrato WS oficial da TOTVS) ou o
+        // replay do processo da tela (legado/fallback).
+        $xml = $processo === 'FinTBCBaixaDataProcess'
+            ? ProcessXml::baixaLancamentoTbc(
+                codColigada: $codColigada,
+                codFilial: $codFilial,
+                idLan: (string) $idLan,
+                valorBaixa: $valorBaixa,
+                codCxa: $codCxa,
+                dataBaixa: $dataBaixa,
+                historico: $historico,
+                idFormaPagto: $idFormaPagto
+            )
+            : ProcessXml::baixaLancamento(
+                codColigada: $codColigada,
+                codFilial: $codFilial,
+                idLan: (string) $idLan,
+                valorBaixa: $valorBaixa,
+                codCxa: $codCxa,
+                tipoFormaPagto: $formaPagto,
+                dataBaixa: $dataBaixa,
+                historico: $historico,
+                codUsuario: $codUsuario,
+                tipoBaixa: $tipoBaixa
+            );
 
         // Modo diagnóstico: devolve o XML gerado SEM enviar ao RM. Serve para
         // auditar o payload da versão implantada (tamanho/md5 identificam a

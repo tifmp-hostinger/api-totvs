@@ -47,16 +47,14 @@ return [
     // — MatriculaService/LancamentoService — e força separador decimal '.').
     // NUNCA teste nomes em produção: nome errado é inofensivo, mas o nome CERTO
     // EXECUTA uma baixa real. Confirme antes; teste em homologação/sandbox.
+    // FinTBCBaixaDataProcess = caminho OFICIAL da TOTVS para baixa via WebService
+    // (TDN "Baixa Via Web Service"): contrato pequeno (FinTBCBaixaParamsProc), o RM
+    // carrega o lançamento da base pelo IdLan. Pré-requisito: Novo Modelo de Baixa.
+    // FinLanBaixaData é o processo da TELA — via WS as coleções chegam vazias e ele
+    // responde "Os lançamentos devem ser informados" (não use; fica como fallback
+    // configurável para o builder de replay).
     'baixa' => [
-        'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinLanBaixaData'),
-        // ExecuteWithParams desserializa o strXmlParams COMPLETO no tipo do processo
-        // — é a operação própria para replay do XML "Salvar parâmetros como XML" da
-        // tela (nosso caso: o payload da baixa é o export real, e as COLEÇÕES
-        // Lancamentos/ItensBaixa precisam chegar populadas). Já o ExecuteWithXMLParams
-        // usa um mapeador simplificado que aplica só campos simples sobre um objeto
-        // zerado: serve para Matrícula/Lançamento (que dependem só de PrimaryKeyList
-        // + escalares), mas deixa as coleções da baixa vazias -> o processo responde
-        // "Os lançamentos devem ser informados" mesmo com o XML perfeito.
+        'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinTBCBaixaDataProcess'),
         'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithParams'),
     ],
 
