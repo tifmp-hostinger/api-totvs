@@ -48,7 +48,8 @@ class BaixaService
      *  - CODFILIAL        (opc., default 1)
      *  - DATABAIXA        (opc., default hoje, formato Y-m-d)
      *  - HISTORICOBAIXA   (opc.)
-     *  - TIPOBAIXA        (opc., "Completa" | "Parcial"; default Completa)
+     *  - TIPOBAIXA        (opc., "Simplificada" | "Completa" | "Parcial"; default Simplificada)
+     *  - DRY_RUN          (opc., true = devolve o XML gerado sem enviar ao RM)
      *
      * @return array<string,mixed>
      * @throws ValidationException dados de entrada inválidos
@@ -143,6 +144,21 @@ class BaixaService
         // a baixa sob outro nome/operação conforme a versão — ver config/rm.php).
         $processo = (string) ($this->rmConfig['baixa']['processo'] ?? self::PROCESSO);
         $operacao = (string) ($this->rmConfig['baixa']['operacao'] ?? 'ExecuteWithParams');
+
+        // Modo diagnóstico: devolve o XML gerado SEM enviar ao RM. Serve para
+        // auditar o payload da versão implantada (tamanho/md5 identificam a
+        // versão do builder) e conferir os valores preenchidos.
+        if (filter_var($in['DRY_RUN'] ?? false, FILTER_VALIDATE_BOOL)) {
+            return [
+                'dry_run'   => true,
+                'PROCESSO'  => $processo,
+                'OPERACAO'  => $operacao,
+                'ws_url'    => (string) ($this->rmConfig['ws_url'] ?? ''),
+                'xml_bytes' => strlen($xml),
+                'xml_md5'   => md5($xml),
+                'xml'       => $xml,
+            ];
+        }
 
         $retorno = $operacao === 'ExecuteWithXMLParams'
             ? $this->rm->executeWithXmlParams($processo, $xml)
