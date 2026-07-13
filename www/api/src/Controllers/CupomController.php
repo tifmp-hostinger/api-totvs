@@ -39,16 +39,17 @@ final class CupomController
     public function aplicar(Request $request, Response $response): Response
     {
         $body  = (array) $request->getParsedBody();
-        $ra    = trim((string) ($body['RA'] ?? ''));
-        $offer = trim((string) ($body['OFERTA'] ?? ''));
-        $plano = trim((string) ($body['PLANOPAGAMENTO'] ?? $body['CODPLANO'] ?? ''));
-        $cupom = trim((string) ($body['CUPOM'] ?? ''));
+        $ra          = trim((string) ($body['RA'] ?? ''));
+        $offer       = trim((string) ($body['OFERTA'] ?? ''));
+        $plano       = trim((string) ($body['PLANOPAGAMENTO'] ?? $body['CODPLANO'] ?? ''));
+        $cupom       = trim((string) ($body['CUPOM'] ?? ''));
+        $codContrato = trim((string) ($body['CODCONTRATO'] ?? ''));
 
         if ($ra === '' || $offer === '' || $plano === '' || $cupom === '') {
             return Json::error('Informe RA, OFERTA, PLANOPAGAMENTO e CUPOM para aplicar o cupom.', [], 422);
         }
 
-        $dados = $this->bolsaService->aplicarPorRaOferta($ra, $offer, $plano, $cupom);
+        $dados = $this->bolsaService->aplicarPorRaOferta($ra, $offer, $plano, $cupom, $codContrato);
 
         return Json::success(
             $dados['ja_existia'] ? 'Cupom já estava aplicado ao contrato.' : 'Cupom aplicado com sucesso.',

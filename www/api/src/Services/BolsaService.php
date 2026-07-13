@@ -32,15 +32,21 @@ class BolsaService
 
     /**
      * Aplica um cupom a partir de RA + OFERTA + PLANO (rota autônoma, fora do
-     * fluxo de inscrição). Valida o cupom (INT.EDUVEM.00016), resolve a oferta
-     * (00006) e o contrato do aluno no PL (00014) e delega para aplicar().
+     * fluxo de inscrição). Valida o cupom (INT.EDUVEM.00016) e resolve a oferta
+     * (00006). O contrato pode vir pronto em $codContrato (do corpo) ou, se
+     * vazio, é resolvido pela matrícula no PL (INT.EDUVEM.00014).
      *
      * @return array{aplicada:bool, ja_existia:bool, CODBOLSA:mixed, CODCONTRATO:string, CUPOM:string}
      * @throws ValidationException oferta/cupom inválidos ou aluno sem contrato
      * @throws RMException          falha do RM ao gravar a bolsa
      */
-    public function aplicarPorRaOferta(string $ra, string $offer, string $codPlanoPgto, string $cupom): array
-    {
+    public function aplicarPorRaOferta(
+        string $ra,
+        string $offer,
+        string $codPlanoPgto,
+        string $cupom,
+        string $codContrato = ''
+    ): array {
         $oferta = $this->consulta->oferta($offer);
         if ($oferta === null) {
             throw new ValidationException(
@@ -59,17 +65,19 @@ class BolsaService
             );
         }
 
-        $pl = $this->consulta->matriculaPeriodoLetivo($offer, $ra);
-        if ($pl === null || empty($pl['CODCONTRATO'])) {
-            throw new ValidationException(
-                "O aluno (RA {$ra}) não possui contrato no período letivo desta oferta. "
-                    . 'Faça a matrícula no período letivo (que gera o contrato) antes de aplicar o cupom.',
-                'Aplicação de cupom: aluno sem contrato',
-                ['RA' => $ra, 'OFERTA' => $offer]
-            );
+        $codContrato = trim($codContrato);
+        if ($codContrato === '') {
+            $pl = $this->consulta->matriculaPeriodoLetivo($offer, $ra);
+            if ($pl === null || empty($pl['CODCONTRATO'])) {
+                throw new ValidationException(
+                    "Não foi possível localizar o contrato do aluno (RA {$ra}) nesta oferta. "
+                        . 'Envie CODCONTRATO no corpo ou faça a matrícula no período letivo antes.',
+                    'Aplicação de cupom: contrato não informado/localizado',
+                    ['RA' => $ra, 'OFERTA' => $offer]
+                );
+            }
+            $codContrato = (string) $pl['CODCONTRATO'];
         }
-
-        $codContrato = (string) $pl['CODCONTRATO'];
 
         $res = $this->aplicar($cupomDetails, $ra, $codContrato, $oferta);
 

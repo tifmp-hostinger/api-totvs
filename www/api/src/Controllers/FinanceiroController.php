@@ -45,14 +45,15 @@ final class FinanceiroController
     public function gerarLancamentos(Request $request, Response $response): Response
     {
         $body = (array) $request->getParsedBody();
-        $ra    = trim((string) ($body['RA'] ?? ''));
-        $offer = trim((string) ($body['OFERTA'] ?? ''));
+        $ra          = trim((string) ($body['RA'] ?? ''));
+        $offer       = trim((string) ($body['OFERTA'] ?? ''));
+        $codContrato = trim((string) ($body['CODCONTRATO'] ?? ''));
 
         if ($ra === '' || $offer === '') {
             return Json::error('Informe RA e OFERTA para gerar os lançamentos.', [], 422);
         }
 
-        $dados = $this->lancamentoService->gerarPorRaOferta($ra, $offer);
+        $dados = $this->lancamentoService->gerarPorRaOferta($ra, $offer, $codContrato);
 
         return Json::success(
             $dados['ja_existiam'] ? 'Lançamentos já existiam para o contrato.' : 'Lançamentos gerados com sucesso.',

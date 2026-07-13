@@ -231,9 +231,9 @@ Retorno (200): `{ IDLAN, CODCOLIGADA, VALORBAIXADO, DATABAIXA, CODCXA, FORMAPAGT
 
 `POST /financeiro/lancamentos` — **gera os lançamentos financeiros do contrato do aluno** (processo `EduGerarLancFromContratoSliceableData`). É a mesma etapa que a inscrição executa no final, agora **exposta como rota autônoma** (não roda o resto do fluxo). **Idempotente**: se os lançamentos já existem, não regera.
 
-Body: `{ "RA": "000123", "OFERTA": "OF2026-001" }`.
+Body: `{ "RA": "000123", "OFERTA": "OF2026-001", "CODCONTRATO": "..." }` — **`CODCONTRATO` é opcional**: se enviado, é usado direto; se vazio, a API resolve pela matrícula no período letivo (`INT.EDUVEM.00014`).
 
-Resolve internamente a oferta (`INT.EDUVEM.00006`) e o contrato do aluno no período letivo (`INT.EDUVEM.00014`); dispara o processo e confirma a criação com retentativas (o job roda assíncrono). Pré-requisito: o aluno já ter contrato no PL daquela oferta (senão **422**). Retorno (200): `{ gerados, ja_existiam, CODCONTRATO, RA, OFERTA }`.
+Resolve internamente a oferta (`INT.EDUVEM.00006`) para obter coligada/filial/período-letivo; dispara o processo e confirma a criação com retentativas (o job roda assíncrono). Se `CODCONTRATO` não for enviado e não houver contrato localizável → **422**. Retorno (200): `{ gerados, ja_existiam, CODCONTRATO, RA, OFERTA }`.
 
 ### Consultas
 
@@ -251,9 +251,9 @@ Resolve internamente a oferta (`INT.EDUVEM.00006`) e o contrato do aluno no per�
 
 `POST /cupons/aplicar` — **aplica o cupom (bolsa) ao contrato do aluno** (`EduBolsaAlunoData`). Mesma etapa da inscrição, agora **autônoma** e **idempotente** (se já aplicado, não duplica).
 
-Body: `{ "RA": "000123", "OFERTA": "OF2026-001", "PLANOPAGAMENTO": "PP01", "CUPOM": "PROMO10" }`.
+Body: `{ "RA": "000123", "OFERTA": "OF2026-001", "PLANOPAGAMENTO": "PP01", "CUPOM": "PROMO10", "CODCONTRATO": "..." }` — **`CODCONTRATO` é opcional** (se vazio, resolve pela matrícula no PL, `00014`).
 
-Valida o cupom (`INT.EDUVEM.00016`) e resolve oferta (`00006`) + contrato no PL (`00014`) pelo RA. Cupom inválido, oferta inexistente ou aluno sem contrato → **422**. Retorno (200): `{ aplicada, ja_existia, CODBOLSA, CODCONTRATO, CUPOM }`.
+Valida o cupom (`INT.EDUVEM.00016`) e resolve a oferta (`00006`) pelo `OFERTA`. Cupom inválido, oferta inexistente ou contrato não informado/não localizado → **422**. Retorno (200): `{ aplicada, ja_existia, CODBOLSA, CODCONTRATO, CUPOM }`.
 
 ### SSO (exceção HTML)
 

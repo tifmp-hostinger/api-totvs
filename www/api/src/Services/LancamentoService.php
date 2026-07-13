@@ -33,14 +33,15 @@ class LancamentoService
      */
     /**
      * Geração de lançamentos a partir de RA + OFERTA (rota autônoma, fora do
-     * fluxo de inscrição). Resolve a oferta (INT.EDUVEM.00006) e o contrato do
-     * aluno no período letivo (INT.EDUVEM.00014) e delega para gerar().
+     * fluxo de inscrição). Resolve a oferta (INT.EDUVEM.00006) e delega para
+     * gerar(). O contrato pode vir pronto em $codContrato (do corpo) ou, se
+     * vazio, é resolvido pela matrícula no período letivo (INT.EDUVEM.00014).
      *
      * @return array{gerados:bool, ja_existiam:bool, CODCONTRATO:string, RA:string, OFERTA:string}
      * @throws ValidationException oferta inexistente ou aluno sem contrato
      * @throws RMException          falha do RM ao gerar
      */
-    public function gerarPorRaOferta(string $ra, string $offer): array
+    public function gerarPorRaOferta(string $ra, string $offer, string $codContrato = ''): array
     {
         $oferta = $this->consulta->oferta($offer);
         if ($oferta === null) {
@@ -51,17 +52,19 @@ class LancamentoService
             );
         }
 
-        $pl = $this->consulta->matriculaPeriodoLetivo($offer, $ra);
-        if ($pl === null || empty($pl['CODCONTRATO'])) {
-            throw new ValidationException(
-                "O aluno (RA {$ra}) não possui contrato no período letivo desta oferta. "
-                    . 'Faça a matrícula no período letivo (que gera o contrato) antes de gerar os lançamentos.',
-                'Geração de lançamentos: aluno sem contrato',
-                ['RA' => $ra, 'OFERTA' => $offer]
-            );
+        $codContrato = trim($codContrato);
+        if ($codContrato === '') {
+            $pl = $this->consulta->matriculaPeriodoLetivo($offer, $ra);
+            if ($pl === null || empty($pl['CODCONTRATO'])) {
+                throw new ValidationException(
+                    "Não foi possível localizar o contrato do aluno (RA {$ra}) nesta oferta. "
+                        . 'Envie CODCONTRATO no corpo ou faça a matrícula no período letivo antes.',
+                    'Geração de lançamentos: contrato não informado/localizado',
+                    ['RA' => $ra, 'OFERTA' => $offer]
+                );
+            }
+            $codContrato = (string) $pl['CODCONTRATO'];
         }
-
-        $codContrato = (string) $pl['CODCONTRATO'];
 
         $res = $this->gerar(
             $oferta['CODCOLIGADA'],
