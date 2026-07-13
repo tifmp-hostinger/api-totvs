@@ -111,10 +111,10 @@ class BaixaService
             );
         }
 
-        $tipoBaixa = (string) ($in['TIPOBAIXA'] ?? 'Completa');
-        if (!in_array($tipoBaixa, ['Completa', 'Parcial'], true)) {
+        $tipoBaixa = (string) ($in['TIPOBAIXA'] ?? 'Simplificada');
+        if (!in_array($tipoBaixa, ['Simplificada', 'Completa', 'Parcial'], true)) {
             throw new ValidationException(
-                'TIPOBAIXA deve ser "Completa" ou "Parcial".',
+                'TIPOBAIXA deve ser "Simplificada", "Completa" ou "Parcial".',
                 'Baixa: tipo de baixa inválido',
                 $in
             );

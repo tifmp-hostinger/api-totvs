@@ -219,11 +219,11 @@ Body:
   "CODFILIAL": 1,                 // opcional (default 1)
   "DATABAIXA": "2026-07-13",      // opcional (default hoje, Y-m-d)
   "HISTORICOBAIXA": "Baixa via API", // opcional
-  "TIPOBAIXA": "Completa"         // opcional — "Completa" (default) ou "Parcial"
+  "TIPOBAIXA": "Simplificada"     // opcional — "Simplificada" (default) | "Completa" | "Parcial"
 }
 ```
 
-Valores fixos herdados da captura do RM (não parametrizados): `CodMoeda=R$`, `CotacaoBaixa=1`, item `TipoBaixa=BaixaManual`, `OrigemValor*=BaseDados`, `TipoTransacao/PagRec=WCF`, `CompensarExtratoBaixa=Parametrizacao`, contexto `CODSISTEMA=F`. O `CODUSUARIO` vem do usuário de serviço (config). O XML do processo é montado em `Support/ProcessXml::baixaLancamento()`, fiel ao payload capturado (`FinLanBaixaParamsProc`).
+O XML do processo (`Support/ProcessXml::baixaLancamento()`) reproduz o **envelope de processo real do RM** (capturado via "Salvar parâmetros como XML"), com valores de sessão neutralizados. O RM identifica **qual lançamento** baixar pelo `<PrimaryKeyList>` (`CODCOLIGADA`, `IDLAN`) — daí a importância do envelope; sem ele o processo devolve *"Os lançamentos devem ser informados"*. Enviamos só os campos de **entrada** (PrimaryKeyList + `PagtoPorLan` + `FormasPagamento` + parâmetros da baixa); os blocos pesados (`ItensBaixa.contabil`, rateios, `Lancamentos`/`FinLancamentoBaixaResult`) são **computados pelo RM**. Fixos: `CodMoeda=R$`, `TipoTransacao=WCF`, `CompensarExtratoBaixa=Parametrizacao`, `ServerName=FinLanBaixaData`, `ServiceInterface=RM.Fin.Lan.IFinLanBaixaData`.
 
 **Nome do processo / operação configuráveis (env):** o `ProcessServerName` e a operação SOAP são ajustáveis sem redeploy — o RM pode expor a baixa sob outro nome/operação conforme a versão. Se o RM devolver **`Classe não encontrada: <nome>`**, o nome está errado para a sua instância: ajuste `FIN_BAIXA_PROCESSO` (e, se preciso, `FIN_BAIXA_OPERACAO=ExecuteWithXMLParams`). Retornos com assinatura de erro do RM (`classe não encontrada`, `exception`, stack trace .NET etc.) agora resultam em **502**, não em falso `sucesso`.
 
