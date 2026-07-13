@@ -629,6 +629,64 @@ curl -X GET "$BASE_URL/cupons/OF2026-001/PP01/PROMO10" \
 ```
 
 
+### `POST /cupons/aplicar`
+
+Aplica um cupom (bolsa) ao contrato do aluno. Autônomo e idempotente. `CODCONTRATO` é opcional.
+
+```bash
+curl -X POST "$BASE_URL/cupons/aplicar" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "RA": "24001268",
+    "OFERTA": "OF2026-001",
+    "PLANOPAGAMENTO": "PP01",
+    "CUPOM": "PROMO10",
+    "CODCONTRATO": ""
+  }'
+```
+
+
+## Financeiro
+
+### `POST /financeiro/baixas`
+
+Baixa (quita) um lançamento financeiro — **grava movimento real** na conta/caixa. Processo `FinTBCBaixaDataProcess` (baixa via WS oficial da TOTVS). `IDFORMAPAGTO` = id da Forma de Pagamento no RM (default 1 = Dinheiro). `"DRY_RUN": true` devolve o XML gerado **sem enviar ao RM** (diagnóstico).
+
+```bash
+curl -X POST "$BASE_URL/financeiro/baixas" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "IDLAN": "1082893",
+    "VALORBAIXA": "465,00",
+    "CODCXA": "50380",
+    "TIPOFORMAPAGTO": "Dinheiro",
+    "HISTORICOBAIXA": "Baixa via API",
+    "DRY_RUN": false
+  }'
+```
+
+
+### `POST /financeiro/lancamentos`
+
+Gera os lançamentos financeiros do contrato do aluno (processo `EduGerarLancFromContratoSliceableData`). Autônomo e idempotente. `CODCONTRATO` é opcional (sem ele, resolve pela matrícula no período letivo).
+
+```bash
+curl -X POST "$BASE_URL/financeiro/lancamentos" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "RA": "24001268",
+    "OFERTA": "OF2026-001",
+    "CODCONTRATO": ""
+  }'
+```
+
+
 ## SSO
 
 ### `GET /sso/TOKEN_GERADO_PELA_INSCRICAO`

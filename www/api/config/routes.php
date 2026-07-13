@@ -81,7 +81,8 @@ return function (App $app): void {
     /* ---------- Financeiro (processos wsProcess) ---------- */
 
     $app->group('/financeiro', function (RouteCollectorProxy $fin) {
-        // Baixa (quitação) de lançamento: processo FinLanBaixaProc.
+        // Baixa (quitação) de lançamento: processo FinTBCBaixaDataProcess
+        // (baixa via WS oficial da TOTVS; configurável por FIN_BAIXA_PROCESSO).
         $fin->post('/baixas', [FinanceiroController::class, 'baixar']);
         // Geração de lançamentos do contrato (autônoma): EduGerarLancFromContratoSliceableData.
         $fin->post('/lancamentos', [FinanceiroController::class, 'gerarLancamentos']);

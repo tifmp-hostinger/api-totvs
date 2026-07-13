@@ -233,19 +233,19 @@ Body:
 
 | Env | Default | Uso |
 |---|---|---|
-| `FIN_BAIXA_PROCESSO` | `FinLanBaixaData` | `ProcessServerName` do processo de baixa no RM (a confirmar na instância) |
-| `FIN_BAIXA_OPERACAO` | `ExecuteWithParams` | operação SOAP (`ExecuteWithParams` ou `ExecuteWithXMLParams`) |
+| `FIN_BAIXA_PROCESSO` | `FinTBCBaixaDataProcess` | `ProcessServerName` do processo de baixa (**validado em homolog**) |
+| `FIN_BAIXA_OPERACAO` | `ExecuteWithXMLParams` | operação SOAP (`ExecuteWithParams` ou `ExecuteWithXMLParams`) |
 | `FIN_CODCXA_PADRAO` | — | conta/caixa default quando `CODCXA` não vem no corpo |
 
-**Descobrindo o `ProcessServerName` correto.** O primeiro nome tentado (`FinLanBaixaProc`) **não existe** na instância (o RM devolveu `Classe não encontrada`); o default passou para **`FinLanBaixaData`** (indicado pela equipe do RM, **a confirmar**). O nome varia por versão/patch — a fonte autoritativa é o **seu** RM. Descubra por inspeção **read-only** (sem executar baixa): (a) **Monitor de Jobs** de uma baixa já feita → coluna *Classe de Processo*; ou (b) tela **"Baixar"** → *Salvar parâmetros como XML* e **cancele** antes de confirmar (isso revela o `ProcessServerName` **e** o elemento-raiz correto do XML). Candidatos levantados (convenção local + pesquisa, **não confirmados** aqui):
+O **builder de XML acompanha o processo** escolhido (`match` em `BaixaService::baixar()`):
 
-| Candidato | Reaproveita o XML atual (`<FinLanBaixaParamsProc>`)? | Observação |
+| `FIN_BAIXA_PROCESSO` | Builder | Status |
 |---|---|---|
-| `FinLanBaixaProcData` | **Sim** (só troca `FIN_BAIXA_PROCESSO`) | melhor encaixe da convenção local (`Edu…ProcData`) |
-| `FinLanBaixaTBCData` | Sim | pode ser o DataServer, não o process server |
-| `FinTBCBaixaDataProcess` | **Não** — exige raiz `<FinTBCBaixaParamsProc>` | precisa reescrever `ProcessXml::baixaLancamento` |
+| `FinTBCBaixaDataProcess` (default) | `ProcessXml::baixaLancamentoTbc()` | ✅ **validado em homolog (13/07/2026)** |
+| `FinLanBaixaTBCData` | `ProcessXml::baixaLancamentoTbcLan()` | ⚠️ **nunca validado contra o RM real** — implementado como alternativa durante a investigação; valide em homolog antes de usar |
+| qualquer outro (ex.: `FinLanBaixaData`) | `ProcessXml::baixaLancamento()` (replay da tela) | ⚠️ falha via WS com *"Os lançamentos devem ser informados"* — mantido só como registro/fallback |
 
-Recomenda-se também `FIN_BAIXA_OPERACAO=ExecuteWithXMLParams` (os processos que já funcionam usam essa operação e ela força separador decimal `.`). **A operação não é a causa do `Classe não encontrada`** — o problema é exclusivamente o nome. **Nunca** teste nomes em produção: nome errado é inofensivo, mas o nome **certo executa uma baixa real** (e o estorno não é trivial) — valide em homologação/sandbox.
+**Histórico (resumo da investigação, para não repetir):** `FinLanBaixaProc` não existe na instância (`Classe não encontrada`); `FinLanBaixaData` é o processo **da tela** — mesmo com payload byte a byte idêntico a um export aceito, via WS as coleções chegam vazias. O caminho suportado pela TOTVS para WS é o TBC. **Nunca** teste nomes de processo em produção: nome errado é inofensivo, mas o nome **certo executa uma baixa real** — valide em homologação.
 
 Retorno (200): `{ IDLAN, CODCOLIGADA, VALORBAIXADO, DATABAIXA, CODCXA, FORMAPAGTO, TIPOBAIXA, retorno_rm, log_job }`. Erro do RM → **502** com `retorno_rm` (e o log do job, quando o RM devolve só o JobId e a sentença `INT.EDUVEM.00021` está cadastrada).
 

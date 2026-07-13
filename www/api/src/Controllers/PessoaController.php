@@ -29,8 +29,8 @@ final class PessoaController
     }
 
     /**
-     * POST /pessoas/busca — body: { "CPF": "..." } ou { "RNM": "..." }
-     * (POST para o documento não trafegar em URL/logs de acesso)
+     * GET /pessoas/busca?cpf=...  (ou ?rnm=...)
+     * Aceita também CPF/RNM no corpo (compatibilidade com o consumo antigo via POST).
      */
     public function buscarPorDocumento(Request $request, Response $response, array $args = []): Response
     {

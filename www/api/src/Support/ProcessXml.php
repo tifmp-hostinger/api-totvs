@@ -7,11 +7,20 @@ namespace FMP\RMApi\Support;
 /**
  * Templates dos XMLs de processos do RM (wsProcess / ExecuteWithXMLParams).
  *
- * Os XMLs foram herdados do legado (capturas de execuções reais do RM) e
- * mantidos estruturalmente idênticos para preservar compatibilidade de
- * desserialização (DataContract). Apenas os valores de sessão foram
- * neutralizados/parametrizados: ExecutionId, ScheduleDateTime, HostName,
- * Ip, NetworkUser e competência.
+ * DOIS estilos convivem aqui, de propósito:
+ *
+ *  1. LEGADO (matriculaPeriodoLetivo, matriculaDisciplina, gerarLancamento):
+ *     heredocs inline gigantes, herdados de capturas de execuções reais do RM
+ *     e mantidos estruturalmente idênticos para preservar compatibilidade de
+ *     desserialização (DataContract). Só os valores de sessão foram
+ *     neutralizados (ExecutionId, ScheduleDateTime, HostName, Ip, NetworkUser,
+ *     competência). Funcionam em produção há tempos — migrá-los para o estilo
+ *     novo só com testes de round-trip byte a byte do XML gerado.
+ *
+ *  2. NOVO (baixaLancamento*, desde jul/2026): template em arquivo
+ *     (resources/fin/*.template.xml, obtido do GetSchema/export da própria
+ *     instância) + strtr() de placeholders {{...}}. Preferir este estilo em
+ *     builders futuros: é testável, diffável e não polui a classe.
  *
  * Observação herdada do legado: alguns valores permanecem fixos de propósito
  * (ex.: $CODCOLIGADA=1 e $CODTIPOCURSO=2 no contexto dos processos,
@@ -1567,6 +1576,12 @@ XML;
      * (Pagamentos>FinPagamentoBaixaTBCParamsProc com ListIdLan + MeioPagamento).
      * Mesmos princípios do baixaLancamentoTbc(); contabilização por Evento
      * Contábil (LanctoParaBaixas de exemplo esvaziado).
+     *
+     * ATENÇÃO: este caminho NUNCA foi validado contra o RM real. Foi
+     * implementado como alternativa selecionável por env
+     * (FIN_BAIXA_PROCESSO=FinLanBaixaTBCData) durante a investigação da baixa,
+     * mas o que foi homologado (13/07/2026) foi o FinTBCBaixaDataProcess
+     * (baixaLancamentoTbc). Se for usar, valide em homologação antes.
      */
     public static function baixaLancamentoTbcLan(
         string|int $codColigada,

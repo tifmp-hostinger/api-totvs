@@ -7,21 +7,30 @@ namespace FMP\RMApi\Services;
 use FMP\RMApi\Clients\RMSoapClient;
 use FMP\RMApi\Exceptions\RMException;
 use FMP\RMApi\Exceptions\ValidationException;
+use FMP\RMApi\Support\Env;
 use FMP\RMApi\Support\ProcessXml;
 
 /**
- * Baixa (quitação) de lançamento financeiro no RM
- * (processo FinLanBaixaProc, via wsProcess / ExecuteWithParams).
+ * Baixa (quitação) de lançamento financeiro no RM.
+ *
+ * Caminho padrão (VALIDADO em homologação em 13/07/2026): processo
+ * FinTBCBaixaDataProcess via wsProcess/ExecuteWithXMLParams — o contrato
+ * oficial da TOTVS para baixa por WebService (TDN "Baixa Via Web Service").
+ * Processos alternativos são selecionáveis por env (FIN_BAIXA_PROCESSO) e o
+ * builder de XML acompanha — ver o match() em baixar() e config/rm.php.
  *
  * É a contrapartida do LancamentoService: enquanto aquele GERA as parcelas
  * (a receber, em aberto), este as BAIXA numa conta/caixa com uma forma de
- * pagamento. Reproduz o payload capturado do RM (ver ProcessXml::baixaLancamento),
- * parametrizando apenas os campos dinâmicos.
+ * pagamento.
  */
 class BaixaService
 {
-    /** Fallback do ProcessServerName (o efetivo vem de config rm.baixa.processo / env FIN_BAIXA_PROCESSO). */
-    public const PROCESSO = 'FinLanBaixaData';
+    /**
+     * Fallback do ProcessServerName. Na prática o efetivo SEMPRE vem de
+     * config rm.baixa.processo (env FIN_BAIXA_PROCESSO) — esta constante só
+     * dispara se a chave sumir da config.
+     */
+    public const PROCESSO = 'FinTBCBaixaDataProcess';
 
     /** Formas de pagamento aceitas pelo RM (enum FinTipoFormaPagto). */
     private const FORMAS_PAGAMENTO = [
@@ -49,6 +58,7 @@ class BaixaService
      *  - DATABAIXA        (opc., default hoje, formato Y-m-d)
      *  - HISTORICOBAIXA   (opc.)
      *  - TIPOBAIXA        (opc., "Simplificada" | "Completa" | "Parcial"; default Simplificada)
+     *  - IDFORMAPAGTO     (opc., id da Forma de Pagamento cadastrada no RM; default 1 = Dinheiro)
      *  - DRY_RUN          (opc., true = devolve o XML gerado sem enviar ao RM)
      *
      * @return array<string,mixed>
@@ -93,7 +103,7 @@ class BaixaService
         // CODCXA: do corpo ou de um default por env (FIN_CODCXA_PADRAO).
         $codCxa = trim((string) ($in['CODCXA'] ?? ''));
         if ($codCxa === '') {
-            $codCxa = trim((string) \FMP\RMApi\Support\Env::get('FIN_CODCXA_PADRAO', ''));
+            $codCxa = trim((string) Env::get('FIN_CODCXA_PADRAO', ''));
         }
         if ($codCxa === '') {
             throw new ValidationException(

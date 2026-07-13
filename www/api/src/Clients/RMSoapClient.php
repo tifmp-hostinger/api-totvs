@@ -45,6 +45,12 @@ class RMSoapClient
         }
 
         try {
+            // ATENÇÃO (pegadinha do SoapClient): connection_timeout limita só a
+            // FASE DE CONEXÃO TCP. O tempo de resposta da chamada em si é regido
+            // por default_socket_timeout — que o Dockerfile fixa em 300s (casando
+            // com max_execution_time/Apache Timeout). Fora do container oficial,
+            // configure default_socket_timeout ou uma resposta lenta do RM pode
+            // prender o worker pelo default do PHP (60s) ou indefinidamente.
             $client = new SoapClient($this->baseUrl . $type->getUrlSuffix(), [
                 'login'              => $user ?? $this->user,
                 'password'           => $password ?? $this->password,
