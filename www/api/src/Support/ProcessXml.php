@@ -1583,22 +1583,21 @@ XML;
      */
     private static function preencherPrimaryKey(\DOMElement $root, string $col, string $lan): void
     {
-        // PrimaryKeyList: [CODCOLIGADA(int), IDLAN(int)]
+        // PrimaryKeyList: UMA linha (um registro FLAN) com as colunas da PK
+        // na ordem de PrimaryKeyNames -> [CODCOLIGADA, IDLAN]. É ArrayOfArrayOfanyType:
+        // cada <ArrayOfanyType> é um registro; os <anyType> dentro são as colunas.
         if ($pkl = self::filho($root, 'PrimaryKeyList')) {
-            $molde = self::primeiroElemento($pkl); // ArrayOfanyType do tipo int
-            if ($molde !== null) {
-                $clones = [];
+            $rowMolde = self::primeiroElemento($pkl);                          // <ArrayOfanyType>
+            $anyMolde = $rowMolde ? self::primeiroElemento($rowMolde) : null;  // <anyType int>
+            if ($rowMolde !== null && $anyMolde !== null) {
+                $row = $rowMolde->cloneNode(false); // ArrayOfanyType vazio (mantém namespaces)
                 foreach ([$col, $lan] as $val) {
-                    $c = $molde->cloneNode(true);
-                    if ($any = self::primeiroElemento($c)) {
-                        self::apenasTexto($any, $val);
-                    }
-                    $clones[] = $c;
+                    $any = $anyMolde->cloneNode(true);
+                    self::apenasTexto($any, $val);
+                    $row->appendChild($any);
                 }
                 self::esvaziar($pkl);
-                foreach ($clones as $c) {
-                    $pkl->appendChild($c);
-                }
+                $pkl->appendChild($row);
             }
         }
 
