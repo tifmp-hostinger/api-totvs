@@ -28,12 +28,24 @@ return [
     // Usuário de serviço
     'usuario_servico' => Env::get('TOTVS_WS_USER', 'integra.eduvem'),
 
-    // Baixa de lançamento (FinLanBaixaProc). Nome do process server e operação
-    // SOAP configuráveis por env — o RM pode expor a baixa sob outro nome/
-    // operação conforme a versão. Ajuste sem redeploy de código.
-    //   FIN_BAIXA_PROCESSO: ProcessServerName (default abaixo)
-    //   FIN_BAIXA_OPERACAO: ExecuteWithParams (default) | ExecuteWithXMLParams
+    // Baixa de lançamento. Nome do process server e operação SOAP configuráveis
+    // por env — o RM expõe a baixa sob um nome que varia por versão/patch.
+    //   FIN_BAIXA_PROCESSO: ProcessServerName   FIN_BAIXA_OPERACAO: ExecuteWithParams | ExecuteWithXMLParams
     //   FIN_CODCXA_PADRAO : conta/caixa default quando não vier no corpo
+    //
+    // ATENÇÃO: "Classe não encontrada: FinLanBaixaProc" = o nome NÃO existe
+    // nesta instância. Descubra o nome real por inspeção READ-ONLY no RM:
+    //   (a) Monitor de Jobs de uma baixa já feita → coluna "Classe de Processo"; ou
+    //   (b) tela "Baixar" → "Salvar parâmetros como XML" e CANCELE antes de confirmar
+    //       (revela o ProcessServerName E o elemento-raiz correto do XML).
+    // Candidatos (convenção local + pesquisa; NÃO confirmados nesta instância):
+    //   1) FinLanBaixaProcData    — reaproveita o XML atual <FinLanBaixaParamsProc> (só troca env)
+    //   2) FinLanBaixaTBCData      — idem (pode ser o DataServer, não o processo)
+    //   3) FinTBCBaixaDataProcess  — EXIGE outro XML (<FinTBCBaixaParamsProc>); não é só renomear
+    // Operação recomendada: ExecuteWithXMLParams (os processos que funcionam usam-na
+    // — MatriculaService/LancamentoService — e força separador decimal '.').
+    // NUNCA teste nomes em produção: nome errado é inofensivo, mas o nome CERTO
+    // EXECUTA uma baixa real. Confirme antes; teste em homologação/sandbox.
     'baixa' => [
         'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinLanBaixaProc'),
         'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithParams'),

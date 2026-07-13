@@ -233,6 +233,16 @@ Valores fixos herdados da captura do RM (não parametrizados): `CodMoeda=R$`, `C
 | `FIN_BAIXA_OPERACAO` | `ExecuteWithParams` | operação SOAP (`ExecuteWithParams` ou `ExecuteWithXMLParams`) |
 | `FIN_CODCXA_PADRAO` | — | conta/caixa default quando `CODCXA` não vem no corpo |
 
+**Descobrindo o `ProcessServerName` correto.** O default `FinLanBaixaProc` **não existe** na instância testada (o RM devolveu `Classe não encontrada`). O nome varia por versão/patch — a fonte autoritativa é o **seu** RM. Descubra por inspeção **read-only** (sem executar baixa): (a) **Monitor de Jobs** de uma baixa já feita → coluna *Classe de Processo*; ou (b) tela **"Baixar"** → *Salvar parâmetros como XML* e **cancele** antes de confirmar (isso revela o `ProcessServerName` **e** o elemento-raiz correto do XML). Candidatos levantados (convenção local + pesquisa, **não confirmados** aqui):
+
+| Candidato | Reaproveita o XML atual (`<FinLanBaixaParamsProc>`)? | Observação |
+|---|---|---|
+| `FinLanBaixaProcData` | **Sim** (só troca `FIN_BAIXA_PROCESSO`) | melhor encaixe da convenção local (`Edu…ProcData`) |
+| `FinLanBaixaTBCData` | Sim | pode ser o DataServer, não o process server |
+| `FinTBCBaixaDataProcess` | **Não** — exige raiz `<FinTBCBaixaParamsProc>` | precisa reescrever `ProcessXml::baixaLancamento` |
+
+Recomenda-se também `FIN_BAIXA_OPERACAO=ExecuteWithXMLParams` (os processos que já funcionam usam essa operação e ela força separador decimal `.`). **A operação não é a causa do `Classe não encontrada`** — o problema é exclusivamente o nome. **Nunca** teste nomes em produção: nome errado é inofensivo, mas o nome **certo executa uma baixa real** (e o estorno não é trivial) — valide em homologação/sandbox.
+
 Retorno (200): `{ IDLAN, CODCOLIGADA, VALORBAIXADO, DATABAIXA, CODCXA, FORMAPAGTO, TIPOBAIXA, retorno_rm, log_job }`. Erro do RM → **502** com `retorno_rm` (e o log do job, quando o RM devolve só o JobId e a sentença `INT.EDUVEM.00021` está cadastrada).
 
 ### Financeiro — Geração de lançamentos
