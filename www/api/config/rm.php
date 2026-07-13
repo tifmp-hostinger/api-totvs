@@ -55,16 +55,18 @@ return [
         'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithXMLParams'),
     ],
 
-    // Relatório contrato
+    // Relatório contrato (o ID do relatório pode variar entre bases/ambientes)
     'relatorio_contrato' => [
         'codcoligada' => '0',
-        'id'          => '1664',
+        'id'          => Env::get('FIN_RELATORIO_CONTRATO_ID', '1664'),
     ],
 
-    // Portal (mantido fixo pois não depende de env)
+    // Portal do aluno. Defaults de PRODUÇÃO (114384); para homolog (114385)
+    // sobrescreva por env. Usado só nos links de login/autologin do portal —
+    // NÃO afeta as chamadas SOAP (essas seguem TOTVS_WS_URL).
     'portal' => [
-        'login_url'     => 'https://fundacaoescola114384.rm.cloudtotvs.com.br/FrameHTML/Web/App/Edu/PortalEducacional/login/',
-        'autologin_url' => 'https://fundacaoescola114384.rm.cloudtotvs.com.br/Corpore.Net/Source/EDU-EDUCACIONAL/Public/EduPortalAlunoLogin.aspx?AutoLoginType=ExternalLogin&redirect=financeiro.new',
-        'alias'         => 'CorporeRM',
+        'login_url'     => Env::get('TOTVS_PORTAL_LOGIN_URL', 'https://fundacaoescola114384.rm.cloudtotvs.com.br/FrameHTML/Web/App/Edu/PortalEducacional/login/'),
+        'autologin_url' => Env::get('TOTVS_PORTAL_AUTOLOGIN_URL', 'https://fundacaoescola114384.rm.cloudtotvs.com.br/Corpore.Net/Source/EDU-EDUCACIONAL/Public/EduPortalAlunoLogin.aspx?AutoLoginType=ExternalLogin&redirect=financeiro.new'),
+        'alias'         => Env::get('TOTVS_PORTAL_ALIAS', 'CorporeRM'),
     ],
 ];

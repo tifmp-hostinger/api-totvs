@@ -24,9 +24,16 @@ precedência:
 
 | Variável | Obrigatória | Exemplo / observação |
 |---|---|---|
-| `TOTVS_WS_URL` | **sim** | `https://fundacaoescola114384.rm.cloudtotvs.com.br:8051` (host + porta do webservice do RM; confirme com o DBA) |
+| `TOTVS_WS_URL` | **sim** | `https://fundacaoescola114384.rm.cloudtotvs.com.br:8051` = produção; `...114385...` = homolog. Define a BASE que a API inteira consulta/grava (SOAP) |
 | `TOTVS_WS_USER` | **sim** | usuário de integração do RM |
 | `TOTVS_WS_PASSWORD` | **sim** | senha do usuário de integração |
+| `TOTVS_PORTAL_LOGIN_URL` | não | URL de login do portal do aluno. Default = produção (114384); em homolog aponte para 114385. Só afeta links do portal, não o SOAP |
+| `TOTVS_PORTAL_AUTOLOGIN_URL` | não | URL de autologin do portal. Mesma regra acima |
+| `TOTVS_PORTAL_ALIAS` | não | alias do banco no portal. Default `CorporeRM` (confirme se difere na homolog) |
+| `FIN_RELATORIO_CONTRATO_ID` | não | ID do relatório de contrato. Default `1664` (pode variar entre bases) |
+| `FIN_BAIXA_PROCESSO` | não | ProcessServerName da baixa. Default `FinLanBaixaData` |
+| `FIN_BAIXA_OPERACAO` | não | Default `ExecuteWithXMLParams` |
+| `FIN_CODCXA_PADRAO` | não | conta/caixa default da baixa quando não vier no corpo |
 | `API_KEY` | recomendada | Liga a autenticação. Quando definida, toda requisição precisa do header `X-API-Key`. Vazia = autenticação desligada |
 | `APP_DEBUG` | não | `true` para expor `xml_enviado`/`xml_retornado`/`soap_fault` nos erros. Padrão `false` |
 | `APP_BASE` | não | base path lógico. **Hoje ignorado** — `index.php` usa `setBasePath('')` (rotas na raiz) |
