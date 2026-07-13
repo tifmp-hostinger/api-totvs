@@ -1657,7 +1657,20 @@ XML;
                       <ValorOriginal>{$valorBaixa}</ValorOriginal>
                     </FinItemBaixa>
                   </ItensBaixa>
-                  <Lancamentos />
+                  <Lancamentos>
+                    <FinLancamentoBaixaResult>
+                      <Coligada>{$codColigada}</Coligada>
+                      <ID>{$idLan}</ID>
+                      <CodColigada>{$codColigada}</CodColigada>
+                      <IdBaixa>0</IdBaixa>
+                      <IdLan>{$idLan}</IdLan>
+                      <ServicoAlteracaoRepasse>false</ServicoAlteracaoRepasse>
+                      <ValorBaixado>0.00</ValorBaixado>
+                      <ValorLiquido>{$valorBaixa}</ValorLiquido>
+                      <ValorOriginal>{$valorBaixa}</ValorOriginal>
+                      <ValordaBaixadoLancto>{$valorBaixa}</ValordaBaixadoLancto>
+                    </FinLancamentoBaixaResult>
+                  </Lancamentos>
                   <ListBaixaGeradas />
                   <ListContabilLan />
                   <ListaBaixas />
