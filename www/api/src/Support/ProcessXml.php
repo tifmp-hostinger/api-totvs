@@ -1622,7 +1622,41 @@ XML;
                   <IsHabilitaPIX>false</IsHabilitaPIX>
                   <IsHabilitaTEF>false</IsHabilitaTEF>
                   <IsModuloDeCaixa>false</IsModuloDeCaixa>
-                  <ItensBaixa />
+                  <ItensBaixa>
+                    <FinItemBaixa>
+                      <ServicoAlteracaoRepasse>false</ServicoAlteracaoRepasse>
+                      <CodColCxa>{$codColigada}</CodColCxa>
+                      <CodColigada>{$codColigada}</CodColigada>
+                      <CodCxa>{$codCxa}</CodCxa>
+                      <CodFilial>{$codFilial}</CodFilial>
+                      <CompensarExtratoBaixa>Parametrizacao</CompensarExtratoBaixa>
+                      <CotacaoBaixa>1</CotacaoBaixa>
+                      <DataBaixa>{$dataBaixaFull}</DataBaixa>
+                      <IdBaixa>-1</IdBaixa>
+                      <IdFormaPagto>1</IdFormaPagto>
+                      <IdLan>{$idLan}</IdLan>
+                      <IdPagto>1</IdPagto>
+                      <IdParcelamento>0</IdParcelamento>
+                      <NaoIncluirBaixa>false</NaoIncluirBaixa>
+                      <OpcaoParcelamento>1</OpcaoParcelamento>
+                      <OrigemValorCap>BaseDados</OrigemValorCap>
+                      <OrigemValorDesconto>BaseDados</OrigemValorDesconto>
+                      <OrigemValorJuros>BaseDados</OrigemValorJuros>
+                      <OrigemValorMulta>BaseDados</OrigemValorMulta>
+                      <PagRec>Receber</PagRec>
+                      <SequencialPagto>0</SequencialPagto>
+                      <TipoBaixa>BaixaManual</TipoBaixa>
+                      <TipoFormaPagto>{$formaPg}</TipoFormaPagto>
+                      <TipoTransacao>WCF</TipoTransacao>
+                      <Usuario>{$usuario}</Usuario>
+                      <ValorBaixa>{$valorBaixa}</ValorBaixa>
+                      <ValorCap>0</ValorCap>
+                      <ValorDesconto>0</ValorDesconto>
+                      <ValorJuros>0</ValorJuros>
+                      <ValorMulta>0</ValorMulta>
+                      <ValorOriginal>{$valorBaixa}</ValorOriginal>
+                    </FinItemBaixa>
+                  </ItensBaixa>
                   <Lancamentos />
                   <ListBaixaGeradas />
                   <ListContabilLan />
