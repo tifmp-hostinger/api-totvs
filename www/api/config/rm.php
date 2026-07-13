@@ -49,7 +49,10 @@ return [
     // EXECUTA uma baixa real. Confirme antes; teste em homologação/sandbox.
     'baixa' => [
         'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinLanBaixaData'),
-        'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithParams'),
+        // Default alinhado aos processos que FUNCIONam (Matrícula/Lançamento usam
+        // ExecuteWithXMLParams): essa operação desserializa o strXmlParams no tipo
+        // do processo, ligando corretamente as coleções (Lancamentos). Trocável por env.
+        'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithXMLParams'),
     ],
 
     // Relatório contrato
