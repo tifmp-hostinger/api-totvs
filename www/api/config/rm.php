@@ -49,10 +49,15 @@ return [
     // EXECUTA uma baixa real. Confirme antes; teste em homologação/sandbox.
     'baixa' => [
         'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinLanBaixaData'),
-        // Default alinhado aos processos que FUNCIONam (Matrícula/Lançamento usam
-        // ExecuteWithXMLParams): essa operação desserializa o strXmlParams no tipo
-        // do processo, ligando corretamente as coleções (Lancamentos). Trocável por env.
-        'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithXMLParams'),
+        // ExecuteWithParams desserializa o strXmlParams COMPLETO no tipo do processo
+        // — é a operação própria para replay do XML "Salvar parâmetros como XML" da
+        // tela (nosso caso: o payload da baixa é o export real, e as COLEÇÕES
+        // Lancamentos/ItensBaixa precisam chegar populadas). Já o ExecuteWithXMLParams
+        // usa um mapeador simplificado que aplica só campos simples sobre um objeto
+        // zerado: serve para Matrícula/Lançamento (que dependem só de PrimaryKeyList
+        // + escalares), mas deixa as coleções da baixa vazias -> o processo responde
+        // "Os lançamentos devem ser informados" mesmo com o XML perfeito.
+        'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithParams'),
     ],
 
     // Relatório contrato (o ID do relatório pode variar entre bases/ambientes)
