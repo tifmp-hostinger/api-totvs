@@ -32,16 +32,22 @@ class LogService
             $payload = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         }
 
+        // Escapa os campos de texto (um e-mail com "&" ou mensagem com "<"
+        // quebrava o XML e o log era perdido silenciosamente) e blinda o CDATA
+        // contra "]]>" dentro do payload.
+        $esc = static fn(string $v): string => htmlspecialchars($v, ENT_XML1, 'UTF-8');
+        $payloadCdata = str_replace(']]>', ']]]]><![CDATA[>', (string) $payload);
+
         $xml = <<<XML
         <PRJ5495296>
             <ZMDLOGINTEGEDUVEM>
                 <ID>0</ID>
-                <EMAIL>{$email}</EMAIL>
-                <ENTIDADE>{$entity}</ENTIDADE>
-                <CODOFERTA>{$offer}</CODOFERTA>
-                <STATUS>{$status}</STATUS>
-                <MENSAGEM>{$message}</MENSAGEM>
-                <XML><![CDATA[{$payload}]]></XML>
+                <EMAIL>{$esc($email)}</EMAIL>
+                <ENTIDADE>{$esc($entity)}</ENTIDADE>
+                <CODOFERTA>{$esc($offer)}</CODOFERTA>
+                <STATUS>{$esc($status)}</STATUS>
+                <MENSAGEM>{$esc($message)}</MENSAGEM>
+                <XML><![CDATA[{$payloadCdata}]]></XML>
             </ZMDLOGINTEGEDUVEM>
         </PRJ5495296>
         XML;

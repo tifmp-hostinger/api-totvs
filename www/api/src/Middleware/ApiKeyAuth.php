@@ -47,10 +47,13 @@ final class ApiKeyAuth
             return $handler->handle($request);
         }
 
-        // Rotas isentas (health, SSO do aluno…).
+        // Rotas isentas (health, SSO do aluno…). Casa o caminho exato ou um
+        // segmento completo ("/sso/..."): "/ssoutra-coisa" NÃO é isento — a
+        // versão anterior tinha um str_starts_with sem "/" que isentava
+        // qualquer rota que apenas começasse com o prefixo.
         $path = $request->getUri()->getPath();
         foreach ($this->isentos as $prefixo) {
-            if ($path === $prefixo || str_starts_with($path, $prefixo . '/') || str_starts_with($path, $prefixo)) {
+            if ($path === $prefixo || str_starts_with($path, $prefixo . '/')) {
                 return $handler->handle($request);
             }
         }

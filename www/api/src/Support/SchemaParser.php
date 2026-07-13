@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace FMP\RMApi\Support;
 
 class SchemaParser
 {
     private const NS_XS = 'http://www.w3.org/2001/XMLSchema';
 
-    /** @var \DOMXPath */
-    private $xp;
+    private \DOMXPath $xp;
 
     /**
      * Analisa o XSD e devolve a estrutura no formato público exigido.
