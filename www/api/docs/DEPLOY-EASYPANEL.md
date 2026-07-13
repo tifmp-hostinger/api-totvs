@@ -34,7 +34,9 @@ precedência:
 | `FIN_BAIXA_PROCESSO` | não | ProcessServerName da baixa. Default `FinLanBaixaData` |
 | `FIN_BAIXA_OPERACAO` | não | Default `ExecuteWithXMLParams` |
 | `FIN_CODCXA_PADRAO` | não | conta/caixa default da baixa quando não vier no corpo |
-| `API_KEY` | recomendada | Liga a autenticação. Quando definida, toda requisição precisa do header `X-API-Key`. Vazia = autenticação desligada |
+| `API_KEY` | **sim** (produção) | Liga a autenticação (header `X-API-Key` ou `Authorization: Bearer`). **Com `APP_DEBUG=false` e `API_KEY` vazia, as rotas não isentas respondem 503** — para rodar deliberadamente sem autenticação, defina `API_KEY_OPCIONAL=true` |
+| `API_KEY_OPCIONAL` | não | `true` = permite produção SEM `API_KEY` (volta ao comportamento antigo: aberto, com aviso no log). Use com consciência |
+| `CORS_ALLOWED_ORIGINS` | não | Origens permitidas no CORS, separadas por vírgula. Default `*` (aberto). Ex.: `https://app.fmp.edu.br,https://admin.fmp.edu.br` |
 | `APP_DEBUG` | não | `true` para expor `xml_enviado`/`xml_retornado`/`soap_fault` nos erros. Padrão `false` |
 | `APP_BASE` | não | base path lógico. **Hoje ignorado** — `index.php` usa `setBasePath('')` (rotas na raiz) |
 | `APP_CRYPTO_KEY` | só p/ SSO | chave de **32 bytes exatos** (AES-256-GCM do `/sso/{token}`) |

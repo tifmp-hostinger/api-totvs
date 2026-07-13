@@ -11,7 +11,7 @@
 <style>
   :root{
     --fmp-red:#EE2A42; --fmp-ink:#191818; --fmp-cream:#EFEEEA; --fmp-sand:#BFBAA4;
-    --ink-2:#3a3838; --line:#e2e0d8; --card:#ffffff; --ok:#1f9d6b;
+    --ink-2:#3a3838; --line:#e2e0d8; --card:#ffffff; --ok:#1f9d6b; --warn:#d97706; --err:#dc2626;
     --get:#2563eb; --post:#16a34a; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
@@ -24,17 +24,34 @@
   h1{font-family:"Noto Serif",serif;font-style:italic;font-weight:600;font-size:30px;margin:10px 0 4px}
   h1 b{color:var(--fmp-red);font-weight:600}
   .sub{color:#cfcbbf;font-size:14px;max-width:760px}
-  .controls{max-width:1080px;margin:20px auto 0;padding:0 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .stats{margin-top:10px;font-size:12px;color:var(--fmp-sand);letter-spacing:.06em}
+  .stats b{color:#fff}
+
+  .controls{position:sticky;top:0;z-index:50;background:var(--fmp-cream);border-bottom:1px solid var(--line);box-shadow:0 4px 14px rgba(25,24,24,.06)}
+  .controls .inner{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
   .field{display:flex;flex-direction:column;gap:5px}
   .field label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2)}
   .field input,.field select{font-family:var(--mono);font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff}
   .field select{cursor:pointer}
-  #base{min-width:300px} #apikey{min-width:220px} .field.search input{min-width:220px;font-family:"Outfit"}
+  .base-wrap{display:flex;gap:6px;align-items:center}
+  #base{min-width:290px} #apikey{min-width:200px} .field.search input{min-width:200px;font-family:"Outfit"}
+  .mini{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink-2);font-family:"Outfit";white-space:nowrap}
+  .mini:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+
   main{max-width:1080px;margin:0 auto;padding:8px 24px 80px}
-  .note{background:#fff;border:1px solid var(--line);border-left:4px solid var(--fmp-red);border-radius:12px;padding:12px 16px;margin:20px 0;font-size:13.5px;color:var(--ink-2)}
+  .note{background:#fff;border:1px solid var(--line);border-left:4px solid var(--fmp-red);border-radius:12px;padding:12px 16px;margin:20px 0 14px;font-size:13.5px;color:var(--ink-2)}
   .note b{color:var(--fmp-ink)}
-  .group{margin-top:30px}
+  .gnav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+  .gnav a{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:600;color:var(--ink-2);text-decoration:none}
+  .gnav a:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+  .gnav .n{font-family:var(--mono);font-size:10.5px;background:var(--fmp-cream);border-radius:999px;padding:1px 7px;color:#8a8678}
+  .toolbar{display:flex;gap:10px;margin:14px 0 0}
+  .toolbar button{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:"Outfit";color:var(--ink-2)}
+  .toolbar button:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+
+  .group{margin-top:30px;scroll-margin-top:96px}
   .group h2{font-family:"Noto Serif",serif;font-style:italic;font-size:20px;margin:0 0 4px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .group h2 .n{font-family:var(--mono);font-style:normal;font-size:11px;color:#8a8678;margin-left:8px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:12px 0;overflow:hidden}
   .card-head{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;user-select:none}
   .card-head:hover{background:#faf9f6}
@@ -52,17 +69,31 @@
   .inp label{font-size:11px;font-weight:600;color:var(--ink-2);font-family:var(--mono)}
   .inp input{font-family:var(--mono);font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;min-width:160px}
   textarea{width:100%;font-family:var(--mono);font-size:13px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fdfdfb;min-height:120px;resize:vertical;margin-top:8px}
+
   .snippet{margin-top:14px;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a}
-  .snippet-head{display:flex;align-items:center;justify-content:space-between;background:#222;color:#cfcbbf;padding:7px 12px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+  .snippet-head{display:flex;align-items:center;justify-content:space-between;background:#222;color:#cfcbbf;padding:7px 12px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;flex-wrap:wrap;gap:6px}
   .snippet pre{margin:0;background:var(--fmp-ink);color:#f3f1ea;padding:14px;font-family:var(--mono);font-size:12.5px;overflow-x:auto;white-space:pre}
-  .btns{display:flex;gap:8px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap}
   button.copy{background:transparent;border:1px solid #4a4a4a;color:#cfcbbf;border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:"Outfit";font-weight:600}
   button.copy:hover{border-color:var(--fmp-red);color:#fff}
   button.copy.done{border-color:var(--ok);color:var(--ok)}
+  button.exec{background:var(--fmp-red);border:1px solid var(--fmp-red);color:#fff;border-radius:7px;padding:4px 14px;font-size:11px;cursor:pointer;font-family:"Outfit";font-weight:700;letter-spacing:.04em}
+  button.exec:hover{filter:brightness(1.08)}
+  button.exec[disabled]{opacity:.55;cursor:wait}
+
+  .resp{display:none;margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .resp.show{display:block}
+  .resp-head{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap}
+  .status-pill{font-family:var(--mono);font-weight:700;font-size:11.5px;color:#fff;border-radius:999px;padding:2px 10px}
+  .s-ok{background:var(--ok)} .s-warn{background:var(--warn)} .s-err{background:var(--err)}
+  .resp-meta{color:#8a8678;font-family:var(--mono);font-size:11.5px}
+  .resp-head .btns{margin-left:auto}
+  .resp-head button{background:#fff;border:1px solid var(--line);color:var(--ink-2);border-radius:7px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:"Outfit";font-weight:600}
+  .resp-head button:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+  .resp pre{margin:0;padding:12px 14px;font-family:var(--mono);font-size:12.5px;max-height:420px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#fdfdfb}
+
   footer{max-width:1080px;margin:0 auto;padding:24px;color:#8a8678;font-size:12.5px;border-top:1px solid var(--line)}
-  .toolbar{display:flex;gap:10px;margin:18px 0 0}
-  .toolbar button{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:"Outfit";color:var(--ink-2)}
-  .toolbar button:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+  kbd{font-family:var(--mono);font-size:11px;background:#fff;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px}
 </style>
 </head>
 <body>
@@ -70,42 +101,57 @@
   <div class="wrap">
     <div class="brand"><span class="spark">&#10022;</span> FMP &middot; Funda&ccedil;&atilde;o Escola Superior do Minist&eacute;rio P&uacute;blico</div>
     <h1>RM-API &mdash; refer&ecirc;ncia de <b>endpoints</b></h1>
-    <div class="sub">Integra&ccedil;&atilde;o com o TOTVS RM via SOAP. Ajuste a URL base, a chave e os campos; cada endpoint gera o <b>cURL</b> pronto para copiar (terminal ou <i>Import cURL</i> do n8n). A p&aacute;gina n&atilde;o executa requisi&ccedil;&otilde;es &mdash; apenas monta os comandos.</div>
+    <div class="sub">Integra&ccedil;&atilde;o com o TOTVS RM via SOAP. Ajuste a URL base, a chave e os campos; cada endpoint gera o <b>cURL</b> pronto (terminal ou <i>Import cURL</i> do n8n) e pode ser <b>executado direto daqui</b> com resposta na tela.</div>
+    <div class="stats" id="stats"></div>
   </div>
 </header>
 
 <div class="controls">
-  <div class="field">
-    <label for="base">URL base do servi&ccedil;o</label>
-    <input id="base" value="https://api-totvs.fmp.edu.br" spellcheck="false" />
-  </div>
-  <div class="field">
-    <label for="apikey">API key (header X-API-Key)</label>
-    <input id="apikey" placeholder="cole sua chave" spellcheck="false" />
-  </div>
-  <div class="field">
-    <label for="fmt">Formato do corpo (POST)</label>
-    <select id="fmt">
-      <option value="json">JSON</option>
-      <option value="form">Campos (form / "Using Fields Below")</option>
-    </select>
-  </div>
-  <div class="field search">
-    <label for="q">Filtrar endpoints</label>
-    <input id="q" placeholder="ex: pessoa, inscri&ccedil;&atilde;o, schema&hellip;" />
+  <div class="inner">
+    <div class="field">
+      <label for="base">URL base do servi&ccedil;o</label>
+      <div class="base-wrap">
+        <input id="base" value="https://api-totvs.fmp.edu.br" spellcheck="false" />
+        <button class="mini" id="useOrigin" type="button" title="Usar a origem desta p&aacute;gina como base (mesma origem = sem CORS)">usar esta origem</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="apikey">API key (header X-API-Key)</label>
+      <input id="apikey" placeholder="cole sua chave" spellcheck="false" />
+    </div>
+    <div class="field">
+      <label for="fmt">Formato do corpo (POST)</label>
+      <select id="fmt">
+        <option value="json">JSON</option>
+        <option value="form">Campos (form / "Using Fields Below")</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="mf">M&eacute;todo</label>
+      <select id="mf">
+        <option value="">Todos</option>
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+      </select>
+    </div>
+    <div class="field search">
+      <label for="q">Filtrar (<kbd>/</kbd> foca &middot; <kbd>Esc</kbd> limpa)</label>
+      <input id="q" placeholder="ex: pessoa, baixa, schema&hellip;" />
+    </div>
   </div>
 </div>
 
 <main>
   <div class="note">
     <b>Base path na raiz:</b> as rotas s&atilde;o <code>/pessoas</code>, <code>/rm/test</code> etc., <b>sem</b> <code>/api</code>.
-    <b>Autentica&ccedil;&atilde;o:</b> se o servidor tiver <code>API_KEY</code>, preencha o campo acima &mdash; o header <code>X-API-Key</code> entra nos cURLs.
-    <b>Formato:</b> escolha <code>JSON</code> ou <code>Campos</code> (a API aceita os dois). Corpos aninhados (rm/sql, rm/read, rm/save) saem sempre em JSON.
-    <b>POST grava dados reais no RM</b> &mdash; cuidado. A p&aacute;gina s&oacute; monta o comando.
+    <b>Autentica&ccedil;&atilde;o:</b> se o servidor tiver <code>API_KEY</code>, preencha o campo acima &mdash; o header <code>X-API-Key</code> entra nos cURLs e no Executar.
+    <b>Executar:</b> roda a requisi&ccedil;&atilde;o do seu navegador. Servida desta mesma origem n&atilde;o h&aacute; CORS; para outra base, configure <code>CORS_ALLOWED_ORIGINS</code> no servidor.
+    <b>POST grava dados reais no RM</b> &mdash; a p&aacute;gina pede confirma&ccedil;&atilde;o antes de executar (exce&ccedil;&atilde;o: corpo com <code>"DRY_RUN": true</code>, que n&atilde;o envia nada ao RM &mdash; e &eacute; o default do exemplo da baixa).
   </div>
+  <nav class="gnav" id="gnav"></nav>
   <div class="toolbar">
-    <button id="expandAll">Expandir tudo</button>
-    <button id="collapseAll">Recolher tudo</button>
+    <button id="expandAll" type="button">Expandir tudo</button>
+    <button id="collapseAll" type="button">Recolher tudo</button>
   </div>
   <div id="catalog"></div>
 </main>
@@ -145,7 +191,7 @@ const endpoints = [
 
   {g:"Contrato", method:"POST", path:"/contratos", desc:"GenerateReport 1664 → GetGeneratedReportSize → GetFileChunk. Retorna CONTEUDO (PDF).", hint:"CIDADE e BAIRRO são códigos; a API resolve via INT.EDUVEM.00010/00020.", body:{NOME:"Fulano de Tal",CPF:"12345678901",ESTADO:"SP",CIDADE:"3550308",BAIRRO:"123",RUA:"Av. Paulista",NUMERO:"1000",COMPLEMENTO:"",NACIONALIDADE:"Brasileira",NASCIMENTO:"1990-01-15"}},
 
-  {g:"Financeiro", method:"POST", path:"/financeiro/baixas", desc:"Baixa (quita) um lançamento financeiro no RM (processo FinLanBaixaData). GRAVA movimento real na conta/caixa. Contrapartida da geração de lançamentos.", hint:"VALORBAIXA aceita 465,00 ou 465.00. TIPOFORMAPAGTO: Dinheiro|Cheque|Cartao|CartaoCredito|CartaoDebito|Transferencia|DebitoConta|Boleto|Pix|Outros. TIPOBAIXA: Simplificada (default)|Completa|Parcial. CODCXA pode vir do env FIN_CODCXA_PADRAO. IDFORMAPAGTO = id da Forma de Pagamento no RM (default 1 = Dinheiro). DRY_RUN:true devolve o XML gerado sem enviar ao RM (diagnóstico). Processo: FinTBCBaixaDataProcess (baixa via WS oficial TOTVS).", body:{IDLAN:"1082893",VALORBAIXA:"2000.00",CODCXA:"50380",TIPOFORMAPAGTO:"Dinheiro",CODCOLIGADA:1,CODFILIAL:1,DATABAIXA:"2026-07-13",HISTORICOBAIXA:"Baixa via API",TIPOBAIXA:"Simplificada"}},
+  {g:"Financeiro", method:"POST", path:"/financeiro/baixas", desc:"Baixa (quita) um lançamento financeiro no RM — processo FinTBCBaixaDataProcess (baixa via WS oficial da TOTVS, validada em homologação). GRAVA movimento real na conta/caixa. Contrapartida da geração de lançamentos.", hint:"O exemplo vem com DRY_RUN:true (devolve o XML gerado SEM enviar ao RM) — troque para false para executar de verdade. VALORBAIXA aceita 465,00 ou 465.00. TIPOFORMAPAGTO: Dinheiro|Cheque|Cartao|CartaoCredito|CartaoDebito|Transferencia|DebitoConta|Boleto|Pix|Outros. IDFORMAPAGTO = id da Forma de Pagamento no RM (default 1 = Dinheiro). TIPOBAIXA: Simplificada (default)|Completa|Parcial. CODCXA pode vir do env FIN_CODCXA_PADRAO.", body:{IDLAN:"1082893",VALORBAIXA:"2000.00",CODCXA:"50380",TIPOFORMAPAGTO:"Dinheiro",IDFORMAPAGTO:1,CODCOLIGADA:1,CODFILIAL:1,DATABAIXA:"2026-07-13",HISTORICOBAIXA:"Baixa via API",TIPOBAIXA:"Simplificada",DRY_RUN:true}},
   {g:"Financeiro", method:"POST", path:"/financeiro/lancamentos", desc:"Gera os lançamentos financeiros do contrato do aluno (EduGerarLancFromContratoSliceableData). Autônomo (não roda a inscrição) e idempotente.", hint:"CODCONTRATO é opcional: se enviado, é usado direto; se vazio, a API resolve pelo RA+OFERTA (matrícula no PL, 00014). Se já existirem lançamentos, não regera.", body:{RA:"000123",OFERTA:"OF2026-001",CODCONTRATO:""}},
 
   {g:"Oferta", method:"GET", path:"/ofertas/{codoferta}", desc:"Dados da oferta (INT.EDUVEM.00006).", params:{codoferta:"OF2026-001"}},
@@ -166,6 +212,7 @@ const $ = s => document.querySelector(s);
 const baseInput = $("#base");
 const apiKeyInput = $("#apikey");
 const fmtSelect = $("#fmt");
+const mfSelect = $("#mf");
 try{
   const sb = localStorage.getItem("fmp_api_base"); if(sb) baseInput.value = sb;
   const sk = localStorage.getItem("fmp_api_key"); if(sk) apiKeyInput.value = sk;
@@ -193,47 +240,128 @@ function buildUrl(ep, card){
   return trimBase()+path+(qs.length?("?"+qs.join("&")):"");
 }
 
+function corpoAtual(ep, card){
+  if(!ep.body) return null;
+  const ta = card.querySelector("textarea");
+  let obj = null;
+  try{ obj = JSON.parse(ta.value); }catch(e){ obj = null; }
+  return {texto: ta.value, obj, useForm: fmtSelect.value==="form" && isFlat(obj)};
+}
+
 function buildCurl(ep, card){
   const url = buildUrl(ep, card);
   const key = apiKeyInput.value.trim();
   let lines = ['curl -X '+ep.method+' "'+url+'"'];
   if(key){ lines.push('  -H "X-API-Key: '+key+'"'); }
 
-  if(!ep.body){
+  const corpo = corpoAtual(ep, card);
+  if(!corpo){
     lines.push('  -H "Accept: application/json"');
     return lines.join(" \\\n");
   }
 
-  const ta = card.querySelector("textarea");
-  let obj = null;
-  try{ obj = JSON.parse(ta.value); }catch(e){ obj = null; }
-  const useForm = fmtSelect.value === "form" && isFlat(obj);
-
-  if(useForm){
+  if(corpo.useForm){
     lines.push('  -H "Accept: application/json"');
-    Object.keys(obj).forEach(k=>{ lines.push('  --data-urlencode "'+k+'='+obj[k]+'"'); });
+    Object.keys(corpo.obj).forEach(k=>{ lines.push('  --data-urlencode "'+k+'='+corpo.obj[k]+'"'); });
   } else {
     lines.push('  -H "Content-Type: application/json"');
     lines.push('  -H "Accept: application/json"');
-    lines.push("  -d '"+ta.value+"'");
+    lines.push("  -d '"+corpo.texto+"'");
   }
   return lines.join(" \\\n");
 }
 
 function refresh(ep, card){ card.querySelector(".curl").textContent = buildCurl(ep, card); }
 
+/* ---------- Executar direto da página ---------- */
+
+async function executar(ep, card, btn){
+  const corpo = corpoAtual(ep, card);
+
+  if(ep.method !== "GET"){
+    const dryRun = corpo && corpo.obj && corpo.obj.DRY_RUN === true;
+    if(!dryRun && !confirm("Este "+ep.method+" GRAVA dados reais no RM.\n\n"+ep.method+" "+ep.path+"\n\nExecutar mesmo assim?")) return;
+  }
+
+  const url = buildUrl(ep, card);
+  const headers = {"Accept":"application/json"};
+  const key = apiKeyInput.value.trim();
+  if(key) headers["X-API-Key"] = key;
+
+  const opts = {method: ep.method, headers};
+  if(corpo){
+    if(corpo.useForm){
+      opts.body = new URLSearchParams(Object.entries(corpo.obj).map(([k,v])=>[k, String(v)]));
+    } else {
+      headers["Content-Type"] = "application/json";
+      opts.body = corpo.texto;
+    }
+  }
+
+  const ctrl = new AbortController();
+  opts.signal = ctrl.signal;
+  const timer = setTimeout(()=>ctrl.abort(), 300000); // acompanha o timeout do servidor (300s)
+
+  const painel = card.querySelector(".resp");
+  const pill = painel.querySelector(".status-pill");
+  const meta = painel.querySelector(".resp-meta");
+  const pre  = painel.querySelector("pre");
+  painel.classList.add("show");
+  pill.className = "status-pill s-warn"; pill.textContent = "…";
+  meta.textContent = "executando";
+  pre.textContent = "";
+  btn.disabled = true;
+
+  const t0 = performance.now();
+  try{
+    const res = await fetch(url, opts);
+    const ms = Math.round(performance.now() - t0);
+    const texto = await res.text();
+    let corpoFmt = texto;
+    try{ corpoFmt = JSON.stringify(JSON.parse(texto), null, 2); }catch(e){}
+    pill.className = "status-pill " + (res.ok ? "s-ok" : (res.status < 500 ? "s-warn" : "s-err"));
+    pill.textContent = res.status + " " + (res.statusText || "");
+    meta.textContent = ms + " ms · " + (res.headers.get("content-type")||"").split(";")[0];
+    pre.textContent = corpoFmt || "(resposta vazia)";
+  }catch(err){
+    const ms = Math.round(performance.now() - t0);
+    pill.className = "status-pill s-err";
+    pill.textContent = err.name === "AbortError" ? "timeout" : "erro de rede";
+    meta.textContent = ms + " ms";
+    pre.textContent = (err.name === "AbortError")
+      ? "A requisição excedeu 300s e foi abortada."
+      : String(err) + "\n\nSe a base for outra origem, verifique o CORS do servidor (CORS_ALLOWED_ORIGINS) e o certificado TLS.";
+  }finally{
+    clearTimeout(timer);
+    btn.disabled = false;
+  }
+}
+
+/* ---------- Montagem do catálogo ---------- */
+
 const catalog = $("#catalog");
 const groups = {};
 endpoints.forEach((ep,i)=>{ (groups[ep.g] = groups[ep.g]||[]).push({ep,i}); });
 
-Object.keys(groups).forEach(gname=>{
+const gnav = $("#gnav");
+Object.keys(groups).forEach((gname, gi)=>{
+  const a = document.createElement("a");
+  a.href = "#g"+gi;
+  a.innerHTML = esc(gname)+' <span class="n">'+groups[gname].length+"</span>";
+  gnav.appendChild(a);
+});
+$("#stats").innerHTML = "<b>"+endpoints.length+"</b> endpoints &middot; <b>"+Object.keys(groups).length+"</b> grupos";
+
+Object.keys(groups).forEach((gname, gi)=>{
   const sec = document.createElement("div");
   sec.className = "group";
-  sec.innerHTML = "<h2>"+esc(gname)+"</h2>";
+  sec.id = "g"+gi;
+  sec.innerHTML = "<h2>"+esc(gname)+'<span class="n">'+groups[gname].length+"</span></h2>";
   groups[gname].forEach(({ep})=>{
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.text = (ep.g+" "+ep.method+" "+ep.path+" "+ep.desc).toLowerCase();
+    card.dataset.method = ep.method;
 
     let inputsHtml = "";
     if(ep.params){
@@ -260,11 +388,23 @@ Object.keys(groups).forEach(gname=>{
         '<div class="snippet">'+
           '<div class="snippet-head"><span>cURL</span>'+
             '<div class="btns">'+
-              '<button class="copy" data-act="url">Copiar URL</button>'+
-              '<button class="copy" data-act="curl">Copiar cURL</button>'+
+              '<button class="copy" data-act="url" type="button">Copiar URL</button>'+
+              '<button class="copy" data-act="curl" type="button">Copiar cURL</button>'+
+              '<button class="exec" type="button">Executar &#9654;</button>'+
             '</div>'+
           '</div>'+
           '<pre class="curl"></pre>'+
+        '</div>'+
+        '<div class="resp">'+
+          '<div class="resp-head">'+
+            '<span class="status-pill s-warn">&hellip;</span>'+
+            '<span class="resp-meta"></span>'+
+            '<div class="btns">'+
+              '<button data-act="copyresp" type="button">Copiar resposta</button>'+
+              '<button data-act="clearresp" type="button">Fechar</button>'+
+            '</div>'+
+          '</div>'+
+          '<pre></pre>'+
         '</div>'+
       '</div>';
 
@@ -280,6 +420,16 @@ Object.keys(groups).forEach(gname=>{
         });
       });
     });
+    const execBtn = card.querySelector("button.exec");
+    execBtn.addEventListener("click", e=>{ e.stopPropagation(); executar(ep, card, execBtn); });
+    card.querySelector('[data-act="copyresp"]').addEventListener("click", e=>{
+      e.stopPropagation();
+      navigator.clipboard.writeText(card.querySelector(".resp pre").textContent);
+    });
+    card.querySelector('[data-act="clearresp"]').addEventListener("click", e=>{
+      e.stopPropagation();
+      card.querySelector(".resp").classList.remove("show");
+    });
 
     refresh(ep, card);
     sec.appendChild(card);
@@ -294,16 +444,37 @@ function rebuildAll(){
 baseInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_api_base", baseInput.value.trim()); }catch(e){} rebuildAll(); });
 apiKeyInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_api_key", apiKeyInput.value.trim()); }catch(e){} rebuildAll(); });
 fmtSelect.addEventListener("change", ()=>{ try{ localStorage.setItem("fmp_api_fmt", fmtSelect.value); }catch(e){} rebuildAll(); });
+$("#useOrigin").addEventListener("click", ()=>{
+  baseInput.value = window.location.origin;
+  try{ localStorage.setItem("fmp_api_base", baseInput.value); }catch(e){}
+  rebuildAll();
+});
 
-$("#q").addEventListener("input", e=>{
-  const term = e.target.value.toLowerCase().trim();
+/* ---------- Filtros ---------- */
+
+function aplicarFiltros(){
+  const term = $("#q").value.toLowerCase().trim();
+  const mf = mfSelect.value;
   document.querySelectorAll(".card").forEach(card=>{
-    card.style.display = card.dataset.text.includes(term) ? "" : "none";
+    const okTexto = card.dataset.text.includes(term);
+    const okMetodo = !mf || card.dataset.method === mf;
+    card.style.display = (okTexto && okMetodo) ? "" : "none";
   });
   document.querySelectorAll(".group").forEach(sec=>{
     const any = [...sec.querySelectorAll(".card")].some(c=> c.style.display!=="none");
     sec.style.display = any ? "" : "none";
   });
+}
+$("#q").addEventListener("input", aplicarFiltros);
+mfSelect.addEventListener("change", aplicarFiltros);
+
+document.addEventListener("keydown", e=>{
+  if(e.key === "/" && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)){
+    e.preventDefault(); $("#q").focus();
+  }
+  if(e.key === "Escape" && document.activeElement === $("#q")){
+    $("#q").value = ""; aplicarFiltros();
+  }
 });
 
 $("#expandAll").addEventListener("click", ()=> document.querySelectorAll(".card").forEach(c=>c.classList.add("open")));

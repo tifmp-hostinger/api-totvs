@@ -25,12 +25,18 @@ use Psr\Http\Server\RequestHandlerInterface as Handler;
 final class ApiKeyAuth
 {
     /**
-     * @param string   $apiKey          valor de API_KEY (vazio = auth desativada)
-     * @param string[] $isentos         prefixos de rota liberados sem chave
+     * @param string   $apiKey      valor de API_KEY (vazio = auth desativada)
+     * @param string[] $isentos     prefixos de rota liberados sem chave
+     * @param bool     $exigirChave true (produção): sem API_KEY configurada,
+     *                              as rotas NÃO isentas respondem 503 em vez de
+     *                              ficarem abertas — evita subir produção sem
+     *                              autenticação por esquecimento. Escape hatch
+     *                              deliberado: env API_KEY_OPCIONAL=true.
      */
     public function __construct(
         private readonly string $apiKey,
-        private readonly array $isentos = ['/status', '/sso']
+        private readonly array $isentos = ['/status', '/sso'],
+        private readonly bool $exigirChave = false
     ) {
     }
 
@@ -38,12 +44,6 @@ final class ApiKeyAuth
     {
         // Preflight CORS nunca exige chave.
         if (strtoupper($request->getMethod()) === 'OPTIONS') {
-            return $handler->handle($request);
-        }
-
-        // Auth desativada enquanto a chave não for configurada.
-        if ($this->apiKey === '') {
-            error_log('[RMAPI] AVISO: API_KEY nao definida — autenticacao DESATIVADA.');
             return $handler->handle($request);
         }
 
@@ -56,6 +56,20 @@ final class ApiKeyAuth
             if ($path === $prefixo || str_starts_with($path, $prefixo . '/')) {
                 return $handler->handle($request);
             }
+        }
+
+        // Sem chave configurada: em produção bloqueia (503 com instrução clara);
+        // em debug/opt-out mantém o comportamento aberto com aviso no log.
+        if ($this->apiKey === '') {
+            if ($this->exigirChave) {
+                return Json::error(
+                    'API indisponível: autenticação não configurada no servidor.',
+                    ['detalhe' => 'Defina a env API_KEY (ou API_KEY_OPCIONAL=true para rodar deliberadamente sem autenticação).'],
+                    503
+                );
+            }
+            error_log('[RMAPI] AVISO: API_KEY nao definida — autenticacao DESATIVADA.');
+            return $handler->handle($request);
         }
 
         if (!hash_equals($this->apiKey, $this->extrairChave($request))) {

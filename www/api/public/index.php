@@ -79,21 +79,54 @@ $app->setBasePath('');
 (require __DIR__ . '/../config/routes.php')($app);
 
 /* ---------- Autenticação (API key) ----------
- * Ativa só quando a env API_KEY está definida. Isenta /status e /sso.
+ * Ativa quando a env API_KEY está definida. Isenta /status e /sso.
+ * Em produção (APP_DEBUG=false), API_KEY vazia BLOQUEIA as rotas não isentas
+ * com 503 (evita subir produção aberta por esquecimento); para rodar
+ * deliberadamente sem autenticação, defina API_KEY_OPCIONAL=true.
  * Adicionada ANTES do CORS para que o CORS (externo) envolva também o 401.
  */
+$appDebug = \FMP\RMApi\Support\Env::get('APP_DEBUG', 'false') === 'true';
+$apiKeyOpcional = \FMP\RMApi\Support\Env::get('API_KEY_OPCIONAL', 'false') === 'true';
+
 $app->add(new \FMP\RMApi\Middleware\ApiKeyAuth(
-    \FMP\RMApi\Support\Env::get('API_KEY', '') ?? ''
+    \FMP\RMApi\Support\Env::get('API_KEY', '') ?? '',
+    exigirChave: !$appDebug && !$apiKeyOpcional
 ));
 
-/* ---------- CORS ---------- */
+/* ---------- CORS ----------
+ * CORS_ALLOWED_ORIGINS: lista de origens permitidas separadas por vírgula.
+ * Default "*" preserva o comportamento aberto anterior. Com lista definida,
+ * a origem da requisição só é ecoada se estiver na lista (senão o navegador
+ * bloqueia). O preflight OPTIONS é respondido aqui com 204 — antes ele caía
+ * no roteador (que não registra OPTIONS) e voltava erro sem headers CORS.
+ */
+$corsOrigens = array_values(array_filter(array_map(
+    'trim',
+    explode(',', (string) \FMP\RMApi\Support\Env::get('CORS_ALLOWED_ORIGINS', '*'))
+)));
 
-$app->add(function (Request $request, $handler) {
-    $response = $handler->handle($request);
+$app->add(function (Request $request, $handler) use ($corsOrigens) {
+    $preflight = strtoupper($request->getMethod()) === 'OPTIONS';
+
+    $response = $preflight
+        ? new \Slim\Psr7\Response(204)
+        : $handler->handle($request);
+
+    $origin = $request->getHeaderLine('Origin');
+    if (in_array('*', $corsOrigens, true)) {
+        $allow = '*';
+    } elseif ($origin !== '' && in_array($origin, $corsOrigens, true)) {
+        $allow = $origin;
+        $response = $response->withAddedHeader('Vary', 'Origin');
+    } else {
+        return $response; // origem não permitida: sem headers CORS
+    }
+
     return $response
-        ->withHeader('Access-Control-Allow-Origin', '*')
+        ->withHeader('Access-Control-Allow-Origin', $allow)
         ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization, X-API-Key')
-        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+        ->withHeader('Access-Control-Max-Age', '600');
 });
 
 /* ---------- Tratamento de erros centralizado ----------
