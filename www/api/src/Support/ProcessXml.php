@@ -1530,6 +1530,7 @@ XML;
             self::setFilho($item, 'CodCxa', $cxa);
             self::setFilho($item, 'CodFilial', $fil);
             self::setFilho($item, 'DataBaixa', $data);
+            self::setFilho($item, 'DataContabilizBx', $data);
             self::setFilho($item, 'IdLan', $lan);
             self::setFilho($item, 'ValorBaixa', $valorBaixa);
             self::setFilho($item, 'ValorOriginal', $valorBaixa);
@@ -1537,6 +1538,10 @@ XML;
             self::setFilho($item, 'CotacaoBaixa', '1');
             self::setFilho($item, 'TipoFormaPagto', $tipoFormaPagto);
             self::setFilho($item, 'PagRec', 'Receber');
+            // Liga o item ao registro FLAN. A framework do RM identifica o
+            // lançamento por este mapa de PK; sem ele a lista interna de
+            // lançamentos fica vazia -> "Os lançamentos devem ser informados".
+            self::preencherCamposComplementares($item, $col, $lan);
         }
 
         // ---- Lancamentos > FinLancamentoBaixaResult (escalares; esvazia listas-monstro) ----
@@ -1617,6 +1622,53 @@ XML;
                 }
             }
         }
+    }
+
+    /**
+     * Preenche o CamposComplementares de um FinItemBaixa com o mapa de PK do
+     * registro FLAN (CODCOLIGADA, IDLAN, IDBAIXA=-1 + REC* nulos), reproduzindo
+     * o dicionário que o RM envia quando a baixa é feita pela tela. É por esse
+     * mapa que a framework identifica o lançamento a baixar.
+     */
+    private static function preencherCamposComplementares(\DOMElement $item, string $col, string $lan): void
+    {
+        $cc = self::filho($item, 'CamposComplementares');
+        if ($cc === null) {
+            return;
+        }
+
+        $arrNs = 'http://schemas.microsoft.com/2003/10/Serialization/Arrays';
+        $xsNs  = 'http://www.w3.org/2001/XMLSchema';
+        $xsiNs = 'http://www.w3.org/2001/XMLSchema-instance';
+        $doc   = $cc->ownerDocument;
+
+        if ($cc->hasAttributeNS($xsiNs, 'nil')) {
+            $cc->removeAttributeNS($xsiNs, 'nil');
+        }
+        self::esvaziar($cc);
+
+        $addPar = static function (string $key, ?string $tipo, ?string $valor) use ($doc, $cc, $arrNs, $xsNs, $xsiNs): void {
+            $kv = $doc->createElementNS($arrNs, 'a:KeyValueOfstringanyType');
+            $kv->appendChild($doc->createElementNS($arrNs, 'a:Key', $key));
+            $v = $doc->createElementNS($arrNs, 'a:Value');
+            if ($valor === null) {
+                $v->setAttributeNS($xsiNs, 'i:nil', 'true');
+            } else {
+                $v->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:b', $xsNs);
+                $v->setAttributeNS($xsiNs, 'i:type', 'b:' . $tipo);
+                $v->appendChild($doc->createTextNode($valor));
+            }
+            $kv->appendChild($v);
+            $cc->appendChild($kv);
+        };
+
+        $addPar('CODCOLIGADA', 'short', $col);
+        $addPar('IDLAN', 'int', $lan);
+        $addPar('IDBAIXA', 'int', '-1');
+        $addPar('RECCREATEDBY', null, null);
+        $addPar('RECCREATEDON', null, null);
+        $addPar('RECMODIFIEDBY', null, null);
+        $addPar('RECMODIFIEDON', null, null);
     }
 
     /** Primeiro filho DOMElement com o localName dado (namespace-agnóstico). */
