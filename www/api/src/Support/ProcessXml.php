@@ -25,6 +25,9 @@ class ProcessXml
     /** Template do FinTBCBaixaParamsProc (GetSchema) — baixa via WS suportada pela TOTVS. */
     private const TEMPLATE_BAIXA_TBC = __DIR__ . '/../../resources/fin/FinTBCBaixaParamsProc.template.xml';
 
+    /** Template do FinLanBaixaTBCParamsProc (GetSchema) — variante TBC orientada a pagamento. */
+    private const TEMPLATE_BAIXA_TBC_LAN = __DIR__ . '/../../resources/fin/FinLanBaixaTBCParamsProc.template.xml';
+
     /**
      * Remove a indentação comum do heredoc e qualquer espaço em branco
      * antes da declaração <?xml ...?> — o desserializador .NET do RM exige
@@ -1553,6 +1556,52 @@ XML;
 
         if (str_contains($xml, '{{')) {
             throw new \RuntimeException('Template da baixa TBC com placeholder não resolvido.');
+        }
+
+        return $xml;
+    }
+
+    /**
+     * Variante TBC orientada a pagamento (ProcessServerName FinLanBaixaTBCData,
+     * raiz FinLanBaixaTBCParamsProc): um pagamento cobre a lista de lançamentos
+     * (Pagamentos>FinPagamentoBaixaTBCParamsProc com ListIdLan + MeioPagamento).
+     * Mesmos princípios do baixaLancamentoTbc(); contabilização por Evento
+     * Contábil (LanctoParaBaixas de exemplo esvaziado).
+     */
+    public static function baixaLancamentoTbcLan(
+        string|int $codColigada,
+        string|int $codFilial,
+        string|int $idLan,
+        string $valorBaixa,
+        string|int $codCxa,
+        string $dataBaixa,
+        string $historico,
+        string $codUsuario,
+        string|int $idFormaPagto = 1,
+        string|int $chapaFuncionario = '-1'
+    ): string {
+        $template = @file_get_contents(self::TEMPLATE_BAIXA_TBC_LAN);
+        if ($template === false || trim($template) === '') {
+            throw new \RuntimeException('Template da baixa TBC (Lan) não encontrado: ' . self::TEMPLATE_BAIXA_TBC_LAN);
+        }
+
+        $esc = static fn (string $v): string => htmlspecialchars($v, ENT_XML1, 'UTF-8');
+
+        $xml = strtr($template, [
+            '{{CODCOLIGADA}}'  => (string) $codColigada,
+            '{{CODFILIAL}}'    => (string) $codFilial,
+            '{{CHAPA}}'        => $esc((string) $chapaFuncionario),
+            '{{USUARIO}}'      => $esc($codUsuario),
+            '{{IDLAN}}'        => (string) $idLan,
+            '{{DATA}}'         => $dataBaixa . 'T00:00:00-03:00',
+            '{{HISTBAIXA}}'    => $esc($historico),
+            '{{CODCXA}}'       => $esc((string) $codCxa),
+            '{{IDFORMAPAGTO}}' => (string) $idFormaPagto,
+            '{{VALOR}}'        => number_format((float) $valorBaixa, 2, '.', ''),
+        ]);
+
+        if (str_contains($xml, '{{')) {
+            throw new \RuntimeException('Template da baixa TBC (Lan) com placeholder não resolvido.');
         }
 
         return $xml;

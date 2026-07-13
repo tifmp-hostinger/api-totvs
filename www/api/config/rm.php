@@ -53,9 +53,13 @@ return [
     // FinLanBaixaData é o processo da TELA — via WS as coleções chegam vazias e ele
     // responde "Os lançamentos devem ser informados" (não use; fica como fallback
     // configurável para o builder de replay).
+    // Operação: os exemplos da TDN para os processos TBC usam ExecuteWithXmlParams —
+    // a mesma operação da Matrícula/Lançamento, que comprovadamente entrega objetos
+    // complexos ao processo. Processos alternativos por env (builder acompanha):
+    //   FinTBCBaixaDataProcess (default) | FinLanBaixaTBCData | FinLanBaixaData (tela/replay)
     'baixa' => [
         'processo' => Env::get('FIN_BAIXA_PROCESSO', 'FinTBCBaixaDataProcess'),
-        'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithParams'),
+        'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithXMLParams'),
     ],
 
     // Relatório contrato (o ID do relatório pode variar entre bases/ambientes)

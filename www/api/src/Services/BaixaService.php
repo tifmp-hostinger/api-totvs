@@ -136,10 +136,10 @@ class BaixaService
         $processo = (string) ($this->rmConfig['baixa']['processo'] ?? self::PROCESSO);
         $operacao = (string) ($this->rmConfig['baixa']['operacao'] ?? 'ExecuteWithParams');
 
-        // Builder conforme o processo: TBC (contrato WS oficial da TOTVS) ou o
+        // Builder conforme o processo: TBC (contratos WS oficiais da TOTVS) ou o
         // replay do processo da tela (legado/fallback).
-        $xml = $processo === 'FinTBCBaixaDataProcess'
-            ? ProcessXml::baixaLancamentoTbc(
+        $xml = match ($processo) {
+            'FinTBCBaixaDataProcess' => ProcessXml::baixaLancamentoTbc(
                 codColigada: $codColigada,
                 codFilial: $codFilial,
                 idLan: (string) $idLan,
@@ -148,8 +148,19 @@ class BaixaService
                 dataBaixa: $dataBaixa,
                 historico: $historico,
                 idFormaPagto: $idFormaPagto
-            )
-            : ProcessXml::baixaLancamento(
+            ),
+            'FinLanBaixaTBCData' => ProcessXml::baixaLancamentoTbcLan(
+                codColigada: $codColigada,
+                codFilial: $codFilial,
+                idLan: (string) $idLan,
+                valorBaixa: $valorBaixa,
+                codCxa: $codCxa,
+                dataBaixa: $dataBaixa,
+                historico: $historico,
+                codUsuario: $codUsuario,
+                idFormaPagto: $idFormaPagto
+            ),
+            default => ProcessXml::baixaLancamento(
                 codColigada: $codColigada,
                 codFilial: $codFilial,
                 idLan: (string) $idLan,
@@ -160,7 +171,8 @@ class BaixaService
                 historico: $historico,
                 codUsuario: $codUsuario,
                 tipoBaixa: $tipoBaixa
-            );
+            ),
+        };
 
         // Modo diagnóstico: devolve o XML gerado SEM enviar ao RM. Serve para
         // auditar o payload da versão implantada (tamanho/md5 identificam a
