@@ -257,6 +257,32 @@ Body: `{ "RA": "000123", "OFERTA": "OF2026-001", "CODCONTRATO": "..." }` — **`
 
 Resolve internamente a oferta (`INT.EDUVEM.00006`) para obter coligada/filial/período-letivo; dispara o processo e confirma a criação com retentativas (o job roda assíncrono). Se `CODCONTRATO` não for enviado e não houver contrato localizável → **422**. Retorno (200): `{ gerados, ja_existiam, CODCONTRATO, RA, OFERTA }`.
 
+### Financeiro — Consulta de lançamentos
+
+`GET /financeiro/lancamentos?RA=...&OFERTA=...` — **lista (somente leitura)** os lançamentos do contrato do aluno (sentença `INT.EDUVEM.00018`). É o passo natural **entre gerar e baixar**: aqui se descobre o `IDLAN` que a baixa exige.
+
+Query: `RA` e `OFERTA` (obrigatórios, aceitos em qualquer caixa), `CODCONTRATO` (opcional — se vazio, resolve pela matrícula no período letivo, `INT.EDUVEM.00014`).
+
+Retorno (200):
+
+```json
+{
+  "total": 10,
+  "lancamentos": [ { "...colunas da sentença INT.EDUVEM.00018..." } ],
+  "resumo": {
+    "IDLANS": ["1091335", "1091336"],
+    "ABERTOS": [ { "IDLAN": "1091335", "VALOR": "500.00", "STATUS": "..." } ],
+    "TOTAL_ABERTOS": 2,
+    "PRIMEIRO_IDLAN": "1091335",
+    "VALOR_TOTAL": "5000.00",
+    "COLUNAS": ["IDLAN", "..."]
+  },
+  "CODCONTRATO": "...", "RA": "...", "OFERTA": "..."
+}
+```
+
+> **As colunas de `lancamentos` são exatamente as da sentença cadastrada no RM** — a API não as reescreve. O bloco `resumo` procura `IDLAN`/valor/status de forma **tolerante a nomes** (`IDLAN`, `VALORLIQUIDO`, `STATUSLAN`, `VALORBAIXADO`…): se a sentença não expuser a coluna, o campo vem vazio em vez de quebrar. Confira `resumo.COLUNAS` na primeira chamada para saber o que a sua instância devolve. Sem contrato localizável → **422**.
+
 ### Consultas
 
 | Rota | Sentença |

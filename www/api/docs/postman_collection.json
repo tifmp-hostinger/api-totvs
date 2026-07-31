@@ -940,47 +940,6 @@
    "name": "Financeiro",
    "item": [
     {
-     "name": "Baixa de lançamento",
-     "request": {
-      "method": "POST",
-      "header": [
-       {
-        "key": "Accept",
-        "value": "application/json"
-       },
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       },
-       {
-        "key": "X-API-Key",
-        "value": "{{apiKey}}"
-       }
-      ],
-      "url": {
-       "raw": "{{baseUrl}}/financeiro/baixas",
-       "host": [
-        "{{baseUrl}}"
-       ],
-       "path": [
-        "financeiro",
-        "baixas"
-       ],
-       "query": []
-      },
-      "description": "GRAVA movimento real na conta/caixa (FinTBCBaixaDataProcess). IDFORMAPAGTO = id da Forma de Pagamento no RM (default 1 = Dinheiro). DRY_RUN:true devolve o XML sem enviar ao RM.",
-      "body": {
-       "mode": "raw",
-       "raw": "{\n  \"IDLAN\": \"1082893\",\n  \"VALORBAIXA\": \"465,00\",\n  \"CODCXA\": \"50380\",\n  \"TIPOFORMAPAGTO\": \"Dinheiro\",\n  \"HISTORICOBAIXA\": \"Baixa via API\",\n  \"DRY_RUN\": false\n}",
-       "options": {
-        "raw": {
-         "language": "json"
-        }
-       }
-      }
-     }
-    },
-    {
      "name": "Gerar lançamentos do contrato",
      "request": {
       "method": "POST",
@@ -1013,6 +972,89 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"RA\": \"24001268\",\n  \"OFERTA\": \"OF2026-001\",\n  \"CODCONTRATO\": \"\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "Listar lançamentos do contrato",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "X-API-Key",
+        "value": "{{apiKey}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/financeiro/lancamentos?RA=24001268&OFERTA=OF2026-001",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "financeiro",
+        "lancamentos"
+       ],
+       "query": [
+        {
+         "key": "RA",
+         "value": "24001268"
+        },
+        {
+         "key": "OFERTA",
+         "value": "OF2026-001"
+        },
+        {
+         "key": "CODCONTRATO",
+         "value": "",
+         "disabled": true
+        }
+       ]
+      },
+      "description": "Lista (leitura) os lançamentos do contrato — INT.EDUVEM.00018. Passo entre gerar e baixar: é aqui que se descobre o IDLAN. 'resumo' traz IDLANS, ABERTOS, PRIMEIRO_IDLAN, VALOR_TOTAL e COLUNAS. CODCONTRATO é opcional."
+     }
+    },
+    {
+     "name": "Baixa de lançamento",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "X-API-Key",
+        "value": "{{apiKey}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/financeiro/baixas",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "financeiro",
+        "baixas"
+       ],
+       "query": []
+      },
+      "description": "GRAVA movimento real na conta/caixa (FinTBCBaixaDataProcess). IDFORMAPAGTO = id da Forma de Pagamento no RM (default 1 = Dinheiro). DRY_RUN:true devolve o XML sem enviar ao RM.",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"IDLAN\": \"1082893\",\n  \"VALORBAIXA\": \"465,00\",\n  \"CODCXA\": \"50380\",\n  \"TIPOFORMAPAGTO\": \"Dinheiro\",\n  \"HISTORICOBAIXA\": \"Baixa via API\",\n  \"DRY_RUN\": false\n}",
        "options": {
         "raw": {
          "language": "json"

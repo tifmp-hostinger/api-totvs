@@ -86,6 +86,8 @@ return function (App $app): void {
         $fin->post('/baixas', [FinanceiroController::class, 'baixar']);
         // Geração de lançamentos do contrato (autônoma): EduGerarLancFromContratoSliceableData.
         $fin->post('/lancamentos', [FinanceiroController::class, 'gerarLancamentos']);
+        // Consulta (leitura) dos lançamentos do contrato: INT.EDUVEM.00018.
+        $fin->get('/lancamentos', [FinanceiroController::class, 'listarLancamentos']);
     });
 
     /* ---------- Oferta ---------- */

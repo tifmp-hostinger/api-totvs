@@ -670,6 +670,17 @@ curl -X POST "$BASE_URL/financeiro/baixas" \
 ```
 
 
+### `GET /financeiro/lancamentos`
+
+**Lista** os lançamentos do contrato (INT.EDUVEM.00018) — passo entre gerar e baixar, é aqui que se descobre o `IDLAN`. `CODCONTRATO` é opcional.
+
+```bash
+curl -X GET "$BASE_URL/financeiro/lancamentos?RA=24001268&OFERTA=OF2026-001" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json"
+```
+
+
 ### `POST /financeiro/lancamentos`
 
 Gera os lançamentos financeiros do contrato do aluno (processo `EduGerarLancFromContratoSliceableData`). Autônomo e idempotente. `CODCONTRATO` é opcional (sem ele, resolve pela matrícula no período letivo).
