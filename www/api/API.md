@@ -134,6 +134,8 @@ Retorno do RM = `CODPESSOA` (numérico) ou mensagem de validação (exposta em `
 | `POST /alunos/cliente-fornecedor` | `{ "RA": "...", "CODCOLIGADA": 1, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CODCOLCFO": 0, "CODCFO": "..." }` | 200 + `{ chave, etapas }` |
 | `GET /alunos/{codcoligada}/{codpessoa}` | — | RA, CODUSUARIO, SENHAPADRAO, EXISTESUSUARIOFILIAL, DATAULTIMOACESSOVALIDO |
 
+> **Aluno sem `CODUSUARIO`:** o RM cria o usuário do aluno (nome = RA) mas nem sempre grava o elo em `SALUNO.CODUSUARIO` — e sem ele não há vínculo usuário/filial nem SSO. Quando isso ocorre, a API **grava o vínculo** (`CODUSUARIO = RA`) e relê o aluno (etapa `USUÁRIO DO ALUNO` = `CORRIGIDO`). Se ainda assim faltar, a API **não derruba a requisição**: o aluno já está criado, então devolve **200** com o RA e marca `ACESSO` = `SEM_USUARIO` (matrícula e financeiro seguem; só o portal fica pendente). Antes isso era **422** e travava a integração inteira com o aluno já gravado.
+
 **`POST /alunos` agora é orquestrado com rastreamento de etapas** (como a inscrição):
 `CLIENTE/FORNECEDOR` (valida o cliFor pelo CPF/RNM via `INT.EDUVEM.00009`) → `ALUNO` (EduAlunoData) → `USUÁRIO/FILIAL` (EduUsuarioFilialData) → `ACESSO` (GlbUsuarioData + SSO). Sucesso devolve `dados.etapas`; erro de RM lança `FluxoException` (422) com `etapa` + `etapas_concluidas`.
 

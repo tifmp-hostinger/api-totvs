@@ -125,14 +125,39 @@ class AlunoService
             );
         }
 
+        // O RM cria o usuário do aluno (nome = RA) mas nem sempre grava o elo em
+        // SALUNO.CODUSUARIO. Sem esse elo não há vínculo usuário/filial nem SSO,
+        // e o fluxo inteiro parava aqui — com o aluno já criado. Quando isso
+        // acontecer, gravamos o vínculo (CODUSUARIO = RA) e relemos.
         if (empty($student['CODUSUARIO'])) {
-            throw $this->falhaMsg(
-                'ALUNO',
-                "O aluno foi gravado (chave {$chave}, RA " . ($student['RA'] ?? '?')
-                    . '), mas está SEM usuário de portal (CODUSUARIO vazio) — necessário para '
-                    . 'o vínculo usuário/filial e o SSO de primeiro acesso.',
-                $etapas,
-                $student
+            $ra = trim((string) ($student['RA'] ?? explode(';', $chave)[1] ?? ''));
+
+            if ($ra !== '') {
+                try {
+                    $this->vincularUsuario($codColigada, $ra, $codTipoCurso, $codFilial);
+                    $student = $this->buscar($codPessoa, $codColigada) ?? $student;
+                    $add(
+                        'USUÁRIO DO ALUNO',
+                        "Aluno estava sem CODUSUARIO; vínculo com o usuário {$ra} gravado",
+                        'CORRIGIDO'
+                    );
+                } catch (RMException $e) {
+                    $add('USUÁRIO DO ALUNO', "Não foi possível vincular o usuário {$ra} ao aluno: " . $e->retornoRm, 'ERRO');
+                }
+            }
+        }
+
+        // Se ainda assim não houver usuário, o aluno JÁ ESTÁ CRIADO — derrubar a
+        // requisição aqui perderia o RA e travaria toda a matrícula. Seguimos
+        // sem SSO, registrando o aviso (as etapas seguintes já são best-effort).
+        $semUsuario = empty($student['CODUSUARIO']);
+        if ($semUsuario) {
+            $add(
+                'ACESSO',
+                'Aluno criado, mas sem usuário de portal (CODUSUARIO vazio). '
+                    . 'Matrícula e financeiro seguem normalmente; o acesso ao portal '
+                    . 'precisa ser resolvido no RM.',
+                'SEM_USUARIO'
             );
         }
 
@@ -141,7 +166,9 @@ class AlunoService
          * usuário de integração no RM), registramos como etapa ERRO e seguimos
          * sem derrubar a criação do aluno.
          */
-        if (($student['EXISTESUSUARIOFILIAL'] ?? '') === 'N') {
+        if ($semUsuario) {
+            $add('USUÁRIO/FILIAL DO ALUNO', 'Pulado: aluno sem CODUSUARIO', 'PULADO');
+        } elseif (($student['EXISTESUSUARIOFILIAL'] ?? '') === 'N') {
             try {
                 $this->garantirUsuarioFilial($student['CODUSUARIO'], $codColigada, $codTipoCurso, $codFilial);
                 $add('USUÁRIO/FILIAL DO ALUNO', "Vínculo usuário/filial criado para {$student['CODUSUARIO']}");
@@ -159,10 +186,13 @@ class AlunoService
         $autoLogin = false;
         $nextUrl   = $this->rmConfig['portal']['login_url'] ?? '';
 
-        $temSenhaPadrao = $this->temSenhaPadrao($student['CODUSUARIO'], (string) ($student['SENHAPADRAO'] ?? ''));
+        $temSenhaPadrao = !$semUsuario
+            && $this->temSenhaPadrao($student['CODUSUARIO'], (string) ($student['SENHAPADRAO'] ?? ''));
         $nuncaAcessou   = empty($student['DATAULTIMOACESSOVALIDO']);
 
-        if ($nuncaAcessou || $temSenhaPadrao) {
+        if ($semUsuario) {
+            // aviso já registrado acima; sem usuário não há SSO a preparar
+        } elseif ($nuncaAcessou || $temSenhaPadrao) {
             try {
                 $this->ajustarAcessoUsuario($student['CODUSUARIO'], (string) $student['SENHAPADRAO']);
                 $token     = $this->crypto->encrypt($student['CODUSUARIO'] . '$_$' . $student['SENHAPADRAO']);
@@ -178,12 +208,48 @@ class AlunoService
 
         return [
             'chave'      => $chave,
-            'RA'         => $student['RA'] ?? null,
-            'CODUSUARIO' => $student['CODUSUARIO'],
+            'RA'         => $student['RA'] ?? (explode(';', $chave)[1] ?? null),
+            'CODUSUARIO' => $student['CODUSUARIO'] ?? null,
             'autoLogin'  => $autoLogin,
             'nextUrl'    => $nextUrl,
             'etapas'     => $etapas,
         ];
+    }
+
+    /**
+     * Grava o elo SALUNO.CODUSUARIO quando o RM criou o usuário do aluno (nome
+     * = RA) mas não preencheu o campo no aluno. Gravação parcial: só a PK + o
+     * campo, mesmo padrão de vincularCliente().
+     */
+    public function vincularUsuario(
+        string|int $codColigada,
+        string $ra,
+        string|int $codTipoCurso,
+        string|int $codFilial
+    ): string {
+        $esc     = fn($v) => htmlspecialchars((string) $v, ENT_XML1, 'UTF-8');
+        $colX    = $esc($codColigada);
+        $raX     = $esc($ra);
+
+        $xml = <<<XML
+        <EduAluno>
+            <SAluno>
+                <CODCOLIGADA>{$colX}</CODCOLIGADA>
+                <RA>{$raX}</RA>
+                <CODUSUARIO>{$raX}</CODUSUARIO>
+            </SAluno>
+            <SAlunoCompl>
+                <CODCOLIGADA>{$colX}</CODCOLIGADA>
+                <RA>{$raX}</RA>
+            </SAlunoCompl>
+        </EduAluno>
+        XML;
+
+        return $this->rm->saveRecord(
+            self::DATASERVER_ALUNO,
+            $xml,
+            $this->contexto($codColigada, $codTipoCurso, $codFilial)
+        );
     }
 
     /**
