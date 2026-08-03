@@ -64,3 +64,17 @@ checkThrows('ensureHasValue rejeita ausente', ValidationException::class, fn() =
 // Quirk documentado: usa !empty(), então "0" é tratado como ausente. Quem
 // precisa aceitar zero (ex.: CODCOLCFO=0) valida à mão — ver AlunoService::vincularCliente().
 checkThrows('ensureHasValue rejeita "0" (quirk conhecido do empty)', ValidationException::class, fn() => Validation::ensureHasValue(['K' => '0'], 'K'));
+
+/* ---------- placeholders de integração não resolvida ---------- */
+
+// Sem esta guarda, "undefined" passava no !empty() e virava dado real no RM.
+foreach (['undefined', 'null', 'NaN', '[object Object]', ' UNDEFINED '] as $lixo) {
+    checkThrows(
+        "ensureHasValue rejeita placeholder " . var_export($lixo, true),
+        ValidationException::class,
+        fn() => Validation::ensureHasValue(['CODPESSOA' => $lixo], 'CODPESSOA')
+    );
+}
+// Valores legítimos que apenas CONTÊM as palavras seguem passando.
+checkSame('valor legítimo com "null" dentro passa', 'nullify', Validation::ensureHasValue(['K' => 'nullify'], 'K'));
+checkSame('número passa normalmente', 12345, Validation::ensureHasValue(['K' => 12345], 'K'));

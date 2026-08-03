@@ -107,9 +107,33 @@ class AlunoService
         }
         $add('ALUNO', ($alunoJaExistia ? 'Aluno atualizado' : 'Aluno criado') . ". Chave: {$chave}", $alunoJaExistia ? 'ATUALIZADO' : 'OK');
 
+        // A releitura usa a MESMA chave da gravação (CODPESSOA+CODCOLIGADA). Se
+        // não voltar linha, o problema é de identificação (a gravação foi por
+        // outra chave); se voltar sem CODUSUARIO, o aluno existe mas está sem
+        // usuário de portal. Mensagens distintas: as causas e os consertos são
+        // diferentes, e a mensagem genérica anterior escondia isso.
         $student = $this->buscar($codPessoa, $codColigada);
-        if ($student === null || empty($student['CODUSUARIO'])) {
-            throw $this->falhaMsg('ALUNO', 'Não foi possível obter o usuário do aluno gravado.', $etapas, $student);
+
+        if ($student === null) {
+            throw $this->falhaMsg(
+                'ALUNO',
+                "O aluno foi gravado (chave {$chave}), mas a consulta "
+                    . ConsultaService::SQL_ALUNO . " não o encontrou por CODPESSOA={$codPessoa} "
+                    . "/ CODCOLIGADA={$codColigada}. Confira se o CODPESSOA enviado é o correto.",
+                $etapas,
+                ['CODPESSOA' => $codPessoa, 'CODCOLIGADA' => $codColigada, 'chave_gravada' => $chave]
+            );
+        }
+
+        if (empty($student['CODUSUARIO'])) {
+            throw $this->falhaMsg(
+                'ALUNO',
+                "O aluno foi gravado (chave {$chave}, RA " . ($student['RA'] ?? '?')
+                    . '), mas está SEM usuário de portal (CODUSUARIO vazio) — necessário para '
+                    . 'o vínculo usuário/filial e o SSO de primeiro acesso.',
+                $etapas,
+                $student
+            );
         }
 
         /* ---------- Usuário/Filial (EduUsuarioFilialData) — best-effort ----------

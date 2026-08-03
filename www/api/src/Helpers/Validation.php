@@ -27,10 +27,29 @@ class Validation
         );
     }
 
+    /**
+     * Literais que denunciam expressão de integração não resolvida (o n8n/JS
+     * mandou o texto em vez do valor). Sem esta checagem, "undefined" passa no
+     * !empty() e vira dado real no RM — foi o que permitiu gravar aluno com
+     * CODPESSOA inválido (o RM aceita, e a releitura depois não encontra).
+     */
+    private const PLACEHOLDERS_INVALIDOS = ['undefined', 'null', 'nan', '[object object]'];
+
     public static function ensureHasValue($arr, $key)
     {
         if (is_array($arr) && isset($arr[$key]) && !empty($arr[$key])) {
-            return $arr[$key];
+            $valor = $arr[$key];
+
+            if (is_string($valor) && in_array(mb_strtolower(trim($valor)), self::PLACEHOLDERS_INVALIDOS, true)) {
+                throw new ValidationException(
+                    "O campo {$key} chegou como \"{$valor}\": a expressão que o preenche não foi "
+                        . 'resolvida na origem. Verifique o mapeamento da integração.',
+                    "Placeholder não resolvido recebido em {$key}: {$valor}",
+                    $arr
+                );
+            }
+
+            return $valor;
         }
 
         throw new ValidationException(
