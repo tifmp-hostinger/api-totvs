@@ -10,7 +10,12 @@ use FMP\RMApi\Support\ProcessXml;
 
 /**
  * Matrícula do aluno:
- *  - no curso (EduHabilitacaoAlunoData, CODSTATUS 23 = pré-matrícula)
+ *  - no curso (EduHabilitacaoAlunoData)
+ *
+ * A situação da matrícula (CODSTATUS) é a mesma nas três etapas e pode ser
+ * informada por chamada; sem isso vale rm.matricula.codstatus_padrao (env
+ * TOTVS_MATRICULA_CODSTATUS). Códigos usados na FMP: 23 = pré-matrícula,
+ * 57 = matriculado.
  *  - no período letivo (processo EduMatriculaProcData → gera contrato)
  *  - nas turmas/disciplinas (processo EduMatriculaProcData / enturmação)
  */
@@ -31,6 +36,19 @@ class MatriculaService
     ) {
     }
 
+    /**
+     * Situação de matrícula a enviar ao RM: o valor da chamada tem prioridade;
+     * depois a config (env TOTVS_MATRICULA_CODSTATUS); por último o padrão do
+     * ProcessXml. A validação numérica acontece no ProcessXml, um único ponto.
+     */
+    private function codStatus(string|int|null $codStatus): int
+    {
+        $valor = $codStatus ?? $this->rmConfig['matricula']['codstatus_padrao']
+            ?? ProcessXml::CODSTATUS_PADRAO;
+
+        return ProcessXml::normalizarCodStatus($valor);
+    }
+
     private function contexto(string|int $codColigada, string|int $codTipoCurso, string|int $codFilial): array
     {
         return [
@@ -43,12 +61,17 @@ class MatriculaService
     }
 
     /**
-     * Matrícula (pré-matrícula, status 23) do aluno no curso da oferta.
-     * Idempotente: se já existe, não regrava.
+     * Matrícula do aluno no curso da oferta, com a situação informada.
+     * Idempotente: se já existe, NÃO regrava — logo, um aluno já matriculado
+     * mantém a situação que tinha; este parâmetro só afeta matrículas novas.
      * Retorna a linha da matrícula (INT.EDUVEM.00011).
      */
-    public function matricularNoCurso(string $ra, string $codOferta, array $oferta): array
-    {
+    public function matricularNoCurso(
+        string $ra,
+        string $codOferta,
+        array $oferta,
+        string|int|null $codStatus = null
+    ): array {
         $existente = $this->consulta->matriculaCurso($codOferta, $ra);
         if ($existente !== null) {
             return $existente;
@@ -58,6 +81,7 @@ class MatriculaService
         $idHabilitacaoFilial = $oferta['IDHABILITACAOFILIAL'];
         $codTipoCurso        = $oferta['CODTIPOCURSO'];
         $codFilial           = $oferta['CODFILIAL'];
+        $status              = $this->codStatus($codStatus);
 
         $xml = <<<XML
         <EduHabilitacaoAluno>
@@ -65,7 +89,7 @@ class MatriculaService
                 <CODCOLIGADA>{$codColigada}</CODCOLIGADA>
                 <IDHABILITACAOFILIAL>{$idHabilitacaoFilial}</IDHABILITACAOFILIAL>
                 <RA>{$ra}</RA>
-                <CODSTATUS>23</CODSTATUS>
+                <CODSTATUS>{$status}</CODSTATUS>
                 <CODCURSO>{$oferta['CODCURSO']}</CODCURSO>
                 <CODHABILITACAO>{$oferta['CODHABILITACAO']}</CODHABILITACAO>
                 <CODGRADE>{$oferta['CODGRADE']}</CODGRADE>
@@ -165,7 +189,8 @@ class MatriculaService
         string $ra,
         string $codOferta,
         array $oferta,
-        string $codPlanoPagamento
+        string $codPlanoPagamento,
+        string|int|null $codStatus = null
     ): array {
         $existente = $this->consulta->matriculaPeriodoLetivo($codOferta, $ra);
         if ($existente !== null) {
@@ -182,7 +207,8 @@ class MatriculaService
             ra: $ra,
             codTurma: $oferta['CODTURMA'],
             codPlanoPagamento: $codPlanoPagamento,
-            now: date('Y-m-d') . 'T' . date('H:i:s')
+            now: date('Y-m-d') . 'T' . date('H:i:s'),
+            codStatus: $this->codStatus($codStatus)
         );
 
         $resultado = $this->rm->executeWithXmlParams(self::PROCESSO_MATRICULA, $xml);
@@ -230,8 +256,13 @@ class MatriculaService
      * Enturmação: matricula o aluno em cada turma/disciplina da oferta.
      * Retorna a lista de turmas processadas com o status de cada uma.
      */
-    public function enturmar(string $ra, string $codOferta, array $oferta): array
-    {
+    public function enturmar(
+        string $ra,
+        string $codOferta,
+        array $oferta,
+        string|int|null $codStatus = null
+    ): array {
+        $status   = $this->codStatus($codStatus);
         $idPerlet = $oferta['IDPERLET'];
         $codTurma = $oferta['CODTURMA'];
 
@@ -257,7 +288,8 @@ class MatriculaService
                 ra: $ra,
                 codFilial: $oferta['CODFILIAL'],
                 codTurma: $codTurma,
-                now: date('Y-m-d') . 'T' . date('H:i:s')
+                now: date('Y-m-d') . 'T' . date('H:i:s'),
+                codStatus: $status
             );
 
             $result = $this->rm->executeWithXmlParams(self::PROCESSO_MATRICULA, $xml);
