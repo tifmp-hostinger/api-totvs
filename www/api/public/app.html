@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>FMP — Central de Gestão Acadêmica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#EE2A42; --ink:#191818; --cream:#EFEEEA; --sand:#BFBAA4;
+    --ink-2:#3a3838; --line:#e2e0d8; --card:#fff;
+    --ok:#1f9d6b; --warn:#b45309; --err:#b91c1c;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:"Outfit",system-ui,sans-serif;color:var(--ink);background:var(--cream);line-height:1.55;display:flex}
+
+  /* ---------- barra lateral ---------- */
+  aside{width:232px;flex:0 0 auto;background:var(--ink);color:#cfcbbf;display:flex;flex-direction:column;min-height:100vh;position:sticky;top:0;height:100vh}
+  .logo{padding:22px 20px 16px;border-bottom:1px solid #2c2b2a}
+  .logo .brand{display:flex;gap:9px;align-items:center;font-weight:700;letter-spacing:.16em;font-size:12px;color:var(--sand);text-transform:uppercase}
+  .logo .spark{color:var(--red);font-size:17px;line-height:1}
+  .logo h1{font-family:"Noto Serif",serif;font-style:italic;font-weight:600;font-size:17px;color:#fff;margin:8px 0 0}
+  nav{padding:14px 10px;flex:1;overflow-y:auto}
+  nav a{display:flex;gap:10px;align-items:center;color:#cfcbbf;text-decoration:none;padding:9px 12px;border-radius:9px;font-size:13.5px;font-weight:500;margin:2px 0}
+  nav a .ico{width:18px;text-align:center;color:var(--sand)}
+  nav a:hover{background:#242322;color:#fff}
+  nav a.ativo{background:var(--red);color:#fff}
+  nav a.ativo .ico{color:#fff}
+  nav .sep{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6f6b5e;padding:14px 12px 4px}
+  .conex{padding:14px 16px;border-top:1px solid #2c2b2a;font-size:11.5px}
+  .conex .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#666;margin-right:7px;vertical-align:middle}
+  .conex .dot.on{background:var(--ok)} .conex .dot.off{background:var(--err)}
+  .conex a{color:var(--sand)}
+
+  /* ---------- área principal ---------- */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topo{display:flex;align-items:center;gap:14px;padding:16px 28px;border-bottom:1px solid var(--line);background:rgba(239,238,234,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(4px)}
+  .topo h2{font-family:"Noto Serif",serif;font-style:italic;font-weight:600;font-size:23px;margin:0;flex:1}
+  .topo h2 b{color:var(--red);font-weight:600}
+  .cfg-btn{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 15px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:"Outfit";color:var(--ink-2)}
+  .cfg-btn:hover{border-color:var(--red);color:var(--red)}
+  .conteudo{padding:24px 28px 90px;max-width:1060px;width:100%}
+
+  /* ---------- config ---------- */
+  #cfg{display:none;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:22px;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  #cfg.aberto{display:flex}
+
+  /* ---------- blocos ---------- */
+  .modulo{display:none}
+  .modulo.ativo{display:block}
+  .intro{color:var(--ink-2);font-size:14px;max-width:640px;margin:0 0 18px}
+  .painel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:0 0 18px}
+  .painel h3{font-family:"Noto Serif",serif;font-style:italic;font-size:17px;font-weight:600;margin:0 0 12px}
+  .form{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .campo{display:flex;flex-direction:column;gap:5px}
+  .campo label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2)}
+  .campo input,.campo select{font-family:"Outfit";font-size:13.5px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;min-width:150px}
+  .campo input.cod{font-family:var(--mono)}
+  .campo input:focus,.campo select:focus{outline:2px solid #f5b8c0;border-color:var(--red)}
+  .btn{background:var(--red);color:#fff;border:0;border-radius:9px;padding:10px 20px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:"Outfit"}
+  .btn:hover{background:#d21f36}
+  .btn.sec{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+  .btn.sec:hover{border-color:var(--red);color:var(--red);background:#fff}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .spin{display:none;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:sp .7s linear infinite;flex:0 0 auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .dica{font-size:12px;color:#8a8678;margin-top:8px}
+
+  /* ---------- resultados ---------- */
+  .res{margin-top:4px}
+  .msg{border-radius:12px;padding:12px 16px;font-size:13.5px;margin:0 0 14px;border:1px solid}
+  .msg.ok{background:#eef8f2;border-color:#bfe3d0;color:#14532d}
+  .msg.erro{background:#fdf0f0;border-color:#f2c7c7;color:#7f1d1d}
+  .msg .det{display:block;font-size:12.5px;opacity:.85;margin-top:3px}
+  .ficha{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .cel{background:#fff;padding:11px 14px;min-width:0}
+  .cel .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8a8678}
+  .cel .v{font-size:14px;margin-top:2px;word-break:break-word}
+  .cel .v.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8a8678;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:#faf9f6;white-space:nowrap}
+  td{padding:9px 14px;border-bottom:1px solid #f0eee7;font-variant-numeric:tabular-nums;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  tr:hover td{background:#faf9f6}
+  .destaque{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 14px}
+  .big{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;min-width:170px}
+  .big .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8a8678}
+  .big .v{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:2px}
+  .big .v.red{color:var(--red)}
+
+  /* etapas */
+  .etapas{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+  .etapas li{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #f0eee7;font-size:13.5px}
+  .etapas li:last-child{border-bottom:0}
+  .etapas .marc{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .pill{font-size:10.5px;font-weight:700;letter-spacing:.05em;border-radius:999px;padding:3px 10px;text-transform:uppercase;margin-left:auto;white-space:nowrap}
+  .st-ok{background:#e5f5ee;color:var(--ok)} .marc.st-ok{background:var(--ok)}
+  .st-info{background:#fdf3e3;color:var(--warn)} .marc.st-info{background:var(--warn)}
+  .st-err{background:#fdeaea;color:var(--err)} .marc.st-err{background:var(--err)}
+
+  /* ---------- Ficha 360 ---------- */
+  .id360{display:flex;align-items:center;gap:16px;background:var(--ink);color:#fff;border-radius:16px;padding:18px 22px;margin:0 0 14px;flex-wrap:wrap}
+  .id360 .av{width:52px;height:52px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:"Noto Serif",serif;font-size:22px;font-weight:600;flex:0 0 auto}
+  .id360 .nome{font-family:"Noto Serif",serif;font-style:italic;font-size:21px;font-weight:600;line-height:1.2}
+  .id360 .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+  .id360 .tag{font-family:var(--mono);font-size:11.5px;background:#2f2e2c;color:#cfcbbf;border-radius:999px;padding:3px 11px}
+  .id360 .tag b{color:#fff;font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:0 0 18px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 16px;border-left:4px solid var(--sand)}
+  .kpi.ok{border-left-color:var(--ok)} .kpi.warn{border-left-color:var(--warn)} .kpi.neutro{border-left-color:var(--sand)}
+  .kpi .k{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8a8678}
+  .kpi .v{font-size:17px;font-weight:600;margin-top:3px;line-height:1.25}
+  .kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)}
+  .sec360{background:#fff;border:1px solid var(--line);border-radius:16px;margin:0 0 14px;overflow:hidden}
+  .sec360 > .sh{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);background:#faf9f6;flex-wrap:wrap}
+  .sec360 .sh h4{font-family:"Noto Serif",serif;font-style:italic;font-size:16px;margin:0;flex:1;min-width:180px}
+  .sec360 .fonte{font-family:var(--mono);font-size:10.5px;color:#8a8678}
+  .sec360 .sb{padding:16px 18px}
+  .sec360 .aviso{font-size:13px;color:var(--ink-2);background:#faf7ee;border:1px dashed var(--sand);border-radius:10px;padding:10px 14px}
+  .sec360.st-INDISPONIVEL .aviso{background:#fdf0f0;border-color:#f2c7c7;color:#7f1d1d}
+  .sec360 .ficha{border:0;border-radius:0} .sec360 .ficha .cel{border:0;border-top:1px solid #f0eee7}
+  .sec360 .tbl-wrap{border:0;border-radius:0}
+
+  details.tec{margin-top:12px}
+  details.tec summary{font-size:12px;color:#8a8678;cursor:pointer}
+  details.tec pre{background:var(--ink);color:#f3f1ea;border-radius:12px;padding:14px;font-family:var(--mono);font-size:12px;overflow:auto;max-height:380px;margin:8px 0 0}
+
+  /* início */
+  .atalhos{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .atalho{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;cursor:pointer;transition:border-color .15s}
+  .atalho:hover{border-color:var(--red)}
+  .atalho .ico{font-size:20px}
+  .atalho h4{font-family:"Noto Serif",serif;font-style:italic;font-size:16px;margin:8px 0 4px}
+  .atalho p{font-size:12.5px;color:var(--ink-2);margin:0}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:12px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;z-index:60}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:var(--err)} #toast.ok{background:var(--ok)}
+
+  @media (max-width:860px){
+    body{flex-direction:column}
+    aside{width:100%;height:auto;position:static;min-height:0}
+    nav{display:flex;flex-wrap:wrap;padding:8px}
+    nav .sep{display:none}
+    .conteudo{padding:18px 16px 70px}
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="logo">
+    <div class="brand"><span class="spark">&#10022;</span> FMP</div>
+    <h1>Central de Gest&atilde;o</h1>
+  </div>
+  <nav id="nav">
+    <a href="#/inicio" data-mod="inicio"><span class="ico">&#8962;</span> In&iacute;cio</a>
+    <div class="sep">Consultas</div>
+    <a href="#/ficha" data-mod="ficha"><span class="ico">&#9673;</span> Ficha 360 do Aluno</a>
+    <a href="#/pessoas" data-mod="pessoas"><span class="ico">&#9786;</span> Pessoas</a>
+    <a href="#/alunos" data-mod="alunos"><span class="ico">&#127891;</span> Alunos</a>
+    <a href="#/cfo" data-mod="cfo"><span class="ico">&#128188;</span> Clientes/Fornecedores</a>
+    <a href="#/ofertas" data-mod="ofertas"><span class="ico">&#128218;</span> Ofertas &amp; Planos</a>
+    <a href="#/enderecos" data-mod="enderecos"><span class="ico">&#128205;</span> Endere&ccedil;os</a>
+    <div class="sep">Opera&ccedil;&otilde;es</div>
+    <a href="#/inscricao" data-mod="inscricao"><span class="ico">&#9998;</span> Nova Inscri&ccedil;&atilde;o</a>
+    <a href="#/cadastros" data-mod="cadastros"><span class="ico">&#43;</span> Cadastros</a>
+    <a href="#/matriculas" data-mod="matriculas"><span class="ico">&#10003;</span> Matr&iacute;culas</a>
+  </nav>
+  <div class="conex"><span class="dot" id="dot"></span><span id="conexTxt">integra&ccedil;&atilde;o n&atilde;o verificada</span></div>
+</aside>
+
+<div class="main">
+  <div class="topo">
+    <h2 id="titulo">In&iacute;cio</h2>
+    <button class="cfg-btn" id="abrirCfg">&#9881; Conex&atilde;o</button>
+  </div>
+
+  <div class="conteudo">
+
+    <div id="cfg">
+      <div class="campo"><label for="base">URL da integra&ccedil;&atilde;o</label><input id="base" class="cod" placeholder="vazio = esta mesma origem" style="min-width:280px" /></div>
+      <div class="campo"><label for="apikey">Chave de acesso</label><input id="apikey" type="password" placeholder="cole a chave" style="min-width:220px" /></div>
+      <button class="btn sec" id="testarConex">Testar conex&atilde;o</button>
+    </div>
+
+    <!-- ================= INÍCIO ================= -->
+    <section class="modulo" data-mod="inicio" data-titulo="Central de <b>Gest&atilde;o Acad&ecirc;mica</b>">
+      <p class="intro">Consulte pessoas, alunos e ofertas, acompanhe inscri&ccedil;&otilde;es e execute opera&ccedil;&otilde;es acad&ecirc;micas do TOTVS RM &mdash; sem precisar mexer em JSON ou conhecer a API.</p>
+      <div class="atalhos">
+        <div class="atalho" data-vai="ficha"><div class="ico">&#9673;</div><h4>Ficha 360 do aluno</h4><p>Cadastro, acesso ao portal, financeiro e matr&iacute;cula numa tela s&oacute;.</p></div>
+        <div class="atalho" data-vai="pessoas"><div class="ico">&#9786;</div><h4>Localizar pessoa</h4><p>Busque por CPF, RNM ou c&oacute;digo e veja a ficha completa.</p></div>
+        <div class="atalho" data-vai="alunos"><div class="ico">&#127891;</div><h4>Situa&ccedil;&atilde;o do aluno</h4><p>RA, usu&aacute;rio de acesso e &uacute;ltimo acesso ao portal.</p></div>
+        <div class="atalho" data-vai="ofertas"><div class="ico">&#128218;</div><h4>Ofertas &amp; planos</h4><p>Detalhes da oferta, planos de pagamento e valida&ccedil;&atilde;o de cupom.</p></div>
+        <div class="atalho" data-vai="inscricao"><div class="ico">&#9998;</div><h4>Nova inscri&ccedil;&atilde;o</h4><p>Fluxo completo com acompanhamento de cada etapa.</p></div>
+      </div>
+    </section>
+
+    <!-- ================= FICHA 360 ================= -->
+    <section class="modulo" data-mod="ficha" data-titulo="Ficha <b>360 do Aluno</b>">
+      <p class="intro">Tudo que a integra&ccedil;&atilde;o consegue extrair do TOTVS RM sobre um aluno, reunido numa tela: cadastro civil, situa&ccedil;&atilde;o acad&ecirc;mica e de acesso ao portal, v&iacute;nculo financeiro e &mdash; ao informar uma oferta &mdash; matr&iacute;cula, contrato e lan&ccedil;amentos.</p>
+      <div class="painel">
+        <h3>Abrir ficha</h3>
+        <div class="form">
+          <div class="campo"><label>Buscar por</label>
+            <select id="f-tipo"><option value="cpf">CPF</option><option value="rnm">RNM (estrangeiro)</option><option value="codpessoa">C&oacute;digo da pessoa</option></select>
+          </div>
+          <div class="campo"><label id="f-doc-l">CPF</label><input id="f-doc" class="cod" placeholder="somente n&uacute;meros" /></div>
+          <div class="campo"><label>Coligada</label><input id="f-col" class="cod" value="1" style="min-width:90px" /></div>
+          <div class="campo"><label>Oferta (opcional)</label><input id="f-oferta" class="cod" placeholder="OF2026-001 &mdash; libera matr&iacute;cula/financeiro" style="min-width:200px" /></div>
+          <button class="btn" id="f-abrir">Montar ficha</button><span class="spin" id="f-spin"></span>
+        </div>
+        <div class="dica">Sem a oferta, a ficha traz cadastro + acad&ecirc;mico + financeiro. Informe a oferta para incluir a matr&iacute;cula no curso, o contrato e os lan&ccedil;amentos daquele curso.</div>
+      </div>
+      <div class="res" id="f-res"></div>
+    </section>
+
+    <!-- ================= PESSOAS ================= -->
+    <section class="modulo" data-mod="pessoas" data-titulo="<b>Pessoas</b>">
+      <div class="painel">
+        <h3>Localizar pessoa</h3>
+        <div class="form">
+          <div class="campo"><label>Buscar por</label>
+            <select id="p-tipo"><option value="cpf">CPF</option><option value="rnm">RNM (estrangeiro)</option><option value="codigo">C&oacute;digo da pessoa</option></select>
+          </div>
+          <div class="campo"><label id="p-doc-l">CPF</label><input id="p-doc" class="cod" placeholder="somente n&uacute;meros" /></div>
+          <button class="btn" id="p-buscar">Buscar</button><span class="spin" id="p-spin"></span>
+        </div>
+        <div class="dica">A busca aceita CPF com ou sem m&aacute;scara. Se a pessoa n&atilde;o existir, voc&ecirc; pode cadastr&aacute;-la em <b>Cadastros</b>.</div>
+      </div>
+      <div class="res" id="p-res"></div>
+    </section>
+
+    <!-- ================= ALUNOS ================= -->
+    <section class="modulo" data-mod="alunos" data-titulo="<b>Alunos</b>">
+      <div class="painel">
+        <h3>Situa&ccedil;&atilde;o do aluno</h3>
+        <div class="form">
+          <div class="campo"><label>Coligada</label><input id="a-col" class="cod" value="1" style="min-width:90px" /></div>
+          <div class="campo"><label>C&oacute;digo da pessoa</label><input id="a-cod" class="cod" placeholder="ex: 12345" /></div>
+          <button class="btn" id="a-buscar">Consultar</button><span class="spin" id="a-spin"></span>
+        </div>
+        <div class="dica">N&atilde;o sabe o c&oacute;digo? Localize primeiro em <b>Pessoas</b> &mdash; o c&oacute;digo aparece na ficha.</div>
+      </div>
+      <div class="res" id="a-res"></div>
+    </section>
+
+    <!-- ================= CFO ================= -->
+    <section class="modulo" data-mod="cfo" data-titulo="<b>Clientes / Fornecedores</b>">
+      <div class="painel">
+        <h3>Localizar cliente/fornecedor</h3>
+        <div class="form">
+          <div class="campo"><label>Buscar por</label>
+            <select id="c-tipo"><option value="cpf">CPF / CNPJ</option><option value="rnm">RNM (estrangeiro)</option></select>
+          </div>
+          <div class="campo"><label>Documento</label><input id="c-doc" class="cod" placeholder="somente n&uacute;meros" /></div>
+          <button class="btn" id="c-buscar">Buscar</button><span class="spin" id="c-spin"></span>
+        </div>
+        <div class="dica">Registro financeiro do RM usado em contratos e lan&ccedil;amentos. Se n&atilde;o existir, cadastre em <b>Cadastros</b>.</div>
+      </div>
+      <div class="res" id="c-res"></div>
+    </section>
+
+    <!-- ================= OFERTAS ================= -->
+    <section class="modulo" data-mod="ofertas" data-titulo="<b>Ofertas &amp; Planos</b>">
+      <div class="painel">
+        <h3>Consultar oferta</h3>
+        <div class="form">
+          <div class="campo"><label>C&oacute;digo da oferta</label><input id="o-cod" class="cod" placeholder="ex: OF2026-001" /></div>
+          <button class="btn" id="o-buscar">Consultar</button><span class="spin" id="o-spin"></span>
+        </div>
+      </div>
+      <div class="painel">
+        <h3>Validar cupom</h3>
+        <div class="form">
+          <div class="campo"><label>Oferta</label><input id="cu-oferta" class="cod" placeholder="OF2026-001" /></div>
+          <div class="campo"><label>Plano</label><input id="cu-plano" class="cod" placeholder="PP01" /></div>
+          <div class="campo"><label>Cupom</label><input id="cu-cupom" class="cod" placeholder="PROMO10" /></div>
+          <button class="btn sec" id="cu-validar">Validar</button><span class="spin" id="cu-spin"></span>
+        </div>
+      </div>
+      <div class="res" id="o-res"></div>
+    </section>
+
+    <!-- ================= ENDEREÇOS ================= -->
+    <section class="modulo" data-mod="enderecos" data-titulo="<b>Endere&ccedil;os</b>">
+      <div class="painel">
+        <h3>Consultar CEP</h3>
+        <div class="form">
+          <div class="campo"><label>CEP</label><input id="e-cep" class="cod" placeholder="somente n&uacute;meros" /></div>
+          <button class="btn" id="e-buscarCep">Consultar</button><span class="spin" id="e-spin"></span>
+        </div>
+      </div>
+      <div class="painel">
+        <h3>Navegar por estado / cidade / bairro</h3>
+        <div class="form">
+          <div class="campo"><label>Estado</label><select id="e-uf"><option value="">carregar&hellip;</option></select></div>
+          <div class="campo"><label>Cidade</label><select id="e-cid" disabled><option value="">selecione o estado</option></select></div>
+          <button class="btn sec" id="e-verBairros" disabled>Ver bairros</button><span class="spin" id="e-spin2"></span>
+        </div>
+        <div class="dica">Os c&oacute;digos exibidos aqui s&atilde;o os aceitos nos campos CIDADE, BAIRRO e NATURALIDADE da inscri&ccedil;&atilde;o.</div>
+      </div>
+      <div class="res" id="e-res"></div>
+    </section>
+
+    <!-- ================= INSCRIÇÃO ================= -->
+    <section class="modulo" data-mod="inscricao" data-titulo="Nova <b>Inscri&ccedil;&atilde;o</b>">
+      <p class="intro">Fluxo completo: pessoa &rarr; aluno &rarr; matr&iacute;culas &rarr; cupom &rarr; financeiro. Se algo falhar no meio, reenvie &mdash; o processo retoma de onde parou.</p>
+      <div class="painel">
+        <h3>Dados do candidato</h3>
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo"><label>Documento</label>
+            <select id="i-tipodoc" style="min-width:120px"><option value="CPF">CPF</option><option value="RNM">RNM</option></select>
+          </div>
+          <div class="campo"><label id="i-doc-l">CPF</label><input id="i-doc" class="cod" /></div>
+          <div class="campo" style="flex:1;min-width:220px"><label>Nome completo</label><input id="i-nome" /></div>
+        </div>
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo"><label>Nascimento</label><input id="i-nasc" type="date" /></div>
+          <div class="campo"><label>Sexo</label><select id="i-sexo"><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
+          <div class="campo" style="min-width:220px"><label>E-mail</label><input id="i-email" type="email" /></div>
+          <div class="campo"><label>Telefone</label><input id="i-tel" class="cod" placeholder="11987654321" /></div>
+        </div>
+      </div>
+      <div class="painel" id="i-endereco">
+        <h3>Endere&ccedil;o (brasileiro)</h3>
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo"><label>CEP</label><input id="i-cep" class="cod" /></div>
+          <div class="campo"><label>Estado</label><select id="i-uf"><option value="">&hellip;</option></select></div>
+          <div class="campo" style="min-width:220px"><label>Cidade</label><select id="i-cid" disabled><option value="">selecione o estado</option></select></div>
+          <div class="campo" style="min-width:200px"><label>Bairro</label><select id="i-bai" disabled><option value="">selecione a cidade</option></select></div>
+        </div>
+        <div class="form">
+          <div class="campo" style="flex:1;min-width:220px"><label>Rua</label><input id="i-rua" /></div>
+          <div class="campo"><label>N&uacute;mero</label><input id="i-num" class="cod" style="min-width:90px" /></div>
+          <div class="campo"><label>Complemento</label><input id="i-comp" /></div>
+          <div class="campo" style="min-width:220px"><label>Naturalidade (cidade)</label><select id="i-nat" disabled><option value="">selecione o estado</option></select></div>
+        </div>
+      </div>
+      <div class="painel">
+        <h3>Curso e pagamento</h3>
+        <div class="form">
+          <div class="campo"><label>Oferta</label><input id="i-oferta" class="cod" placeholder="OF2026-001" /></div>
+          <div class="campo" style="min-width:220px"><label>Plano de pagamento</label>
+            <select id="i-plano"><option value="">informe a oferta&hellip;</option></select></div>
+          <button class="btn sec" id="i-planos">Carregar planos</button>
+          <div class="campo"><label>Cupom (opcional)</label><input id="i-cupom" class="cod" /></div>
+        </div>
+      </div>
+      <div class="form" style="margin-bottom:18px">
+        <button class="btn" id="i-enviar">Enviar inscri&ccedil;&atilde;o</button><span class="spin" id="i-spin"></span>
+      </div>
+      <div class="res" id="i-res"></div>
+    </section>
+
+    <!-- ================= CADASTROS ================= -->
+    <section class="modulo" data-mod="cadastros" data-titulo="<b>Cadastros</b>">
+      <div class="painel">
+        <h3>Pessoa (criar ou atualizar)</h3>
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo"><label>C&oacute;digo (0 = criar)</label><input id="np-cod" class="cod" value="0" style="min-width:110px" /></div>
+          <div class="campo" style="flex:1;min-width:220px"><label>Nome completo</label><input id="np-nome" /></div>
+          <div class="campo"><label>CPF</label><input id="np-cpf" class="cod" /></div>
+        </div>
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo"><label>Nascimento</label><input id="np-nasc" type="date" /></div>
+          <div class="campo"><label>Sexo</label><select id="np-sexo"><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
+          <div class="campo" style="min-width:220px"><label>E-mail</label><input id="np-email" type="email" /></div>
+          <div class="campo"><label>Telefone</label><input id="np-tel" class="cod" /></div>
+          <div class="campo"><label>CEP</label><input id="np-cep" class="cod" /></div>
+        </div>
+        <div class="form"><button class="btn" id="np-salvar">Salvar pessoa</button><span class="spin" id="np-spin"></span></div>
+      </div>
+      <div class="painel">
+        <h3>Cliente/Fornecedor</h3>
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo" style="flex:1;min-width:220px"><label>Nome</label><input id="nc-nome" /></div>
+          <div class="campo"><label>CPF/CNPJ</label><input id="nc-doc" class="cod" /></div>
+          <div class="campo" style="min-width:200px"><label>E-mail</label><input id="nc-email" type="email" /></div>
+          <div class="campo"><label>Telefone</label><input id="nc-tel" class="cod" /></div>
+        </div>
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo" style="flex:1;min-width:200px"><label>Rua</label><input id="nc-rua" /></div>
+          <div class="campo"><label>N&uacute;mero</label><input id="nc-num" class="cod" style="min-width:90px" /></div>
+          <div class="campo"><label>Bairro</label><input id="nc-bai" /></div>
+          <div class="campo"><label>Cidade</label><input id="nc-cid" /></div>
+          <div class="campo"><label>UF</label><input id="nc-uf" class="cod" style="min-width:70px" maxlength="2" /></div>
+          <div class="campo"><label>CEP</label><input id="nc-cep" class="cod" /></div>
+        </div>
+        <div class="form"><button class="btn" id="nc-salvar">Salvar cliente/fornecedor</button><span class="spin" id="nc-spin"></span></div>
+        <div class="dica">Cadastro idempotente: se o documento j&aacute; existir, o RM devolve o registro existente sem duplicar.</div>
+      </div>
+      <div class="res" id="n-res"></div>
+    </section>
+
+    <!-- ================= MATRÍCULAS ================= -->
+    <section class="modulo" data-mod="matriculas" data-titulo="<b>Matr&iacute;culas</b> por etapa">
+      <p class="intro">Use quando precisar executar uma etapa isolada (a inscri&ccedil;&atilde;o completa j&aacute; faz tudo isso em sequ&ecirc;ncia).</p>
+      <div class="painel">
+        <div class="form" style="margin-bottom:10px">
+          <div class="campo"><label>RA do aluno</label><input id="m-ra" class="cod" placeholder="000123" /></div>
+          <div class="campo"><label>Oferta</label><input id="m-oferta" class="cod" placeholder="OF2026-001" /></div>
+          <div class="campo"><label>Plano (s&oacute; p/ per&iacute;odo letivo)</label><input id="m-plano" class="cod" placeholder="PP01" /></div>
+        </div>
+        <div class="form">
+          <button class="btn sec" data-etapa="curso">1 &middot; Matr&iacute;cula no curso</button>
+          <button class="btn sec" data-etapa="periodo-letivo">2 &middot; Per&iacute;odo letivo (contrato)</button>
+          <button class="btn sec" data-etapa="disciplinas">3 &middot; Disciplinas (enturma&ccedil;&atilde;o)</button>
+          <span class="spin" id="m-spin"></span>
+        </div>
+      </div>
+      <div class="res" id="m-res"></div>
+    </section>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ---------------- conexão ---------------- */
+const baseInput = $("#base"), apiKeyInput = $("#apikey");
+try{
+  const sb = localStorage.getItem("fmp_app_base"); if(sb) baseInput.value = sb;
+  const sk = localStorage.getItem("fmp_api_key"); if(sk) apiKeyInput.value = sk;
+}catch(e){}
+baseInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_app_base", baseInput.value.trim()); }catch(e){} });
+apiKeyInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_api_key", apiKeyInput.value.trim()); }catch(e){} });
+$("#abrirCfg").addEventListener("click", ()=> $("#cfg").classList.toggle("aberto"));
+
+function baseUrl(){
+  const v = baseInput.value.trim().replace(/\/+$/,"");
+  if(v) return v;
+  return (location.origin && location.origin !== "null") ? location.origin : "";
+}
+async function api(metodo, caminho, body){
+  const h = { "Accept": "application/json" };
+  const k = apiKeyInput.value.trim();
+  if(k) h["X-API-Key"] = k;
+  if(body !== undefined) h["Content-Type"] = "application/json";
+  const res = await fetch(baseUrl() + caminho, { method: metodo, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined });
+  let dados = null;
+  try{ dados = await res.json(); }catch(e){}
+  return { status: res.status, ok: res.ok, corpo: dados };
+}
+
+let toastTimer = null;
+function toast(msg, tipo){
+  const t = $("#toast"); t.textContent = msg;
+  t.className = "show" + (tipo ? " " + tipo : "");
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=> t.className = "", 3400);
+}
+
+/* ---------------- navegação ---------------- */
+function navegar(mod){
+  const sec = document.querySelector('.modulo[data-mod="'+mod+'"]') ? mod : "inicio";
+  $$(".modulo").forEach(m => m.classList.toggle("ativo", m.dataset.mod === sec));
+  $$("#nav a").forEach(a => a.classList.toggle("ativo", a.dataset.mod === sec));
+  $("#titulo").innerHTML = document.querySelector('.modulo[data-mod="'+sec+'"]').dataset.titulo;
+  if(location.hash !== "#/"+sec) history.replaceState(null, "", "#/"+sec);
+  if(sec === "enderecos" || sec === "inscricao") carregarEstados();
+}
+window.addEventListener("hashchange", ()=> navegar((location.hash || "#/inicio").replace("#/","")));
+$$(".atalho").forEach(a => a.addEventListener("click", ()=> navegar(a.dataset.vai)));
+
+/* ---------------- renderizadores ---------------- */
+const ROTULOS = {
+  CODIGO:"Código", CODPESSOA:"Código da pessoa", NOME:"Nome", DTNASCIMENTO:"Nascimento", SEXO:"Sexo",
+  CPF:"CPF", RNM:"RNM", EMAIL:"E-mail", TELEFONE1:"Telefone", TELEFONE:"Telefone", RUA:"Rua", NUMERO:"Número",
+  BAIRRO:"Bairro", ESTADO:"UF", CIDADE:"Cidade", CEP:"CEP", CODMUNICIPIO:"Cód. município", IDPAIS:"País",
+  NROREGGERAL:"RG", NACIONALIDADE:"Nacionalidade", NATURALIDADE:"Naturalidade",
+  RA:"RA", CODUSUARIO:"Usuário do portal", SENHAPADRAO:"Senha padrão", EXISTESUSUARIOFILIAL:"Vínculo usuário × filial",
+  DATAULTIMOACESSOVALIDO:"Último acesso válido", CODCOLIGADA:"Coligada",
+  CODCOLCFO:"Coligada do CFO", CODCFO:"Código CFO", CGCCFO:"CPF/CNPJ", PAGREC:"Tipo (pag/rec)", PESSOAFISOUJUR:"Física/Jurídica",
+  CODETD:"UF", CODOFERTA:"Oferta", CODPLANO:"Plano", CODCONTRATO:"Contrato", CODTIPOCURSO:"Tipo de curso", CODFILIAL:"Filial",
+  CODSENTENCA:"Sentença", CHAVE:"Chave", JAEXISTIA:"Já existia"
+};
+const rot = k => ROTULOS[k.toUpperCase()] || (k.charAt(0) + k.slice(1).toLowerCase()).replace(/_/g," ");
+const eCodigo = (k,v) => /COD|CPF|CNPJ|CEP|TELEFONE|^RA$|RNM|CHAVE|NUMERO/i.test(k) || /^[\d.\-\/;]+$/.test(String(v));
+
+function fmtValor(k, v){
+  if(v === null || v === undefined || v === "") return "—";
+  const s = String(v);
+  if(/^\d{4}-\d{2}-\d{2}T?/.test(s)){
+    const d = new Date(s.substring(0,10) + "T12:00:00");
+    if(!isNaN(d)) return d.toLocaleDateString("pt-BR") + (s.length > 10 && s.includes(":") ? " " + s.substring(11,16) : "");
+  }
+  if(k.toUpperCase() === "SEXO") return s === "M" ? "Masculino" : s === "F" ? "Feminino" : s;
+  if(typeof v === "boolean") return v ? "Sim" : "Não";
+  return s;
+}
+function fichaHtml(obj){
+  const ordem = ["NOME","CODIGO","CODPESSOA","RA","CPF","RNM","DTNASCIMENTO","SEXO","EMAIL","TELEFONE1","TELEFONE"];
+  const chaves = Object.keys(obj).filter(k => typeof obj[k] !== "object" || obj[k] === null);
+  chaves.sort((a,b)=>{
+    const ia = ordem.indexOf(a.toUpperCase()), ib = ordem.indexOf(b.toUpperCase());
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  return '<div class="ficha">' + chaves.map(k =>
+    '<div class="cel"><div class="k">' + esc(rot(k)) + '</div><div class="v' + (eCodigo(k, obj[k]) ? " num" : "") + '">' + esc(fmtValor(k, obj[k])) + "</div></div>"
+  ).join("") + "</div>";
+}
+function tabelaHtml(linhas){
+  if(!linhas.length) return '<div class="msg ok">Nenhum registro.</div>';
+  const cols = Object.keys(linhas[0]);
+  return '<div class="tbl-wrap"><table><thead><tr>' +
+    cols.map(c => "<th>" + esc(rot(c)) + "</th>").join("") + "</tr></thead><tbody>" +
+    linhas.map(l => "<tr>" + cols.map(c => "<td>" + esc(fmtValor(c, l[c])) + "</td>").join("") + "</tr>").join("") +
+    "</tbody></table></div>";
+}
+function classeEtapa(status){
+  const s = String(status).toUpperCase();
+  if(/OK|SUCESSO|ENCONTRADO$|ATUALIZAD|CONCLUID/.test(s) && !/NAO/.test(s)) return "st-ok";
+  if(/JA_EXISTIA|NAO_ENCONTRADO|PULAD/.test(s)) return "st-info";
+  return "st-err";
+}
+function etapasHtml(etapas){
+  const lista = Array.isArray(etapas) ? etapas.map(e => typeof e === "object" ? e : {etapa: e, status: "OK"})
+                                      : Object.entries(etapas).map(([etapa, status]) => ({etapa, status}));
+  return '<ul class="etapas">' + lista.map(e => {
+    const nome = e.etapa || e.nome || e.ETAPA || Object.values(e)[0];
+    const status = e.status || e.STATUS || Object.values(e)[1] || "OK";
+    const cls = classeEtapa(status);
+    return '<li><span class="marc ' + cls + '"></span>' + esc(nome) + '<span class="pill ' + cls + '">' + esc(status) + "</span></li>";
+  }).join("") + "</ul>";
+}
+function tecnicoHtml(corpo){
+  return '<details class="tec"><summary>ver retorno t&eacute;cnico</summary><pre>' + esc(JSON.stringify(corpo, null, 2)) + "</pre></details>";
+}
+function erroHtml(r){
+  const c = r.corpo || {};
+  let det = c.detalhe || c.retorno_rm || "";
+  if(c.etapa) det = "Parou na etapa " + c.etapa + (det ? " — " + det : "");
+  return '<div class="msg erro"><b>' + esc(c.mensagem || ("Falha na consulta (HTTP " + r.status + ")")) + "</b>" +
+    (det ? '<span class="det">' + esc(det) + "</span>" : "") + "</div>" +
+    (c.etapas_concluidas ? etapasHtml(c.etapas_concluidas) : "") +
+    tecnicoHtml(c);
+}
+function renderDados(el, r, opcoes){
+  const o = opcoes || {};
+  if(!r.ok){ el.innerHTML = erroHtml(r); return; }
+  const c = r.corpo || {};
+  const d = c.dados;
+  let html = '<div class="msg ok"><b>' + esc(c.mensagem || "Consulta realizada.") + "</b></div>";
+  if(o.destaques && d){
+    const bigs = o.destaques.filter(k => d[k] !== undefined && d[k] !== null && d[k] !== "");
+    if(bigs.length) html += '<div class="destaque">' + bigs.map(k =>
+      '<div class="big"><div class="k">' + esc(rot(k)) + '</div><div class="v red">' + esc(fmtValor(k, d[k])) + "</div></div>").join("") + "</div>";
+  }
+  if(Array.isArray(d)) html += tabelaHtml(d);
+  else if(d && typeof d === "object"){
+    if(d.etapas) html += etapasHtml(d.etapas);
+    const resto = {...d}; delete resto.etapas;
+    if(Object.keys(resto).some(k => typeof resto[k] !== "object" || resto[k] === null)) html += fichaHtml(resto);
+    Object.keys(resto).forEach(k=>{
+      if(Array.isArray(resto[k]) && resto[k].length && typeof resto[k][0] === "object")
+        html += '<h3 style="font-family:\'Noto Serif\',serif;font-style:italic;margin:16px 0 8px">' + esc(rot(k)) + "</h3>" + tabelaHtml(resto[k]);
+    });
+  }
+  html += tecnicoHtml(c);
+  el.innerHTML = html;
+}
+
+async function rodar(spinId, btn, fn){
+  const spin = $(spinId);
+  if(btn) btn.disabled = true;
+  spin.style.display = "inline-block";
+  try{ await fn(); }
+  catch(e){ toast("Falha de rede: " + e.message, "err"); }
+  finally{ spin.style.display = "none"; if(btn) btn.disabled = false; }
+}
+
+/* ---------------- conexão / status ---------------- */
+async function testarConexao(silencioso){
+  try{
+    const r = await api("GET", "/status");
+    const ok = r.ok && r.corpo && r.corpo.sucesso !== false;
+    $("#dot").className = "dot " + (ok ? "on" : "off");
+    $("#conexTxt").textContent = ok ? "integração RM disponível" : "integração indisponível";
+    if(!silencioso) toast(ok ? "Conexão OK — integração RM disponível." : "Integração indisponível: " + ((r.corpo||{}).mensagem || "HTTP " + r.status), ok ? "ok" : "err");
+  }catch(e){
+    $("#dot").className = "dot off";
+    $("#conexTxt").textContent = "sem conexão com a integração";
+    if(!silencioso) toast("Sem conexão: " + e.message, "err");
+  }
+}
+$("#testarConex").addEventListener("click", ()=> testarConexao(false));
+
+/* ---------------- Ficha 360 ---------------- */
+$("#f-tipo").addEventListener("change", ()=>{
+  $("#f-doc-l").textContent = {cpf:"CPF", rnm:"RNM", codpessoa:"Código da pessoa"}[$("#f-tipo").value];
+});
+function pill360(status){
+  const map = { OK:["st-ok","OK"], NAO_ENCONTRADO:["st-info","não encontrado"],
+    NAO_CONSULTADO:["st-info","não consultado"], INDISPONIVEL:["st-err","indisponível"] };
+  const par = map[status] || ["st-info", String(status||"").toLowerCase()];
+  return '<span class="pill ' + par[0] + '">' + esc(par[1]) + "</span>";
+}
+function renderFicha360(el, r){
+  if(!r.ok){ el.innerHTML = erroHtml(r); return; }
+  const d = (r.corpo && r.corpo.dados) || {};
+  const id = d.identificacao || {};
+  const iniciais = String(id.NOME || "?").trim().split(/\s+/).map(p => p[0] || "").slice(0,2).join("").toUpperCase();
+  let html = '<div class="id360">' +
+    '<div class="av">' + esc(iniciais || "?") + "</div>" +
+    '<div><div class="nome">' + esc(id.NOME || "—") + '</div><div class="meta">' +
+      '<span class="tag">Cód. pessoa <b>' + esc(id.CODPESSOA || "—") + "</b></span>" +
+      (id.RA ? '<span class="tag">RA <b>' + esc(id.RA) + "</b></span>" : "") +
+      '<span class="tag">Doc <b>' + esc(id.DOCUMENTO || "—") + "</b></span>" +
+      (id.CODUSUARIO ? '<span class="tag">Portal <b>' + esc(id.CODUSUARIO) + "</b></span>" : "") +
+      '<span class="tag">Coligada <b>' + esc(id.CODCOLIGADA || "—") + "</b></span>" +
+    "</div></div></div>";
+
+  if(Array.isArray(d.kpis) && d.kpis.length){
+    html += '<div class="kpis">' + d.kpis.map(k =>
+      '<div class="kpi ' + esc(k.tom || "neutro") + '"><div class="k">' + esc(k.rotulo) +
+      '</div><div class="v">' + esc(k.valor) + "</div></div>").join("") + "</div>";
+  }
+
+  (d.secoes || []).forEach(s => {
+    let corpo = "";
+    if(s.formato === "ficha" && s.dados && typeof s.dados === "object") corpo = fichaHtml(s.dados);
+    else if(s.formato === "tabela" && Array.isArray(s.dados) && s.dados.length) corpo = tabelaHtml(s.dados);
+    if(!corpo) corpo = '<div class="aviso">' + esc(s.aviso || "Sem dados para exibir.") + "</div>";
+    else if(s.aviso) corpo = '<div class="aviso" style="margin-bottom:12px">' + esc(s.aviso) + "</div>" + corpo;
+    html += '<div class="sec360 st-' + esc(s.status) + '">' +
+      '<div class="sh"><h4>' + esc(s.titulo) + "</h4>" +
+        (s.fonte ? '<span class="fonte">' + esc(s.fonte) + "</span>" : "") + pill360(s.status) +
+      "</div><div class=\"sb\">" + corpo + "</div></div>";
+  });
+
+  html += tecnicoHtml(r.corpo);
+  el.innerHTML = html;
+}
+$("#f-abrir").addEventListener("click", ()=> rodar("#f-spin", $("#f-abrir"), async ()=>{
+  const tipo = $("#f-tipo").value, doc = $("#f-doc").value.trim();
+  if(!doc){ toast("Informe o " + ({cpf:"CPF", rnm:"RNM", codpessoa:"código da pessoa"}[tipo]) + ".", "err"); return; }
+  const params = new URLSearchParams();
+  params.set(tipo, doc);
+  params.set("codcoligada", $("#f-col").value.trim() || "1");
+  const of = $("#f-oferta").value.trim(); if(of) params.set("oferta", of);
+  const r = await api("GET", "/alunos/ficha?" + params.toString());
+  renderFicha360($("#f-res"), r);
+}));
+
+/* ---------------- Pessoas ---------------- */
+$("#p-tipo").addEventListener("change", ()=>{
+  $("#p-doc-l").textContent = {cpf:"CPF", rnm:"RNM", codigo:"Código da pessoa"}[$("#p-tipo").value];
+});
+$("#p-buscar").addEventListener("click", ()=> rodar("#p-spin", $("#p-buscar"), async ()=>{
+  const tipo = $("#p-tipo").value, doc = $("#p-doc").value.trim();
+  if(!doc){ toast("Informe o valor da busca.", "err"); return; }
+  const r = tipo === "codigo"
+    ? await api("GET", "/pessoas/" + encodeURIComponent(doc))
+    : await api("GET", "/pessoas/busca?" + tipo + "=" + encodeURIComponent(doc));
+  renderDados($("#p-res"), r, {destaques:["CODIGO","CODPESSOA","NOME"]});
+}));
+
+/* ---------------- Alunos ---------------- */
+$("#a-buscar").addEventListener("click", ()=> rodar("#a-spin", $("#a-buscar"), async ()=>{
+  const col = $("#a-col").value.trim() || "1", cod = $("#a-cod").value.trim();
+  if(!cod){ toast("Informe o código da pessoa.", "err"); return; }
+  const r = await api("GET", "/alunos/" + encodeURIComponent(col) + "/" + encodeURIComponent(cod));
+  renderDados($("#a-res"), r, {destaques:["RA","CODUSUARIO"]});
+}));
+
+/* ---------------- CFO ---------------- */
+$("#c-buscar").addEventListener("click", ()=> rodar("#c-spin", $("#c-buscar"), async ()=>{
+  const tipo = $("#c-tipo").value, doc = $("#c-doc").value.trim();
+  if(!doc){ toast("Informe o documento.", "err"); return; }
+  const r = await api("GET", "/clientes-fornecedores/busca?" + tipo + "=" + encodeURIComponent(doc));
+  renderDados($("#c-res"), r, {destaques:["CODCOLCFO","CODCFO"]});
+}));
+
+/* ---------------- Ofertas ---------------- */
+$("#o-buscar").addEventListener("click", ()=> rodar("#o-spin", $("#o-buscar"), async ()=>{
+  const cod = $("#o-cod").value.trim();
+  if(!cod){ toast("Informe o código da oferta.", "err"); return; }
+  const [oferta, planos] = await Promise.all([
+    api("GET", "/ofertas/" + encodeURIComponent(cod)),
+    api("GET", "/ofertas/" + encodeURIComponent(cod) + "/planos-pagamento")
+  ]);
+  let html = "";
+  if(oferta.ok){
+    html += '<div class="msg ok"><b>Oferta encontrada.</b></div>';
+    const d = oferta.corpo.dados;
+    html += Array.isArray(d) ? tabelaHtml(d) : fichaHtml(d || {});
+  } else html += erroHtml(oferta);
+  if(planos.ok){
+    html += '<h3 style="font-family:\'Noto Serif\',serif;font-style:italic;margin:18px 0 8px">Planos de pagamento</h3>';
+    const p = planos.corpo.dados;
+    html += tabelaHtml(Array.isArray(p) ? p : [p]);
+  } else if(oferta.ok) html += '<div class="msg erro" style="margin-top:14px">' + esc((planos.corpo||{}).mensagem || "Sem planos de pagamento.") + "</div>";
+  html += tecnicoHtml({oferta: oferta.corpo, planos: planos.corpo});
+  $("#o-res").innerHTML = html;
+}));
+$("#cu-validar").addEventListener("click", ()=> rodar("#cu-spin", $("#cu-validar"), async ()=>{
+  const o = $("#cu-oferta").value.trim(), p = $("#cu-plano").value.trim(), c = $("#cu-cupom").value.trim();
+  if(!o || !p || !c){ toast("Preencha oferta, plano e cupom.", "err"); return; }
+  const r = await api("GET", "/cupons/" + encodeURIComponent(o) + "/" + encodeURIComponent(p) + "/" + encodeURIComponent(c));
+  renderDados($("#o-res"), r);
+}));
+
+/* ---------------- Endereços ---------------- */
+let estadosCarregados = false;
+async function carregarEstados(){
+  if(estadosCarregados) return;
+  const r = await api("GET", "/enderecos/estados").catch(()=>null);
+  if(!r || !r.ok || !Array.isArray(r.corpo.dados)) return;
+  estadosCarregados = true;
+  const ops = r.corpo.dados.map(e => {
+    const cod = e.CODETD || e.CODESTADO || e.UF || Object.values(e)[0];
+    const nome = e.NOME || e.DESCRICAO || cod;
+    return '<option value="' + esc(cod) + '">' + esc(nome) + "</option>";
+  }).join("");
+  ["#e-uf","#i-uf"].forEach(sel => { $(sel).innerHTML = '<option value="">selecione&hellip;</option>' + ops; });
+}
+async function carregarCidades(uf, selCid){
+  const sel = $(selCid);
+  sel.disabled = true; sel.innerHTML = "<option>carregando&hellip;</option>";
+  const r = await api("GET", "/enderecos/estados/" + encodeURIComponent(uf) + "/cidades").catch(()=>null);
+  if(!r || !r.ok || !Array.isArray(r.corpo.dados)){ sel.innerHTML = "<option value=''>falha ao carregar</option>"; return; }
+  sel.innerHTML = '<option value="">selecione&hellip;</option>' + r.corpo.dados.map(c => {
+    const cod = c.CODCIDADE || c.CODIGO || Object.values(c)[0];
+    const nome = c.NOME || c.DESCRICAO || cod;
+    return '<option value="' + esc(cod) + '">' + esc(nome) + "</option>";
+  }).join("");
+  sel.disabled = false;
+}
+async function carregarBairros(cid, selBai){
+  const sel = $(selBai);
+  sel.disabled = true; sel.innerHTML = "<option>carregando&hellip;</option>";
+  const r = await api("GET", "/enderecos/cidades/" + encodeURIComponent(cid) + "/bairros").catch(()=>null);
+  if(!r || !r.ok || !Array.isArray(r.corpo.dados)){ sel.innerHTML = "<option value=''>falha ao carregar</option>"; return; }
+  sel.innerHTML = '<option value="">selecione&hellip;</option>' + r.corpo.dados.map(b => {
+    const cod = b.CODBAIRRO || b.CODIGO || Object.values(b)[0];
+    const nome = b.NOME || b.DESCRICAO || cod;
+    return '<option value="' + esc(cod) + '">' + esc(nome) + "</option>";
+  }).join("");
+  sel.disabled = false;
+}
+$("#e-uf").addEventListener("change", ()=>{ if($("#e-uf").value) carregarCidades($("#e-uf").value, "#e-cid").then(()=>{ $("#e-verBairros").disabled = false; }); });
+$("#e-verBairros").addEventListener("click", ()=> rodar("#e-spin2", $("#e-verBairros"), async ()=>{
+  const cid = $("#e-cid").value;
+  if(!cid){ toast("Selecione a cidade.", "err"); return; }
+  const r = await api("GET", "/enderecos/cidades/" + encodeURIComponent(cid) + "/bairros");
+  renderDados($("#e-res"), r);
+}));
+$("#e-buscarCep").addEventListener("click", ()=> rodar("#e-spin", $("#e-buscarCep"), async ()=>{
+  const cep = $("#e-cep").value.replace(/\D/g,"");
+  if(!cep){ toast("Informe o CEP.", "err"); return; }
+  const r = await api("GET", "/enderecos/cep/" + cep);
+  renderDados($("#e-res"), r);
+}));
+
+/* ---------------- Inscrição ---------------- */
+$("#i-tipodoc").addEventListener("change", ()=>{ $("#i-doc-l").textContent = $("#i-tipodoc").value; });
+$("#i-uf").addEventListener("change", ()=>{
+  if(!$("#i-uf").value) return;
+  carregarCidades($("#i-uf").value, "#i-cid");
+  carregarCidades($("#i-uf").value, "#i-nat");
+});
+$("#i-cid").addEventListener("change", ()=>{ if($("#i-cid").value) carregarBairros($("#i-cid").value, "#i-bai"); });
+$("#i-planos").addEventListener("click", ()=> rodar("#i-spin", $("#i-planos"), async ()=>{
+  const of = $("#i-oferta").value.trim();
+  if(!of){ toast("Informe a oferta primeiro.", "err"); return; }
+  const r = await api("GET", "/ofertas/" + encodeURIComponent(of) + "/planos-pagamento");
+  if(!r.ok || !Array.isArray(r.corpo.dados)){ toast((r.corpo||{}).mensagem || "Falha ao carregar planos.", "err"); return; }
+  $("#i-plano").innerHTML = r.corpo.dados.map(p => {
+    const cod = p.CODPLANO || p.CODIGO || Object.values(p)[0];
+    const nome = p.NOME || p.DESCRICAO || cod;
+    return '<option value="' + esc(cod) + '">' + esc(cod) + " — " + esc(nome) + "</option>";
+  }).join("");
+  toast("Planos carregados.", "ok");
+}));
+$("#i-enviar").addEventListener("click", ()=> rodar("#i-spin", $("#i-enviar"), async ()=>{
+  const body = {
+    OFERTA: $("#i-oferta").value.trim(),
+    PLANOPAGAMENTO: $("#i-plano").value,
+    NOME: $("#i-nome").value.trim(),
+    NASCIMENTO: $("#i-nasc").value,
+    SEXO: $("#i-sexo").value,
+    EMAIL: $("#i-email").value.trim(),
+    TELEFONE: $("#i-tel").value.replace(/\D/g,"")
+  };
+  body[$("#i-tipodoc").value] = $("#i-doc").value.trim();
+  if($("#i-tipodoc").value === "CPF"){
+    Object.assign(body, {
+      CEP: $("#i-cep").value.replace(/\D/g,""), ESTADO: $("#i-uf").value, CIDADE: $("#i-cid").value,
+      BAIRRO: $("#i-bai").value, RUA: $("#i-rua").value.trim(), NUMERO: $("#i-num").value.trim(),
+      COMPLEMENTO: $("#i-comp").value.trim(), NATURALIDADE: $("#i-nat").value
+    });
+  }
+  const cupom = $("#i-cupom").value.trim(); if(cupom) body.CUPOM = cupom;
+  const faltando = ["OFERTA","PLANOPAGAMENTO","NOME","NASCIMENTO","EMAIL"].filter(k => !body[k]);
+  if(faltando.length){ toast("Preencha: " + faltando.join(", "), "err"); return; }
+  if(!confirm("Enviar a inscrição de " + body.NOME + " na oferta " + body.OFERTA + "?")) return;
+  const r = await api("POST", "/inscricoes", body);
+  renderDados($("#i-res"), r);
+  if(r.ok && r.corpo.dados && r.corpo.dados.nextUrl){
+    $("#i-res").insertAdjacentHTML("afterbegin",
+      '<div class="msg ok">Acesso do aluno pronto: <a href="' + esc(r.corpo.dados.nextUrl) + '" target="_blank" rel="noopener">abrir portal do aluno</a></div>');
+  }
+}));
+
+/* ---------------- Cadastros ---------------- */
+$("#np-salvar").addEventListener("click", ()=> rodar("#np-spin", $("#np-salvar"), async ()=>{
+  const body = {
+    CODIGO: parseInt($("#np-cod").value, 10) || 0,
+    NOME: $("#np-nome").value.trim(), CPF: $("#np-cpf").value.trim(),
+    DTNASCIMENTO: $("#np-nasc").value, SEXO: $("#np-sexo").value,
+    EMAIL: $("#np-email").value.trim(), TELEFONE1: $("#np-tel").value.trim(), CEP: $("#np-cep").value.trim()
+  };
+  if(!body.NOME){ toast("Informe o nome.", "err"); return; }
+  if(!confirm((body.CODIGO ? "Atualizar" : "Criar") + " a pessoa " + body.NOME + " no RM?")) return;
+  const r = await api("POST", "/pessoas", body);
+  renderDados($("#n-res"), r, {destaques:["CODPESSOA"]});
+}));
+$("#nc-salvar").addEventListener("click", ()=> rodar("#nc-spin", $("#nc-salvar"), async ()=>{
+  const body = {
+    NOME: $("#nc-nome").value.trim(), CGCCFO: $("#nc-doc").value.trim(),
+    EMAIL: $("#nc-email").value.trim(), TELEFONE: $("#nc-tel").value.trim(),
+    RUA: $("#nc-rua").value.trim(), NUMERO: $("#nc-num").value.trim(), BAIRRO: $("#nc-bai").value.trim(),
+    CIDADE: $("#nc-cid").value.trim(), CODETD: $("#nc-uf").value.trim().toUpperCase(), CEP: $("#nc-cep").value.trim()
+  };
+  if(!body.NOME){ toast("Informe o nome.", "err"); return; }
+  if(!confirm("Salvar o cliente/fornecedor " + body.NOME + " no RM?")) return;
+  const r = await api("POST", "/clientes-fornecedores", body);
+  renderDados($("#n-res"), r, {destaques:["CODCOLCFO","CODCFO","CHAVE"]});
+}));
+
+/* ---------------- Matrículas ---------------- */
+$$('button[data-etapa]').forEach(btn => btn.addEventListener("click", ()=> rodar("#m-spin", btn, async ()=>{
+  const ra = $("#m-ra").value.trim(), oferta = $("#m-oferta").value.trim();
+  if(!ra || !oferta){ toast("Informe RA e oferta.", "err"); return; }
+  const etapa = btn.dataset.etapa;
+  const body = { RA: ra, OFERTA: oferta };
+  if(etapa === "periodo-letivo"){
+    body.PLANOPAGAMENTO = $("#m-plano").value.trim();
+    if(!body.PLANOPAGAMENTO){ toast("Período letivo exige o plano de pagamento.", "err"); return; }
+  }
+  if(!confirm("Executar a etapa \"" + btn.textContent.trim() + "\" para o RA " + ra + "?")) return;
+  const r = await api("POST", "/matriculas/" + etapa, body);
+  renderDados($("#m-res"), r, {destaques:["CODCONTRATO"]});
+})));
+
+/* ---------------- boot ---------------- */
+navegar((location.hash || "#/inicio").replace("#/",""));
+if(!apiKeyInput.value.trim()) $("#cfg").classList.add("aberto");
+else testarConexao(true);
+</script>
+</body>
+</html>

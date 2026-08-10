@@ -5,12 +5,14 @@ declare(strict_types=1);
 use FMP\RMApi\Clients\RMSoapClient;
 use FMP\RMApi\Controllers\SSOController;
 use FMP\RMApi\Helpers\Crypto;
+use FMP\RMApi\Services\RouteControlService;
 use FMP\RMApi\Services\AlunoService;
 use FMP\RMApi\Services\BaixaService;
 use FMP\RMApi\Services\BolsaService;
 use FMP\RMApi\Services\CfoService;
 use FMP\RMApi\Services\ConsultaService;
 use FMP\RMApi\Services\ContratoService;
+use FMP\RMApi\Services\FichaAlunoService;
 use FMP\RMApi\Services\InscricaoService;
 use FMP\RMApi\Services\LancamentoService;
 use FMP\RMApi\Services\LogService;
@@ -25,6 +27,18 @@ return [
         return new RMSoapClient($rm['ws_url'], $rm['ws_user'], $rm['ws_password']);
     },
 
+    RouteControlService::class => fn(ContainerInterface $c) => new RouteControlService(
+        $c->get('app')['var_dir']
+    ),
+
+    \FMP\RMApi\Middleware\RouteGate::class => fn(ContainerInterface $c) => new \FMP\RMApi\Middleware\RouteGate(
+        $c->get(RouteControlService::class)
+    ),
+
+    \FMP\RMApi\Controllers\AdminRotasController::class => fn(ContainerInterface $c) => new \FMP\RMApi\Controllers\AdminRotasController(
+        $c->get(RouteControlService::class)
+    ),
+
     Crypto::class => function (ContainerInterface $c) {
         $app = $c->get('app');
         return new Crypto($app['crypto']['method'], $app['crypto']['key']);
@@ -38,6 +52,17 @@ return [
     ),
 
     CfoService::class => fn(ContainerInterface $c) => new CfoService(
+        $c->get(RMSoapClient::class),
+        $c->get(ConsultaService::class),
+        $c->get('rm')
+    ),
+
+    FichaAlunoService::class => fn(ContainerInterface $c) => new FichaAlunoService(
+        $c->get(PessoaService::class),
+        $c->get(ConsultaService::class)
+    ),
+
+    BaixaService::class => fn(ContainerInterface $c) => new BaixaService(
         $c->get(RMSoapClient::class),
         $c->get(ConsultaService::class),
         $c->get('rm')

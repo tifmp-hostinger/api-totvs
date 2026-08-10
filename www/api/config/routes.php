@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use FMP\RMApi\Controllers\AdminRotasController;
 use FMP\RMApi\Controllers\AlunoController;
 use FMP\RMApi\Controllers\CfoController;
 use FMP\RMApi\Controllers\ContratoController;
@@ -50,6 +51,8 @@ return function (App $app): void {
         $alunos->post('', [AlunoController::class, 'salvar']);
         // Vincula um Cliente/Fornecedor já gravado a um aluno existente (por RA).
         $alunos->post('/cliente-fornecedor', [AlunoController::class, 'vincularCliente']);
+        // Ficha 360º (rota fixa antes da rota com parâmetros para não colidir).
+        $alunos->get('/ficha', [AlunoController::class, 'ficha']);
         $alunos->get('/{codcoligada}/{codpessoa}', [AlunoController::class, 'buscar']);
     });
 
@@ -115,4 +118,16 @@ return function (App $app): void {
     /* ---------- SSO (exceção HTML — ver SSOController) ---------- */
 
     $app->get('/sso/{token}', [SSOController::class, 'signIn']);
+
+    /* ---------- Administração (painel de controle de rotas) ----------
+     * Interface: public/admin.html. Exigem API key e são protegidas
+     * contra desativação (ver RouteCatalog).
+     */
+
+    $app->group('/admin/rotas', function (RouteCollectorProxy $admin) {
+        $admin->get('', [AdminRotasController::class, 'listar']);
+        $admin->post('/lote', [AdminRotasController::class, 'alterarLote']);
+        $admin->post('/estatisticas/zerar', [AdminRotasController::class, 'zerarEstatisticas']);
+        $admin->patch('/{id}', [AdminRotasController::class, 'alterar']);
+    });
 };

@@ -61,6 +61,9 @@ COPY www/api/ /var/www/html/
 # instala dependências (evita erro de vendor)
 RUN composer install --no-dev --optimize-autoloader
 
+# Diretório gravável do painel de rotas (/admin.html): estado + estatísticas
+RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var
+
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \

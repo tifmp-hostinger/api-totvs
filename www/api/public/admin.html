@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>FMP RM-API — Painel de Controle de Rotas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fmp-red:#EE2A42; --fmp-ink:#191818; --fmp-cream:#EFEEEA; --fmp-sand:#BFBAA4;
+    --ink-2:#3a3838; --line:#e2e0d8; --card:#ffffff; --ok:#1f9d6b; --warn:#b45309; --err:#b91c1c;
+    --get:#2563eb; --post:#16a34a; --patch:#9333ea;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Outfit",system-ui,sans-serif;color:var(--fmp-ink);background:var(--fmp-cream);line-height:1.55}
+  a{color:var(--fmp-red)}
+  code{font-family:var(--mono)}
+
+  header{background:var(--fmp-ink);color:#fff;padding:28px 24px 24px}
+  header .wrap{max-width:1160px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.18em;font-size:13px;color:var(--fmp-sand);text-transform:uppercase}
+  .spark{color:var(--fmp-red);font-size:18px;line-height:1}
+  h1{font-family:"Noto Serif",serif;font-style:italic;font-weight:600;font-size:30px;margin:10px 0 4px}
+  h1 b{color:var(--fmp-red);font-weight:600}
+  .sub{color:#cfcbbf;font-size:14px;max-width:820px}
+
+  .controls{max-width:1160px;margin:20px auto 0;padding:0 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2)}
+  .field input,.field select{font-family:var(--mono);font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .field select{cursor:pointer;font-family:"Outfit"}
+  #base{min-width:300px} #apikey{min-width:230px}
+  .field.search input{min-width:220px;font-family:"Outfit"}
+  .btn{background:var(--fmp-ink);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:"Outfit"}
+  .btn:hover{background:#000}
+  .btn.sec{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+  .btn.sec:hover{border-color:var(--fmp-red);color:var(--fmp-red);background:#fff}
+  .btn.danger{background:#fff;color:var(--err);border:1px solid var(--line)}
+  .btn.danger:hover{border-color:var(--err)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  main{max-width:1160px;margin:0 auto;padding:8px 24px 90px}
+  .note{background:#fff;border:1px solid var(--line);border-left:4px solid var(--fmp-red);border-radius:12px;padding:12px 16px;margin:20px 0;font-size:13.5px;color:var(--ink-2)}
+  .note b{color:var(--fmp-ink)}
+
+  /* resumo */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 6px}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .tile .n{font-family:"Noto Serif",serif;font-size:28px;font-weight:600;line-height:1.1}
+  .tile.ok .n{color:var(--ok)} .tile.off .n{color:var(--err)} .tile.hits .n{color:var(--get)} .tile.blk .n{color:var(--warn)}
+  .tile .t{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-top:2px}
+
+  /* toolbar */
+  .toolbar{display:flex;gap:10px;margin:16px 0 0;flex-wrap:wrap;align-items:flex-end}
+  .toolbar .btn{padding:8px 14px;border-radius:999px;font-size:12.5px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chip{background:#fff;border:1px dashed var(--fmp-sand);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--ink-2);cursor:pointer}
+  .chip:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+
+  /* grupos */
+  .group{margin-top:30px}
+  .group-head{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap}
+  .group-head h2{font-family:"Noto Serif",serif;font-style:italic;font-size:20px;margin:0;flex:1}
+  .group-head .cnt{font-size:12px;color:#8a8678}
+  .mini{background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:"Outfit";color:var(--ink-2)}
+  .mini:hover{border-color:var(--fmp-red);color:var(--fmp-red)}
+  .mini.on:hover{border-color:var(--ok);color:var(--ok)}
+
+  /* cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:12px 0;overflow:hidden}
+  .card.inativa{background:#faf6f4;border-color:#eddcd8}
+  .card-head{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;user-select:none;flex-wrap:wrap}
+  .card-head:hover{background:#faf9f6}
+  .card.inativa .card-head:hover{background:#f5efec}
+  .fav{cursor:pointer;font-size:16px;color:#d8d4c6;flex:0 0 auto}
+  .fav.on{color:#e0a10e}
+  .method{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;padding:3px 9px;border-radius:999px;letter-spacing:.04em;min-width:52px;text-align:center}
+  .m-GET{background:var(--get)} .m-POST{background:var(--post)} .m-PATCH{background:var(--patch)}
+  .path{font-family:var(--mono);font-size:14px;font-weight:500;flex:1;word-break:break-all;min-width:200px}
+  .card.inativa .path{color:#8a8678;text-decoration:line-through;text-decoration-color:#c9b6ae}
+  .stats{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .stat{font-family:var(--mono);font-size:10.5px;background:#f2f0e9;border-radius:999px;padding:3px 9px;color:var(--ink-2);white-space:nowrap}
+  .stat.s2xx{background:#e5f5ee;color:var(--ok)} .stat.s4xx{background:#fdf1e3;color:var(--warn)} .stat.s5xx{background:#fdeaea;color:var(--err)}
+  .lock{font-size:13px;color:var(--fmp-sand)}
+  .badge-off{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--err);background:#fdeaea;border-radius:999px;padding:3px 10px;text-transform:uppercase}
+  .chev{color:var(--fmp-sand);transition:transform .18s;font-size:13px}
+  .card.open .chev{transform:rotate(90deg)}
+
+  /* switch */
+  .sw{position:relative;width:42px;height:23px;flex:0 0 auto}
+  .sw input{opacity:0;width:0;height:0}
+  .sw .tr{position:absolute;inset:0;background:#d9d5c8;border-radius:999px;transition:.18s;cursor:pointer}
+  .sw .tr:before{content:"";position:absolute;height:17px;width:17px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .sw input:checked + .tr{background:var(--ok)}
+  .sw input:checked + .tr:before{transform:translateX(19px)}
+  .sw input:disabled + .tr{opacity:.45;cursor:not-allowed}
+
+  .card-body{display:none;padding:0 16px 18px;border-top:1px solid var(--line)}
+  .card.open .card-body{display:block}
+  .desc{font-size:13.5px;color:var(--ink-2);margin:14px 0 4px}
+  .motivo-view{font-size:12.5px;color:var(--err);margin:6px 0 0;font-style:italic}
+  .rowline{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:12px}
+  .inputs{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 4px}
+  .inp{display:flex;flex-direction:column;gap:4px}
+  .inp label{font-size:11px;font-weight:600;color:var(--ink-2);font-family:var(--mono)}
+  .inp input{font-family:var(--mono);font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;min-width:160px}
+  textarea{width:100%;font-family:var(--mono);font-size:13px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fdfdfb;min-height:110px;resize:vertical;margin-top:8px}
+  .exec-bar{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .spin{display:none;width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--fmp-red);border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .resp{margin-top:14px;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a;display:none}
+  .resp-head{display:flex;align-items:center;justify-content:space-between;background:#222;color:#cfcbbf;padding:7px 12px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;flex-wrap:wrap;gap:6px}
+  .resp-head .meta{display:flex;gap:8px;align-items:center;font-family:var(--mono);text-transform:none;letter-spacing:0}
+  .st{padding:2px 9px;border-radius:999px;font-weight:700}
+  .st.s2xx{background:#123f2d;color:#5ee0a4} .st.s4xx{background:#4a2e07;color:#f3b45d} .st.s5xx{background:#4a1212;color:#f38b8b} .st.s0{background:#333;color:#bbb}
+  .resp pre{margin:0;background:var(--fmp-ink);color:#f3f1ea;padding:14px;font-family:var(--mono);font-size:12.5px;overflow:auto;white-space:pre;max-height:420px}
+  button.copy{background:transparent;border:1px solid #4a4a4a;color:#cfcbbf;border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:"Outfit";font-weight:600}
+  button.copy:hover{border-color:var(--fmp-red);color:#fff}
+  button.copy.done{border-color:var(--ok);color:var(--ok)}
+
+  /* modo compacto */
+  body.compact .card{margin:6px 0;border-radius:10px}
+  body.compact .card-head{padding:7px 12px}
+  body.compact .stats .stat:nth-child(n+3){display:none}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--fmp-ink);color:#fff;padding:11px 20px;border-radius:12px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:var(--err)}
+  #toast.ok{background:var(--ok)}
+
+  #vazio{display:none;text-align:center;color:#8a8678;padding:60px 0;font-size:14px}
+  footer{max-width:1160px;margin:0 auto;padding:24px;color:#8a8678;font-size:12.5px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand"><span class="spark">&#10022;</span> FMP &middot; Funda&ccedil;&atilde;o Escola Superior do Minist&eacute;rio P&uacute;blico</div>
+    <h1>RM-API &mdash; painel de <b>controle de rotas</b></h1>
+    <div class="sub">Ative/desative qualquer rota da API em tempo real, acompanhe o uso (requisi&ccedil;&otilde;es, &uacute;ltimo status, dura&ccedil;&atilde;o) e execute chamadas de teste com a resposta formatada &mdash; tudo por esta interface.</div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="field">
+    <label for="base">URL base do servi&ccedil;o</label>
+    <input id="base" placeholder="vazio = esta mesma origem" spellcheck="false" />
+  </div>
+  <div class="field">
+    <label for="apikey">API key (header X-API-Key)</label>
+    <input id="apikey" type="password" placeholder="cole sua chave" spellcheck="false" />
+  </div>
+  <button class="btn" id="carregar">Carregar rotas</button>
+</div>
+
+<main>
+  <div class="note">
+    <b>Como funciona:</b> a lista vem de <code>GET /admin/rotas</code> (exige a API key). O interruptor de cada rota grava o estado no servidor
+    &mdash; rota desativada responde <b>503</b> imediatamente, sem tocar o RM. Rotas com <span style="white-space:nowrap">&#128274;</span> s&atilde;o protegidas (health check e o pr&oacute;prio painel) e n&atilde;o podem ser desligadas.
+    <b>Executar</b> em rotas POST grava dados reais no RM &mdash; o painel pede confirma&ccedil;&atilde;o.
+  </div>
+
+  <div class="tiles" id="tiles" style="display:none">
+    <div class="tile"><div class="n" id="t-total">–</div><div class="t">rotas no cat&aacute;logo</div></div>
+    <div class="tile ok"><div class="n" id="t-ativas">–</div><div class="t">ativas</div></div>
+    <div class="tile off"><div class="n" id="t-inativas">–</div><div class="t">desativadas</div></div>
+    <div class="tile hits"><div class="n" id="t-hits">–</div><div class="t">requisi&ccedil;&otilde;es</div></div>
+    <div class="tile blk"><div class="n" id="t-blk">–</div><div class="t">bloqueios (503)</div></div>
+  </div>
+
+  <div class="toolbar" id="toolbar" style="display:none">
+    <div class="field search">
+      <label for="q">Filtrar</label>
+      <input id="q" placeholder="ex: pessoa, /rm/sql, inscri&ccedil;&atilde;o&hellip;" />
+    </div>
+    <div class="field">
+      <label for="f-metodo">M&eacute;todo</label>
+      <select id="f-metodo"><option value="">todos</option><option>GET</option><option>POST</option><option>PATCH</option></select>
+    </div>
+    <div class="field">
+      <label for="f-status">Estado</label>
+      <select id="f-status"><option value="">todas</option><option value="1">ativas</option><option value="0">desativadas</option></select>
+    </div>
+    <div class="field">
+      <label for="f-visao">Visualiza&ccedil;&atilde;o</label>
+      <select id="f-visao"><option value="detalhada">detalhada</option><option value="compacta">compacta</option></select>
+    </div>
+    <button class="btn sec" id="f-fav">&#9733; S&oacute; favoritas</button>
+    <button class="btn sec" id="expandAll">Expandir tudo</button>
+    <button class="btn sec" id="collapseAll">Recolher tudo</button>
+    <button class="btn sec" id="atualizar">&#8635; Atualizar</button>
+    <button class="btn danger" id="zerar">Zerar estat&iacute;sticas</button>
+  </div>
+
+  <div class="chips" id="ocultos"></div>
+
+  <div id="catalog"></div>
+  <div id="vazio">Nenhuma rota corresponde aos filtros.</div>
+</main>
+
+<footer>
+  FMP RM-API &middot; painel de controle de rotas (<code>/admin.html</code>). Refer&ecirc;ncia de endpoints em <code>/docs.html</code>; documenta&ccedil;&atilde;o em <code>API.md</code>.
+</footer>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ---------------- preferências (visualizações) ---------------- */
+const PREFS_KEY = "fmp_admin_prefs";
+let prefs = { favoritos: [], gruposOcultos: [], visao: "detalhada", soFavoritas: false };
+try { prefs = Object.assign(prefs, JSON.parse(localStorage.getItem(PREFS_KEY) || "{}")); } catch(e){}
+function savePrefs(){ try{ localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); }catch(e){} }
+
+const baseInput = $("#base"), apiKeyInput = $("#apikey");
+try{
+  const sb = localStorage.getItem("fmp_admin_base"); if(sb) baseInput.value = sb;
+  const sk = localStorage.getItem("fmp_api_key"); if(sk) apiKeyInput.value = sk;
+}catch(e){}
+baseInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_admin_base", baseInput.value.trim()); }catch(e){} });
+apiKeyInput.addEventListener("input", ()=>{ try{ localStorage.setItem("fmp_api_key", apiKeyInput.value.trim()); }catch(e){} });
+
+function baseUrl(){
+  const v = baseInput.value.trim().replace(/\/+$/,"");
+  if(v) return v;
+  return (location.origin && location.origin !== "null") ? location.origin : "";
+}
+function headers(json){
+  const h = { "Accept": "application/json" };
+  const k = apiKeyInput.value.trim();
+  if(k) h["X-API-Key"] = k;
+  if(json) h["Content-Type"] = "application/json";
+  return h;
+}
+
+/* ---------------- toast ---------------- */
+let toastTimer = null;
+function toast(msg, tipo){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "show" + (tipo ? " " + tipo : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.className = "", 3200);
+}
+
+/* ---------------- estado do painel ---------------- */
+let rotas = [];            // catálogo vindo do servidor
+const abertos = new Set(); // ids de cards expandidos
+const bodiesEditados = {}; // id -> texto do body preservado entre renders
+
+async function api(metodo, caminho, body){
+  const res = await fetch(baseUrl() + caminho, {
+    method: metodo,
+    headers: headers(body !== undefined),
+    body: body !== undefined ? JSON.stringify(body) : undefined
+  });
+  let dados = null;
+  try{ dados = await res.json(); }catch(e){}
+  if(!res.ok){
+    const msg = (dados && dados.mensagem) ? dados.mensagem : ("HTTP " + res.status);
+    throw new Error(msg + (res.status === 401 ? " — confira a API key." : ""));
+  }
+  return dados;
+}
+
+async function carregar(){
+  const btn = $("#carregar");
+  btn.disabled = true; btn.textContent = "Carregando…";
+  try{
+    const r = await api("GET", "/admin/rotas");
+    rotas = (r.dados && r.dados.rotas) || [];
+    $("#tiles").style.display = "";
+    $("#toolbar").style.display = "";
+    render();
+    toast("Catálogo carregado: " + rotas.length + " rotas.", "ok");
+  }catch(e){
+    toast("Falha ao carregar: " + e.message, "err");
+  }finally{
+    btn.disabled = false; btn.textContent = "Carregar rotas";
+  }
+}
+
+async function recarregarSilencioso(){
+  try{
+    const r = await api("GET", "/admin/rotas");
+    rotas = (r.dados && r.dados.rotas) || [];
+    render();
+  }catch(e){ toast("Falha ao atualizar: " + e.message, "err"); }
+}
+
+/* ---------------- ações ---------------- */
+async function alternarRota(rota, ativa, motivo){
+  try{
+    const r = await api("PATCH", "/admin/rotas/" + encodeURIComponent(rota.id), { ativa, motivo: motivo || "" });
+    toast(r.mensagem, "ok");
+  }catch(e){
+    toast("Falha: " + e.message, "err");
+  }
+  await recarregarSilencioso();
+}
+
+async function alternarGrupo(grupo, ativa){
+  const ids = rotas.filter(r => r.grupo === grupo && !r.protegida).map(r => r.id);
+  if(!ids.length) return;
+  if(!ativa && !confirm('Desativar TODAS as ' + ids.length + ' rotas do grupo "' + grupo + '"?')) return;
+  try{
+    const r = await api("POST", "/admin/rotas/lote", { ativa, rotas: ids, motivo: ativa ? "" : "desativado em lote pelo painel" });
+    toast(r.mensagem, "ok");
+  }catch(e){
+    toast("Falha: " + e.message, "err");
+  }
+  await recarregarSilencioso();
+}
+
+async function zerarEstatisticas(){
+  if(!confirm("Zerar os contadores de uso de todas as rotas?")) return;
+  try{
+    const r = await api("POST", "/admin/rotas/estatisticas/zerar");
+    toast(r.mensagem, "ok");
+  }catch(e){ toast("Falha: " + e.message, "err"); }
+  await recarregarSilencioso();
+}
+
+/* ---------------- testador ---------------- */
+function montarUrl(rota, card){
+  let path = rota.padrao;
+  card.querySelectorAll("[data-param]").forEach(inp=>{
+    path = path.replace("{"+inp.dataset.param+"}", encodeURIComponent(inp.value.trim() || ("{"+inp.dataset.param+"}")));
+  });
+  const qs = [];
+  card.querySelectorAll("[data-query]").forEach(inp=>{
+    const v = inp.value.trim();
+    if(v !== "") qs.push(encodeURIComponent(inp.dataset.query) + "=" + encodeURIComponent(v));
+  });
+  return baseUrl() + path + (qs.length ? "?" + qs.join("&") : "");
+}
+
+function montarCurl(rota, card){
+  const url = montarUrl(rota, card);
+  const k = apiKeyInput.value.trim();
+  const lines = ['curl -X ' + rota.metodo + ' "' + url + '"'];
+  if(k) lines.push('  -H "X-API-Key: ' + k + '"');
+  lines.push('  -H "Accept: application/json"');
+  const ta = card.querySelector("textarea.body");
+  if(ta){
+    lines.push('  -H "Content-Type: application/json"');
+    lines.push("  -d '" + ta.value + "'");
+  }
+  return lines.join(" \\\n");
+}
+
+async function executar(rota, card){
+  if(rota.metodo !== "GET" && !confirm(rota.metodo + " " + rota.padrao + "\n\nIsto executa a rota DE VERDADE (pode gravar dados reais no RM). Continuar?")) return;
+
+  const btn  = card.querySelector(".exec");
+  const spin = card.querySelector(".spin");
+  const resp = card.querySelector(".resp");
+  const pre  = card.querySelector(".resp pre");
+  const stEl = card.querySelector(".resp .st");
+  const tmEl = card.querySelector(".resp .tm");
+
+  const ta = card.querySelector("textarea.body");
+  let corpo;
+  if(ta){
+    try{ corpo = JSON.parse(ta.value); }
+    catch(e){ toast("Body não é um JSON válido: " + e.message, "err"); return; }
+  }
+
+  btn.disabled = true; spin.style.display = "inline-block";
+  const t0 = performance.now();
+  let status = 0, texto = "";
+  try{
+    const res = await fetch(montarUrl(rota, card), {
+      method: rota.metodo,
+      headers: headers(corpo !== undefined),
+      body: corpo !== undefined ? JSON.stringify(corpo) : undefined
+    });
+    status = res.status;
+    texto = await res.text();
+  }catch(e){
+    texto = "Falha de rede: " + e.message;
+  }
+  const ms = Math.round(performance.now() - t0);
+
+  try{ texto = JSON.stringify(JSON.parse(texto), null, 2); }catch(e){}
+  pre.textContent = texto || "(resposta vazia)";
+  stEl.textContent = status ? ("HTTP " + status) : "sem resposta";
+  stEl.className = "st s" + (status ? Math.floor(status/100) + "xx" : "0");
+  tmEl.textContent = ms + " ms · " + new Blob([texto]).size + " bytes";
+  resp.style.display = "block";
+  btn.disabled = false; spin.style.display = "none";
+}
+
+/* ---------------- render ---------------- */
+function fmtData(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"});
+}
+
+function passaFiltro(r){
+  const q = $("#q").value.toLowerCase().trim();
+  const m = $("#f-metodo").value;
+  const s = $("#f-status").value;
+  if(m && r.metodo !== m) return false;
+  if(s !== "" && String(r.ativa ? 1 : 0) !== s) return false;
+  if(prefs.soFavoritas && !prefs.favoritos.includes(r.id)) return false;
+  if(q && !(r.grupo + " " + r.metodo + " " + r.padrao + " " + r.descricao + " " + r.id).toLowerCase().includes(q)) return false;
+  return true;
+}
+
+function render(){
+  document.body.classList.toggle("compact", prefs.visao === "compacta");
+  $("#f-visao").value = prefs.visao;
+  $("#f-fav").style.borderColor = prefs.soFavoritas ? "#e0a10e" : "";
+  $("#f-fav").style.color = prefs.soFavoritas ? "#e0a10e" : "";
+
+  // resumo
+  const ativas = rotas.filter(r => r.ativa).length;
+  let hits = 0, blk = 0;
+  rotas.forEach(r => { if(r.estatisticas){ hits += r.estatisticas.hits || 0; blk += r.estatisticas.bloqueios || 0; } });
+  $("#t-total").textContent = rotas.length;
+  $("#t-ativas").textContent = ativas;
+  $("#t-inativas").textContent = rotas.length - ativas;
+  $("#t-hits").textContent = hits;
+  $("#t-blk").textContent = blk;
+
+  // chips de grupos ocultos
+  const oc = $("#ocultos");
+  oc.innerHTML = prefs.gruposOcultos.map(g =>
+    '<span class="chip" data-grupo="' + esc(g) + '" title="Clique para reexibir">&#128065; grupo oculto: <b>' + esc(g) + '</b> ×</span>').join("");
+  oc.querySelectorAll(".chip").forEach(ch => ch.addEventListener("click", ()=>{
+    prefs.gruposOcultos = prefs.gruposOcultos.filter(g => g !== ch.dataset.grupo);
+    savePrefs(); render();
+  }));
+
+  // ordena: favoritas primeiro dentro do grupo
+  const visiveis = rotas.filter(passaFiltro);
+  const grupos = {};
+  visiveis.forEach(r => { (grupos[r.grupo] = grupos[r.grupo] || []).push(r); });
+  Object.values(grupos).forEach(lista => lista.sort((a,b) =>
+    (prefs.favoritos.includes(b.id) ? 1 : 0) - (prefs.favoritos.includes(a.id) ? 1 : 0)));
+
+  const catalog = $("#catalog");
+  catalog.innerHTML = "";
+  let algum = false;
+
+  Object.keys(grupos).forEach(gnome=>{
+    if(prefs.gruposOcultos.includes(gnome)) return;
+    algum = true;
+    const lista = grupos[gnome];
+    const sec = document.createElement("div");
+    sec.className = "group";
+
+    const head = document.createElement("div");
+    head.className = "group-head";
+    const temDesativavel = lista.some(r => !r.protegida);
+    head.innerHTML =
+      "<h2>" + esc(gnome) + "</h2>" +
+      '<span class="cnt">' + lista.filter(r=>r.ativa).length + "/" + lista.length + " ativas</span>" +
+      (temDesativavel
+        ? '<button class="mini on" data-act="on">ativar grupo</button><button class="mini" data-act="off">desativar grupo</button>'
+        : "") +
+      '<button class="mini" data-act="hide" title="Ocultar este grupo no painel">&#128065; ocultar</button>';
+    head.querySelectorAll(".mini").forEach(b => b.addEventListener("click", ()=>{
+      if(b.dataset.act === "hide"){ prefs.gruposOcultos.push(gnome); savePrefs(); render(); }
+      else alternarGrupo(gnome, b.dataset.act === "on");
+    }));
+    sec.appendChild(head);
+
+    lista.forEach(r => sec.appendChild(montarCard(r)));
+    catalog.appendChild(sec);
+  });
+
+  $("#vazio").style.display = algum ? "none" : "block";
+}
+
+function montarCard(r){
+  const card = document.createElement("div");
+  card.className = "card" + (r.ativa ? "" : " inativa") + (abertos.has(r.id) ? " open" : "");
+  const st = r.estatisticas;
+  const fav = prefs.favoritos.includes(r.id);
+
+  let statsHtml = "";
+  if(st){
+    const cls = st.ultimo_status ? "s" + Math.floor(st.ultimo_status/100) + "xx" : "";
+    statsHtml =
+      '<span class="stat">' + (st.hits || 0) + " req</span>" +
+      (st.ultimo_status ? '<span class="stat ' + cls + '">último: ' + st.ultimo_status + "</span>" : "") +
+      (st.ultimo_acesso ? '<span class="stat">' + esc(fmtData(st.ultimo_acesso)) + "</span>" : "") +
+      (st.bloqueios ? '<span class="stat s5xx">' + st.bloqueios + " bloqueio(s)</span>" : "");
+  }
+
+  card.innerHTML =
+    '<div class="card-head">' +
+      '<span class="fav' + (fav ? " on" : "") + '" title="Favoritar (fixa no topo do grupo)">&#9733;</span>' +
+      '<span class="method m-' + esc(r.metodo) + '">' + esc(r.metodo) + "</span>" +
+      '<code class="path">' + esc(r.padrao) + "</code>" +
+      '<span class="stats">' + statsHtml + "</span>" +
+      (r.ativa ? "" : '<span class="badge-off">desativada</span>') +
+      (r.protegida
+        ? '<span class="lock" title="Rota protegida — não pode ser desativada">&#128274;</span>'
+        : "") +
+      '<label class="sw" title="' + (r.ativa ? "Desativar" : "Ativar") + ' esta rota">' +
+        '<input type="checkbox" ' + (r.ativa ? "checked" : "") + (r.protegida ? " disabled" : "") + ">" +
+        '<span class="tr"></span>' +
+      "</label>" +
+      '<span class="chev">&#9656;</span>' +
+    "</div>" +
+    '<div class="card-body">' +
+      '<p class="desc">' + esc(r.descricao) + "</p>" +
+      (!r.ativa && (r.motivo || r.atualizado_em)
+        ? '<p class="motivo-view">Desativada' + (r.atualizado_em ? " em " + esc(fmtData(r.atualizado_em)) : "") +
+          (r.motivo ? " — motivo: " + esc(r.motivo) : "") + "</p>"
+        : "") +
+      (r.protegida ? "" :
+        '<div class="rowline"><div class="inp" style="flex:1;min-width:240px"><label>motivo (usado ao desativar)</label>' +
+        '<input class="motivo" placeholder="ex: manutenção no RM" value="' + esc(r.motivo || "") + '"></div></div>') +
+      montarTesterHtml(r) +
+    "</div>";
+
+  // abrir/fechar
+  card.querySelector(".card-head").addEventListener("click", e=>{
+    if(e.target.closest(".sw") || e.target.closest(".fav")) return;
+    card.classList.toggle("open");
+    card.classList.contains("open") ? abertos.add(r.id) : abertos.delete(r.id);
+  });
+
+  // favorito
+  card.querySelector(".fav").addEventListener("click", ()=>{
+    prefs.favoritos = fav ? prefs.favoritos.filter(id => id !== r.id) : prefs.favoritos.concat(r.id);
+    savePrefs(); render();
+  });
+
+  // interruptor ativa/desativa
+  const sw = card.querySelector(".sw input");
+  if(sw && !r.protegida){
+    sw.addEventListener("change", ()=>{
+      const motivoInput = card.querySelector(".motivo");
+      const motivo = motivoInput ? motivoInput.value.trim() : "";
+      if(!sw.checked && !confirm("Desativar " + r.metodo + " " + r.padrao + "?\nQuem chamar receberá 503 até reativar.")){
+        sw.checked = true; return;
+      }
+      alternarRota(r, sw.checked, motivo);
+    });
+  }
+
+  // testador
+  const ta = card.querySelector("textarea.body");
+  if(ta){
+    if(bodiesEditados[r.id] !== undefined) ta.value = bodiesEditados[r.id];
+    ta.addEventListener("input", ()=>{ bodiesEditados[r.id] = ta.value; });
+  }
+  const execBtn = card.querySelector(".exec");
+  if(execBtn) execBtn.addEventListener("click", ()=> executar(r, card));
+  const curlBtn = card.querySelector(".copy-curl");
+  if(curlBtn) curlBtn.addEventListener("click", ()=>{
+    navigator.clipboard.writeText(montarCurl(r, card)).then(()=>{
+      curlBtn.textContent = "Copiado ✓"; curlBtn.classList.add("done");
+      setTimeout(()=>{ curlBtn.textContent = "Copiar cURL"; curlBtn.classList.remove("done"); }, 1400);
+    });
+  });
+  const copyResp = card.querySelector(".copy-resp");
+  if(copyResp) copyResp.addEventListener("click", ()=>{
+    navigator.clipboard.writeText(card.querySelector(".resp pre").textContent).then(()=>{
+      copyResp.textContent = "Copiado ✓"; copyResp.classList.add("done");
+      setTimeout(()=>{ copyResp.textContent = "Copiar"; copyResp.classList.remove("done"); }, 1400);
+    });
+  });
+
+  return card;
+}
+
+function montarTesterHtml(r){
+  const ex = r.exemplo || {};
+  let inputs = "";
+  if(ex.params){
+    inputs += Object.keys(ex.params).map(p =>
+      '<div class="inp"><label>' + esc(p) + '</label><input data-param="' + esc(p) + '" value="' + esc(ex.params[p]) + '"></div>').join("");
+  } else {
+    // rota com placeholders mas sem exemplo: gera inputs vazios
+    (r.padrao.match(/\{([^}]+)\}/g) || []).forEach(ph=>{
+      const p = ph.slice(1,-1);
+      inputs += '<div class="inp"><label>' + esc(p) + '</label><input data-param="' + esc(p) + '" value=""></div>';
+    });
+  }
+  if(ex.query){
+    inputs += ex.query.map(q =>
+      '<div class="inp"><label>' + esc(q.label || q.name) + '</label><input data-query="' + esc(q.name) + '" value="' + esc(q.val || "") + '" placeholder="vazio = ignora"></div>').join("");
+  }
+  const temBody = (r.metodo !== "GET");
+  const bodyHtml = temBody
+    ? '<textarea class="body" spellcheck="false">' + esc(JSON.stringify(ex.body || {}, null, 2)) + "</textarea>"
+    : "";
+
+  return (
+    (inputs ? '<div class="inputs">' + inputs + "</div>" : "") +
+    bodyHtml +
+    '<div class="exec-bar">' +
+      '<button class="btn exec">&#9654; Executar</button>' +
+      '<span class="spin"></span>' +
+      '<button class="btn sec copy-curl">Copiar cURL</button>' +
+    "</div>" +
+    '<div class="resp">' +
+      '<div class="resp-head"><div class="meta"><span class="st s0">–</span><span class="tm"></span></div>' +
+      '<button class="copy copy-resp">Copiar</button></div>' +
+      "<pre></pre>" +
+    "</div>"
+  );
+}
+
+/* ---------------- eventos globais ---------------- */
+$("#carregar").addEventListener("click", carregar);
+$("#atualizar").addEventListener("click", recarregarSilencioso);
+$("#zerar").addEventListener("click", zerarEstatisticas);
+$("#q").addEventListener("input", render);
+$("#f-metodo").addEventListener("change", render);
+$("#f-status").addEventListener("change", render);
+$("#f-visao").addEventListener("change", ()=>{ prefs.visao = $("#f-visao").value; savePrefs(); render(); });
+$("#f-fav").addEventListener("click", ()=>{ prefs.soFavoritas = !prefs.soFavoritas; savePrefs(); render(); });
+$("#expandAll").addEventListener("click", ()=>{ rotas.forEach(r=>abertos.add(r.id)); render(); });
+$("#collapseAll").addEventListener("click", ()=>{ abertos.clear(); render(); });
+
+// já tem chave salva? carrega direto (sem chave, espera o usuário preencher).
+if(apiKeyInput.value.trim()) carregar();
+</script>
+</body>
+</html>

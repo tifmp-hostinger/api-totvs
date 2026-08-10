@@ -69,6 +69,13 @@ $container = $containerBuilder->build();
 AppFactory::setContainer($container);
 $app = AppFactory::create();
 
+/* ---------- Portão de rotas (painel /admin.html) ----------
+ * Adicionado ANTES dos demais middlewares para ser o MAIS INTERNO: roda
+ * depois do roteamento (e da autenticação), com a rota já resolvida.
+ * Bloqueia rotas desativadas pelo painel (503) e contabiliza o uso.
+ */
+$app->add($container->get(\FMP\RMApi\Middleware\RouteGate::class));
+
 $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
 $app->setBasePath('');

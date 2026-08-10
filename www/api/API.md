@@ -6,6 +6,10 @@ API REST de integração com o **TOTVS RM via SOAP**. Sem frontend, sem checkout
 >
 > **Página interativa:** `public/docs.html` — servida em `https://SEU-SERVIDOR/docs.html`. Lista todos os endpoints com body editável e gera o cURL pronto pra copiar.
 >
+> **Painel de controle de rotas:** `public/admin.html` — servido em `https://SEU-SERVIDOR/admin.html`. Ativa/desativa qualquer rota em tempo real, mostra estatísticas de uso e executa chamadas de teste pela interface. Detalhes na seção 7.
+>
+> **Central de Gestão (usuário final):** `public/app.html` — servido em `https://SEU-SERVIDOR/app.html`. Aplicação de gerenciamento para o usuário final: consulta pessoas/alunos/CFO/ofertas, valida cupons, navega endereços, envia inscrições (com linha do tempo de etapas), cadastros e matrículas por etapa — tudo com resultados renderizados como fichas e tabelas, sem JSON. Usa a mesma API key (pedida na tela de conexão).
+>
 > **Deploy / EasyPanel / variáveis de ambiente / troubleshooting:** `docs/DEPLOY-EASYPANEL.md`.
 >
 > **Base path:** a app é servida na **raiz** (`setBasePath('')`). As rotas são `/pessoas`, `/rm/test` etc., **sem** `/api`.
@@ -133,6 +137,7 @@ Retorno do RM = `CODPESSOA` (numérico) ou mensagem de validação (exposta em `
 | `POST /alunos` | `{ "CODPESSOA": 123, "CODCOLIGADA": 1, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CPF": "...", "RNM": "" }` | 201 + `{ chave, autoLogin, nextUrl, etapas }` |
 | `POST /alunos/cliente-fornecedor` | `{ "RA": "...", "CODCOLIGADA": 1, "CODTIPOCURSO": 2, "CODFILIAL": 1, "CODCOLCFO": 0, "CODCFO": "..." }` | 200 + `{ chave, etapas }` |
 | `GET /alunos/{codcoligada}/{codpessoa}` | — | RA, CODUSUARIO, SENHAPADRAO, EXISTESUSUARIOFILIAL, DATAULTIMOACESSOVALIDO |
+| `GET /alunos/ficha?cpf=...` (ou `?rnm=` / `?codpessoa=`; `&codcoligada=1`; `&oferta=OF...`) | — | **Ficha 360º** agregada: identificação + KPIs + seções (cadastro, acadêmico/acesso, financeiro/CFO e — com `oferta` — matrícula no curso, contrato e lançamentos). Cada seção degrada com status próprio; 404 só quando a pessoa não existe |
 
 > **Aluno sem `CODUSUARIO`:** o RM cria o usuário do aluno (nome = RA) mas nem sempre grava o elo em `SALUNO.CODUSUARIO` — e sem ele não há vínculo usuário/filial nem SSO. Quando isso ocorre, a API **grava o vínculo** (`CODUSUARIO = RA`) e relê o aluno (etapa `USUÁRIO DO ALUNO` = `CORRIGIDO`). Se ainda assim faltar, a API **não derruba a requisição**: o aluno já está criado, então devolve **200** com o RA e marca `ACESSO` = `SEM_USUARIO` (matrícula e financeiro seguem; só o portal fica pendente). Antes isso era **422** e travava a integração inteira com o aluno já gravado.
 
@@ -390,6 +395,33 @@ SELECT L.DESCRICAO AS TEXTO
 
 Enquanto a sentença não existir, o erro orienta o cadastro e a consulta manual no Monitor de Jobs.
 
-## 7. Rastreamento de etapas (/inscricoes e /alunos)
+## 7. Painel de controle de rotas (`/admin.html`)
+
+Interface web para **gerenciar todas as rotas da API**: servida em `https://SEU-SERVIDOR/admin.html` (mesma identidade visual do `docs.html`). Exige a API key (header `X-API-Key`) — a chave é pedida na própria tela e fica no `localStorage` do navegador.
+
+**O que ela faz:**
+
+- **Liga/desliga qualquer rota** individualmente (interruptor) ou por grupo (em lote), com motivo opcional. Rota desativada responde **503** imediatamente — a requisição nem chega ao controller/RM:
+  ```json
+  { "sucesso": false, "mensagem": "Esta rota está temporariamente desativada pelo painel de controle da API.", "rota": "GET /enderecos/estados", "motivo": "manutenção no RM", "desativada_em": "..." }
+  ```
+- **Estatísticas por rota**: requisições, bloqueios (503), último status, último acesso e duração da última chamada — com botão para zerar.
+- **Testador embutido**: parâmetros de rota/query editáveis e body JSON pré-preenchido; executa a chamada real e mostra a resposta formatada (status, tempo, tamanho) — POST pede confirmação. Também gera o cURL.
+- **Gerenciamento da visualização**: busca, filtro por método/estado, favoritos (fixam no topo), modo compacto/detalhado e grupos ocultáveis — preferências persistidas no navegador.
+
+**Rotas de administração (exigem API key; protegidas contra desativação):**
+
+| Rota | Descrição |
+|---|---|
+| `GET /admin/rotas` | Catálogo completo com estado + estatísticas |
+| `PATCH /admin/rotas/{id}` | Body `{ "ativa": true\|false, "motivo": "..." }` |
+| `POST /admin/rotas/lote` | Body `{ "ativa": bool, "rotas": ["id1","id2"], "motivo": "..." }` |
+| `POST /admin/rotas/estatisticas/zerar` | Zera os contadores de uso |
+
+**Como funciona por dentro:** `src/Support/RouteCatalog.php` é o catálogo canônico (id, método, pattern, grupo, descrição, exemplos do testador — **registre aqui toda rota nova**, senão ela funciona mas não aparece no painel); `src/Middleware/RouteGate.php` (middleware mais interno) bloqueia rotas desativadas e contabiliza o uso; `src/Services/RouteControlService.php` persiste estado e estatísticas em `var/rotas-estado.json` / `var/rotas-stats.json` (com `flock`; diretório configurável via env `APP_VAR_DIR` — no container é `/var/www/html/var`, já criado com permissão pro `www-data` no Dockerfile). Rotas com `protegida: true` (`/status` e o próprio `/admin/*`) não podem ser desativadas — impossível se trancar pra fora. Se o arquivo de estado não existir, **tudo fica ativo** (default seguro).
+
+**Dev local:** `php -S 127.0.0.1:8099 -t public router-dev.php` (o router serve os estáticos de `public/` e roteia o resto pro Slim, como o Apache faz em produção).
+
+## 8. Rastreamento de etapas (/inscricoes e /alunos)
 
 `POST /inscricoes` e `POST /alunos` devolvem a lista de etapas executadas em `dados.etapas` (sucesso) ou `etapas_concluidas` (erro), com status `OK`, `JA_EXISTIA`, `ATUALIZADA/ATUALIZADO`, `ENCONTRADO`/`NAO_ENCONTRADO`. Em erro de RM, a resposta é 422 com `etapa` (onde parou) + `etapas_concluidas` + `retorno_rm`.
