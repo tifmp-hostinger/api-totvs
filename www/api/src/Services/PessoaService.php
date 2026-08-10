@@ -90,41 +90,50 @@ class PessoaService
         return $p;
     }
 
+    /** Campos da PPessoa gravados por esta rota, na ordem esperada pelo RM. */
+    private const CAMPOS = [
+        'NOME', 'DTNASCIMENTO', 'ESTADONATAL', 'NATURALIDADE', 'SEXO',
+        'NACIONALIDADE', 'RUA', 'NUMERO', 'COMPLEMENTO', 'BAIRRO', 'ESTADO',
+        'CIDADE', 'CEP', 'PAIS', 'CPF', 'TELEFONE1', 'EMAIL', 'CODMUNICIPIO',
+        'CODNATURALIDADE', 'IDPAIS', 'NROREGGERAL',
+    ];
+
+    /**
+     * Monta o XML do RhuPessoaData.
+     *
+     * CRIAÇÃO (CODIGO = 0): emite todas as tags, inclusive as vazias — é o
+     * contrato que o RM espera para um registro novo.
+     *
+     * ATUALIZAÇÃO (CODIGO ≠ 0): emite SOMENTE os campos informados. Emitir a
+     * tag vazia faz o RM sobrescrever o valor existente com vazio, ou seja,
+     * uma atualização parcial APAGAVA os campos não enviados (é assim que uma
+     * data de nascimento some e vira 01/01/1970 na releitura).
+     */
     public static function buildXml(array $p): string
     {
-        $get = fn(string $key) => htmlspecialchars((string) ($p[$key] ?? ''), ENT_XML1, 'UTF-8');
+        $esc = fn($v) => htmlspecialchars((string) $v, ENT_XML1 | ENT_QUOTES, 'UTF-8');
         $codigo = (string) ($p['CODIGO'] ?? '0');
+        $criando = trim($codigo) === '' || (string) (int) $codigo === '0';
 
-        return <<<XML
-        <RhuPessoa>
-            <PPessoa>
-                <CODIGO>{$codigo}</CODIGO>
-                <NOME>{$get('NOME')}</NOME>
-                <DTNASCIMENTO>{$get('DTNASCIMENTO')}</DTNASCIMENTO>
-                <ESTADONATAL>{$get('ESTADONATAL')}</ESTADONATAL>
-                <NATURALIDADE>{$get('NATURALIDADE')}</NATURALIDADE>
-                <SEXO>{$get('SEXO')}</SEXO>
-                <NACIONALIDADE>{$get('NACIONALIDADE')}</NACIONALIDADE>
-                <RUA>{$get('RUA')}</RUA>
-                <NUMERO>{$get('NUMERO')}</NUMERO>
-                <COMPLEMENTO>{$get('COMPLEMENTO')}</COMPLEMENTO>
-                <BAIRRO>{$get('BAIRRO')}</BAIRRO>
-                <ESTADO>{$get('ESTADO')}</ESTADO>
-                <CIDADE>{$get('CIDADE')}</CIDADE>
-                <CEP>{$get('CEP')}</CEP>
-                <PAIS>{$get('PAIS')}</PAIS>
-                <CPF>{$get('CPF')}</CPF>
-                <TELEFONE1>{$get('TELEFONE1')}</TELEFONE1>
-                <EMAIL>{$get('EMAIL')}</EMAIL>
-                <CODMUNICIPIO>{$get('CODMUNICIPIO')}</CODMUNICIPIO>
-                <CODNATURALIDADE>{$get('CODNATURALIDADE')}</CODNATURALIDADE>
-                <IDPAIS>{$get('IDPAIS')}</IDPAIS>
-                <NROREGGERAL>{$get('NROREGGERAL')}</NROREGGERAL>
-            </PPessoa>
-            <VPCompl>
-                <CODPESSOA>{$codigo}</CODPESSOA>
-            </VPCompl>
-        </RhuPessoa>
-        XML;
+        $campos = '';
+        foreach (self::CAMPOS as $tag) {
+            $valor = (string) ($p[$tag] ?? '');
+            if (!$criando && $valor === '') {
+                continue;   // atualização: não mexe no que não foi informado
+            }
+            $campos .= "                <{$tag}>" . $esc($valor) . "</{$tag}>\n";
+        }
+
+        $codigoEsc = $esc($codigo);
+
+        return "        <RhuPessoa>\n"
+            . "            <PPessoa>\n"
+            . "                <CODIGO>{$codigoEsc}</CODIGO>\n"
+            . $campos
+            . "            </PPessoa>\n"
+            . "            <VPCompl>\n"
+            . "                <CODPESSOA>{$codigoEsc}</CODPESSOA>\n"
+            . "            </VPCompl>\n"
+            . "        </RhuPessoa>";
     }
 }

@@ -132,6 +132,12 @@ class CfoService
      */
     public function salvar(array $p): string
     {
+        // criarFluxo() aceita o documento em CGCCFO, CPF ou CNPJ, mas buildXml
+        // só lê CGCCFO: sem isto, quem manda "CPF" gravava CFO SEM documento.
+        if (empty($p['CGCCFO'])) {
+            $p['CGCCFO'] = (string) ($p['CPF'] ?? $p['CNPJ'] ?? '');
+        }
+
         $p = self::sanitizar($p);
 
         // Coligada é sempre 0; CODCFO é 0 na criação (RM gera).
