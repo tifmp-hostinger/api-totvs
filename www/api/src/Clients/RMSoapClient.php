@@ -143,18 +143,31 @@ class RMSoapClient
     {
         $r = mb_strtolower(trim($retorno));
 
+        // Sucesso do wsProcess é sempre numérico ("1" ou JobId). Retorno
+        // numérico nunca é erro — evita falso positivo nas assinaturas abaixo.
+        if (is_numeric(trim($r))) {
+            return false;
+        }
+
         $assinaturas = [
             'error', 'exception', 'classe não', 'classe nao', 'não encontrad',
             'nao encontrad', 'not found', 'stack trace', 'nullreference',
             'could not', 'falha ao', 'não foi possível', 'nao foi possivel',
             'system.',
+            // Mensagens do RM em português não contêm "error" (com r final):
+            // "Erro na execução do processo..." passava como SUCESSO.
+            'inválid', 'invalid', 'negad', 'sem permissão', 'sem permissao',
+            'timeout', 'não pôde', 'nao pode ser',
         ];
         foreach ($assinaturas as $sig) {
             if (str_contains($r, $sig)) {
                 return true;
             }
         }
-        return false;
+
+        // "erro"/"falha" como palavra inteira (não pega "erros" dentro de
+        // outra palavra nem nomes legítimos que contenham a sequência).
+        return (bool) preg_match('/\\b(erro|erros|falha|falhou)\\b/u', $r);
     }
 
     /**

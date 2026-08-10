@@ -44,6 +44,55 @@ class ProcessXml
      * markup no envelope enviado ao RM. Pública para que o MatriculaService
      * valide pelo mesmo caminho (a matrícula no curso monta o XML por conta).
      */
+    /**
+     * Escapa um valor que será interpolado no XML enviado ao RM.
+     * Para entradas legítimas (RA, códigos alfanuméricos, datas) não altera
+     * nenhum byte — só neutraliza &, <, > e aspas, que quebrariam a
+     * desserialização .NET ou permitiriam injetar elementos no envelope.
+     */
+    private static function esc(string|int|float|null $valor): string
+    {
+        return htmlspecialchars((string) $valor, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Exige inteiro não-negativo para valores que o RM desserializa como int
+     * (IdLan, CodColigada, CodFilial, IdFormaPagamento...). Sem isso, "1e3"
+     * passa no is_numeric do PHP e quebra a desserialização no RM com erro
+     * opaco — ou pior, permite injetar markup no envelope.
+     */
+    private static function inteiro(string|int $valor, string $campo): int
+    {
+        $texto = trim((string) $valor);
+
+        if (!preg_match('/^\\d+$/', $texto)) {
+            throw new \InvalidArgumentException(
+                "{$campo} inválido: \"{$valor}\". Informe apenas dígitos."
+            );
+        }
+
+        return (int) $texto;
+    }
+
+    /**
+     * Exige data no formato Y-m-d e existente no calendário. As datas entram
+     * direto no XML (dateTime do .NET): "10/08/2026" geraria um dateTime
+     * inválido e o RM falharia com erro opaco em vez de 422.
+     */
+    private static function data(string $valor, string $campo): string
+    {
+        $texto = trim($valor);
+
+        if (preg_match('/^(\\d{4})-(\\d{2})-(\\d{2})$/', $texto, $m)
+            && checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+            return $texto;
+        }
+
+        throw new \InvalidArgumentException(
+            "{$campo} inválido: \"{$valor}\". Use o formato AAAA-MM-DD."
+        );
+    }
+
     public static function normalizarCodStatus(string|int $valor): int
     {
         $texto = trim((string) $valor);
@@ -121,6 +170,17 @@ class ProcessXml
         $scheduleDateTime = date('Y-m-d\TH:i:s.0000000P');
         $competencia = date('m/Y');
         $codStatus = self::normalizarCodStatus($codStatus);
+
+        // Valores que entram no envelope: escapados/validados aqui, num ponto
+        // só, para que nenhum dado de requisição injete markup no XML do RM.
+        $codColigada         = self::inteiro($codColigada, 'CODCOLIGADA');
+        $codFilial           = self::inteiro($codFilial, 'CODFILIAL');
+        $idHabilitacaoFilial = self::inteiro($idHabilitacaoFilial, 'IDHABILITACAOFILIAL');
+        $idPerlet            = self::inteiro($idPerlet, 'IDPERLET');
+        $ra                  = self::esc($ra);
+        $codTurma            = self::esc($codTurma);
+        $codPlanoPagamento   = self::esc($codPlanoPagamento);
+        $now                 = self::esc($now);
 
         $xml = <<<XML
                 <?xml version="1.0" encoding="utf-16"?>
@@ -835,6 +895,18 @@ XML;
         $scheduleDateTime = date('Y-m-d\TH:i:s.0000000P');
         $codStatus = self::normalizarCodStatus($codStatus);
 
+        // Mesmo tratamento do builder irmão: nada de requisição entra cru.
+        $idPerlet            = self::inteiro($idPerlet, 'IDPERLET');
+        $idHabilitacaoFilial = self::inteiro($idHabilitacaoFilial, 'IDHABILITACAOFILIAL');
+        $codFilial           = self::inteiro($codFilial, 'CODFILIAL');
+        $ra                  = self::esc($ra);
+        $codTurma            = self::esc($codTurma);
+        $now                 = self::esc($now);
+        $groupToInclude      = array_map(
+            fn($v) => is_scalar($v) || $v === null ? self::esc($v) : $v,
+            $groupToInclude
+        );
+
         $xml = <<<XML
                 <?xml version="1.0" encoding="utf-16"?>
                     <EduMatriculaParamsProc z:Id="i1" xmlns="http://www.totvs.com.br/RM/" xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
@@ -1209,6 +1281,14 @@ XML;
         $executionId = self::guid();
         $scheduleDateTime = date('Y-m-d\TH:i:s.0000000P');
 
+        // RA e CODCONTRATO chegam do corpo da requisição: escapa antes de
+        // interpolar no envelope (ver esc()/inteiro()).
+        $codColigada = self::inteiro($codColigada, 'CODCOLIGADA');
+        $codFilial   = self::inteiro($codFilial, 'CODFILIAL');
+        $idPerlet    = self::inteiro($idPerlet, 'IDPERLET');
+        $ra          = self::esc($ra);
+        $codContrato = self::esc($codContrato);
+
         $xml = <<<XML
                 <?xml version="1.0" encoding="utf-16"?>
                     <EduGeraLancParamsProc z:Id="i1" xmlns="http://www.totvs.com.br/RM/" xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
@@ -1520,6 +1600,11 @@ XML;
             throw new \RuntimeException('Template da baixa não encontrado: ' . self::TEMPLATE_BAIXA);
         }
 
+        $codColigada = self::inteiro($codColigada, 'CODCOLIGADA');
+        $codFilial   = self::inteiro($codFilial, 'CODFILIAL');
+        $idLan       = self::inteiro($idLan, 'IDLAN');
+        $dataBaixa   = self::data($dataBaixa, 'DATABAIXA');
+
         $esc = static fn (string $v): string => htmlspecialchars($v, ENT_XML1, 'UTF-8');
 
         $xml = strtr($template, [
@@ -1583,16 +1668,22 @@ XML;
             throw new \RuntimeException('Template da baixa TBC não encontrado: ' . self::TEMPLATE_BAIXA_TBC);
         }
 
-        $esc = static fn (string $v): string => htmlspecialchars($v, ENT_XML1, 'UTF-8');
+        // Campos que o RM desserializa como int/dateTime: validados aqui para
+        // não injetarem markup nem gerarem tipo inválido no envelope.
+        $codColigada  = self::inteiro($codColigada, 'CODCOLIGADA');
+        $codFilial    = self::inteiro($codFilial, 'CODFILIAL');
+        $idLan        = self::inteiro($idLan, 'IDLAN');
+        $idFormaPagto = self::inteiro($idFormaPagto, 'IDFORMAPAGTO');
+        $dataBaixa    = self::data($dataBaixa, 'DATABAIXA');
 
         $xml = strtr($template, [
             '{{CODCOLIGADA}}'  => (string) $codColigada,
             '{{CODFILIAL}}'    => (string) $codFilial,
-            '{{CHAPA}}'        => $esc((string) $chapaFuncionario),
+            '{{CHAPA}}'        => self::esc($chapaFuncionario),
             '{{IDLAN}}'        => (string) $idLan,
             '{{DATA}}'         => $dataBaixa . 'T00:00:00-03:00',
-            '{{HISTBAIXA}}'    => $esc($historico),
-            '{{CODCXA}}'       => $esc((string) $codCxa),
+            '{{HISTBAIXA}}'    => self::esc($historico),
+            '{{CODCXA}}'       => self::esc($codCxa),
             '{{IDFORMAPAGTO}}' => (string) $idFormaPagto,
             '{{VALOR}}'        => number_format((float) $valorBaixa, 2, '.', ''),
         ]);
@@ -1629,6 +1720,12 @@ XML;
         string|int $idFormaPagto = 1,
         string|int $chapaFuncionario = '-1'
     ): string {
+        $codColigada  = self::inteiro($codColigada, 'CODCOLIGADA');
+        $codFilial    = self::inteiro($codFilial, 'CODFILIAL');
+        $idLan        = self::inteiro($idLan, 'IDLAN');
+        $idFormaPagto = self::inteiro($idFormaPagto, 'IDFORMAPAGTO');
+        $dataBaixa    = self::data($dataBaixa, 'DATABAIXA');
+
         $template = @file_get_contents(self::TEMPLATE_BAIXA_TBC_LAN);
         if ($template === false || trim($template) === '') {
             throw new \RuntimeException('Template da baixa TBC (Lan) não encontrado: ' . self::TEMPLATE_BAIXA_TBC_LAN);
