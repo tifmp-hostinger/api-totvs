@@ -133,6 +133,18 @@ check('matriculaPL: RA injetado', str_contains($xml, '24001268'));
 check('matriculaPL: turma injetada', str_contains($xml, 'TURMA-X'));
 check('matriculaPL: plano de pagamento injetado', str_contains($xml, 'PP01'));
 check('matriculaPL: ServerName do processo', str_contains($xml, '<ServerName xmlns="http://www.totvs.com/">EduMatriculaProcData</ServerName>'));
+check('matriculaPL: sem CODSTATUS explícito usa o padrão (23)', str_contains($xml, '<CodStatus>23</CodStatus>'));
+
+// CODSTATUS por parâmetro (57 = matriculado)
+$xml57 = ProcessXml::matriculaPeriodoLetivo(
+    codColigada: 1, codFilial: 1, idHabilitacaoFilial: 42, idPerlet: 7,
+    ra: '24001268', codTurma: 'TURMA-X', codPlanoPagamento: 'PP01',
+    now: '2026-07-14T10:00:00', codStatus: 57
+);
+check('matriculaPL: CODSTATUS 57 aplicado', str_contains($xml57, '<CodStatus>57</CodStatus>'));
+check('matriculaPL: nenhum 23 residual', !str_contains($xml57, '<CodStatus>23</CodStatus>'));
+check('matriculaPL: XML com 57 continua bem-formado', xmlBemFormado($xml57));
+check('matriculaPL: CodTipoMat segue fixo em 7', str_contains($xml57, '<CodTipoMat>7</CodTipoMat>'));
 
 $xml = ProcessXml::matriculaDisciplina(
     groupToInclude: [
@@ -153,6 +165,35 @@ $xml = ProcessXml::matriculaDisciplina(
 );
 
 check('matriculaDisc: XML bem-formado', xmlBemFormado($xml));
+check('matriculaDisc: sem CODSTATUS explícito usa o padrão (23)', str_contains($xml, '<CodStatus>23</CodStatus>'));
+
+$xmlDisc57 = ProcessXml::matriculaDisciplina(
+    groupToInclude: [
+        'CODCOLIGADA' => 1, 'CODFILIAL' => 1, 'CODTIPOCURSO' => 2,
+        'CODTURMA' => 'TURMA-X', 'CODDISC' => 'DISC-1',
+        'IDTURMADISC' => 555, 'IDHABILITACAOFILIAL' => 42,
+    ],
+    idPerlet: 7, idHabilitacaoFilial: 42, ra: '24001268',
+    codFilial: 1, codTurma: 'TURMA-X', now: '2026-07-14T10:00:00',
+    codStatus: 57
+);
+check('matriculaDisc: XML com 57 bem-formado', xmlBemFormado($xmlDisc57));
+check('matriculaDisc: os 3 status da disciplina viraram 57',
+    substr_count($xmlDisc57, '<CodStatus>57</CodStatus>') === 2
+    && str_contains($xmlDisc57, '<CodStatusNovo>57</CodStatusNovo>')
+    && str_contains($xmlDisc57, '<CodStatusPL>57</CodStatusPL>'));
+check('matriculaDisc: nenhum 23 residual', !str_contains($xmlDisc57, '>23<'));
+
+// Sanitização: o CodStatus entra por interpolação direta no XML.
+$rejeitou = static function ($valor): bool {
+    try { ProcessXml::normalizarCodStatus($valor); return false; }
+    catch (\InvalidArgumentException) { return true; }
+};
+check('codStatus: aceita inteiro', ProcessXml::normalizarCodStatus('57') === 57);
+check('codStatus: rejeita injeção de XML', $rejeitou('57</CodStatus><Foo>x'));
+check('codStatus: rejeita vazio', $rejeitou(''));
+check('codStatus: rejeita texto', $rejeitou('MATRICULADO'));
+check('codStatus: rejeita negativo', $rejeitou('-1'));
 check('matriculaDisc: disciplina injetada', str_contains($xml, 'DISC-1'));
 check('matriculaDisc: RA injetado', str_contains($xml, '24001268'));
 

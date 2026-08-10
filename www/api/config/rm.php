@@ -28,6 +28,15 @@ return [
     // Usuário de serviço
     'usuario_servico' => Env::get('TOTVS_WS_USER', 'integra.eduvem'),
 
+    // Situação de matrícula (CODSTATUS) gravada nas três etapas: curso,
+    // período letivo e disciplinas. Cada requisição pode sobrescrever mandando
+    // CODSTATUS no corpo; este é apenas o padrão de quem não manda.
+    // Códigos da FMP: 23 = pré-matrícula, 57 = matriculado.
+    // O código precisa existir na tabela de status de matrícula do RM.
+    'matricula' => [
+        'codstatus_padrao' => Env::get('TOTVS_MATRICULA_CODSTATUS', '23'),
+    ],
+
     // Baixa de lançamento. Nome do process server e operação SOAP configuráveis
     // por env — o RM expõe a baixa sob um nome que varia por versão/patch.
     //   FIN_BAIXA_PROCESSO: ProcessServerName   FIN_BAIXA_OPERACAO: ExecuteWithParams | ExecuteWithXMLParams

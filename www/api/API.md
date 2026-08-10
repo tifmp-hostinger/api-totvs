@@ -197,9 +197,23 @@ Retorno:
 
 | Rota | Body | Efeito |
 |---|---|---|
-| `POST /matriculas/curso` | `{ "RA": "...", "OFERTA": "..." }` | SaveRecord `EduHabilitacaoAlunoData` (CODSTATUS 23) |
-| `POST /matriculas/periodo-letivo` | `{ "RA", "OFERTA", "PLANOPAGAMENTO" }` | Processo `EduMatriculaProcData` (gera contrato) |
-| `POST /matriculas/disciplinas` | `{ "RA": "...", "OFERTA": "..." }` | Processo `EduMatriculaProcData` (enturmação por disciplina) |
+| `POST /matriculas/curso` | `{ "RA", "OFERTA", "CODSTATUS"? }` | SaveRecord `EduHabilitacaoAlunoData` |
+| `POST /matriculas/periodo-letivo` | `{ "RA", "OFERTA", "PLANOPAGAMENTO", "CODSTATUS"? }` | Processo `EduMatriculaProcData` (gera contrato) |
+| `POST /matriculas/disciplinas` | `{ "RA", "OFERTA", "CODSTATUS"? }` | Processo `EduMatriculaProcData` (enturmação por disciplina) |
+
+**`CODSTATUS` (situação da matrícula)** — opcional nas três rotas. Ausente, vale
+`TOTVS_MATRICULA_CODSTATUS` (padrão `23`). Códigos da FMP: **23** = pré-matrícula,
+**57** = matriculado. O código precisa existir na tabela de status de matrícula do RM.
+Só aceita inteiro (o valor é interpolado no XML enviado ao processo).
+
+Onde ele é gravado: `SHabilitacaoAluno.CODSTATUS` (curso), `MatricPLParams.CodStatus`
+(período letivo) e `EduMatriculaDiscParams.CodStatus/CodStatusNovo/CodStatusPL`
+(disciplinas). Não confundir com `ParamsGeraLanc.CodStatusMatriculaDisc`, que é filtro
+da geração de lançamentos e permanece `0`.
+
+> As três etapas são **idempotentes**: se a matrícula já existe, a API não regrava.
+> Portanto `CODSTATUS` afeta apenas matrículas novas — aluno já gravado como 23
+> continua 23 até ser alterado no RM.
 
 ### Contrato (PDF)
 

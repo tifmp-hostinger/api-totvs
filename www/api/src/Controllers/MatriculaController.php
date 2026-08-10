@@ -14,7 +14,9 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 /**
  * Endpoints granulares de matrícula (cada etapa isolada).
- * Body comum: { "RA": "...", "OFERTA": "..." }
+ * Body comum: { "RA": "...", "OFERTA": "...", "CODSTATUS": "57" }
+ * CODSTATUS é opcional: sem ele vale o padrão de config
+ * (env TOTVS_MATRICULA_CODSTATUS). 23 = pré-matrícula, 57 = matriculado.
  */
 final class MatriculaController
 {
@@ -22,6 +24,18 @@ final class MatriculaController
         private readonly MatriculaService $matriculaService,
         private readonly ConsultaService $consulta
     ) {
+    }
+
+    /** CODSTATUS do corpo (opcional). Ausente/vazio => null => padrão da config. */
+    private static function codStatus(array $data): ?string
+    {
+        foreach (['CODSTATUS', 'codstatus'] as $chave) {
+            if (isset($data[$chave]) && trim((string) $data[$chave]) !== '') {
+                return (string) Validation::ensureHasValue($data, $chave);
+            }
+        }
+
+        return null;
     }
 
     private function oferta(string $codOferta): array
@@ -47,7 +61,12 @@ final class MatriculaController
         $ra = (string) Validation::ensureHasValue($data, 'RA');
         $codOferta = (string) Validation::ensureHasValue($data, 'OFERTA');
 
-        $matricula = $this->matriculaService->matricularNoCurso($ra, $codOferta, $this->oferta($codOferta));
+        $matricula = $this->matriculaService->matricularNoCurso(
+            $ra,
+            $codOferta,
+            $this->oferta($codOferta),
+            self::codStatus($data)
+        );
 
         return Json::success('Matrícula no curso efetuada.', $matricula, 201);
     }
@@ -64,7 +83,8 @@ final class MatriculaController
             $ra,
             $codOferta,
             $this->oferta($codOferta),
-            $plano
+            $plano,
+            self::codStatus($data)
         );
 
         return Json::success('Matrícula no período letivo efetuada.', $matricula, 201);
@@ -77,7 +97,12 @@ final class MatriculaController
         $ra = (string) Validation::ensureHasValue($data, 'RA');
         $codOferta = (string) Validation::ensureHasValue($data, 'OFERTA');
 
-        $turmas = $this->matriculaService->enturmar($ra, $codOferta, $this->oferta($codOferta));
+        $turmas = $this->matriculaService->enturmar(
+            $ra,
+            $codOferta,
+            $this->oferta($codOferta),
+            self::codStatus($data)
+        );
 
         return Json::success('Enturmação efetuada.', $turmas, 201);
     }

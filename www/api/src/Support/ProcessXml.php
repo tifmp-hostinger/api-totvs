@@ -23,11 +23,41 @@ namespace FMP\RMApi\Support;
  *     builders futuros: é testável, diffável e não polui a classe.
  *
  * Observação herdada do legado: alguns valores permanecem fixos de propósito
- * (ex.: $CODCOLIGADA=1 e $CODTIPOCURSO=2 no contexto dos processos,
- * CodStatus=23 = pré-matrícula, CodTipoMat=7).
+ * (ex.: $CODCOLIGADA=1 e $CODTIPOCURSO=2 no contexto dos processos, CodTipoMat=7).
+ * O CodStatus (situação da matrícula) deixou de ser fixo: vem por parâmetro,
+ * com CODSTATUS_PADRAO como default. Atenção: ParamsGeraLanc.CodStatusMatriculaDisc
+ * NÃO é situação de matrícula (é filtro da geração de lançamentos) e segue em 0.
  */
 class ProcessXml
 {
+    /**
+     * Situação de matrícula usada quando o chamador não informa outra.
+     * 23 = pré-matrícula (valor histórico do legado). 57 = matriculado.
+     * O código é gravado em SHabilitacaoAluno.CODSTATUS / MatricPLParams.CodStatus
+     * e precisa existir na tabela de status de matrícula do RM.
+     */
+    public const CODSTATUS_PADRAO = 23;
+
+    /**
+     * O CodStatus é interpolado direto no XML dos processos: só aceitamos
+     * inteiro não-negativo para que nenhum valor de entrada possa injetar
+     * markup no envelope enviado ao RM. Pública para que o MatriculaService
+     * valide pelo mesmo caminho (a matrícula no curso monta o XML por conta).
+     */
+    public static function normalizarCodStatus(string|int $valor): int
+    {
+        $texto = trim((string) $valor);
+
+        if (!preg_match('/^\d+$/', $texto)) {
+            throw new \InvalidArgumentException(
+                "CODSTATUS inválido: \"{$valor}\". Informe o código numérico da situação "
+                    . 'de matrícula cadastrada no RM (ex.: 23 = pré-matrícula, 57 = matriculado).'
+            );
+        }
+
+        return (int) $texto;
+    }
+
     /** Template canônico do FinLanBaixaParamsProc (GetSchema do próprio RM). */
     private const TEMPLATE_BAIXA = __DIR__ . '/../../resources/fin/FinLanBaixaParamsProc.real.template.xml';
 
@@ -84,11 +114,13 @@ class ProcessXml
         string $ra,
         string $codTurma,
         string $codPlanoPagamento,
-        string $now
+        string $now,
+        string|int $codStatus = self::CODSTATUS_PADRAO
     ): string {
         $executionId = self::guid();
         $scheduleDateTime = date('Y-m-d\TH:i:s.0000000P');
         $competencia = date('m/Y');
+        $codStatus = self::normalizarCodStatus($codStatus);
 
         $xml = <<<XML
                 <?xml version="1.0" encoding="utf-16"?>
@@ -242,7 +274,7 @@ class ProcessXml
                             <CodMotivo i:nil="true" />
                             <CodMotivoTransferencia i:nil="true" />
                             <CodPlanoPgto>{$codPlanoPagamento}</CodPlanoPgto>
-                            <CodStatus>23</CodStatus>
+                            <CodStatus>{$codStatus}</CodStatus>
                             <CodStatusNovo i:nil="true" />
                             <CodStatusPendenteDisc i:nil="true" />
                             <CodStatusPendentePL i:nil="true" />
@@ -796,10 +828,12 @@ XML;
         string $ra,
         string|int $codFilial,
         string $codTurma,
-        string $now
+        string $now,
+        string|int $codStatus = self::CODSTATUS_PADRAO
     ): string {
         $executionId = self::guid();
         $scheduleDateTime = date('Y-m-d\TH:i:s.0000000P');
+        $codStatus = self::normalizarCodStatus($codStatus);
 
         $xml = <<<XML
                 <?xml version="1.0" encoding="utf-16"?>
@@ -955,7 +989,7 @@ XML;
                         <CodMotivo i:nil="true" />
                         <CodMotivoTransferencia i:nil="true" />
                         <CodPlanoPgto />
-                        <CodStatus>23</CodStatus>
+                        <CodStatus>{$codStatus}</CodStatus>
                         <CodStatusNovo i:nil="true" />
                         <CodStatusPendenteDisc i:nil="true" />
                         <CodStatusPendentePL i:nil="true" />
@@ -1009,9 +1043,9 @@ XML;
                             <CodMotivo i:nil="true" />
                             <CodPerLet i:nil="true" />
                             <CodSituacaoMatriculaEspera>0</CodSituacaoMatriculaEspera>
-                            <CodStatus>23</CodStatus>
-                            <CodStatusNovo>23</CodStatusNovo>
-                            <CodStatusPL>23</CodStatusPL>
+                            <CodStatus>{$codStatus}</CodStatus>
+                            <CodStatusNovo>{$codStatus}</CodStatusNovo>
+                            <CodStatusPL>{$codStatus}</CodStatusPL>
                             <CodStatusRes i:nil="true" />
                             <CodSubturma />
                             <CodSubturmaMatriculado i:nil="true" />
