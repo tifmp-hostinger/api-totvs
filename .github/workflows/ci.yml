@@ -1,0 +1,66 @@
+name: CI
+
+# Roda em todo PR e em push na main. A suíte de testes é a rede de segurança
+# do projeto (ver www/api/tests/): sem isso ela só rodava quando alguém
+# lembrava — e não é todo ambiente de desenvolvimento que tem o PHP mínimo.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Push novo no mesmo PR cancela a execução anterior, que já não interessa.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 8.1 = mínimo declarado no composer.json (garante que não entre
+        #       sintaxe mais nova sem atualizar o requisito).
+        # 8.3 = versão que roda em produção (php:8.3-apache, ver Dockerfile).
+        php: ['8.1', '8.3']
+
+    defaults:
+      run:
+        working-directory: www/api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          # soap é obrigatória (composer.json) e não vem por padrão;
+          # curl e mbstring acompanham o que o Dockerfile provê.
+          extensions: soap, curl, mbstring
+          coverage: none
+
+      - name: Cache das dependências
+        uses: actions/cache@v4
+        with:
+          path: www/api/vendor
+          key: composer-${{ matrix.php }}-${{ hashFiles('www/api/composer.lock') }}
+          restore-keys: composer-${{ matrix.php }}-
+
+      - name: Instalar dependências
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Lint (php -l em todos os arquivos)
+        run: find src config public tests -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
+
+      # Além dos testes de unidade, a suíte contém o RotasDocumentadasTest, que
+      # falha se uma rota de config/routes.php não estiver documentada no
+      # public/docs.html — a convenção do CLAUDE.md deixa de depender de memória.
+      - name: Testes
+        run: composer test
