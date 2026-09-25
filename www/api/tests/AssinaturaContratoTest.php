@@ -179,7 +179,6 @@ $consulta = new class($rm) extends ConsultaService {
 $config = [
     'usuario_servico' => 'integra.eduvem',
     'ws_url'          => 'https://rm.exemplo',
-    'assinatura'      => ['relatorio_id' => '4321', 'relatorio_codcoligada' => '0'],
 ];
 
 $reset = static function () use ($rm, $consulta): void {
@@ -190,7 +189,13 @@ $reset = static function () use ($rm, $consulta): void {
 };
 
 $service = new AssinaturaService($rm, $consulta, $config);
-$base = ['RA' => '24001268', 'OFERTA' => 'OF2026-001', 'NOMEDOCUMENTO' => 'Contrato de Matrícula'];
+$base = [
+    'RA'                => '24001268',
+    'OFERTA'            => 'OF2026-001',
+    'NOMEDOCUMENTO'     => 'Contrato de Matrícula',
+    'IDREPORT'          => '4321',
+    'CODCOLIGADAREPORT' => '0',
+];
 
 /** Roda o service e devolve a ValidationException (ou null se não lançou). */
 $falhaValidacao = static function (AssinaturaService $s, array $in): ?ValidationException {
@@ -213,7 +218,7 @@ checkSame('service: contrato resolvido pela matrícula no PL', 'CT-PL-9', $r['CO
 check('service: contrato resolvido vai para a PrimaryKeyList', str_contains((string) ($r['xml'] ?? ''), '>CT-PL-9</a:anyType>'));
 check('service: valores da oferta no XML', str_contains((string) ($r['xml'] ?? ''), '<CodFilial>3</CodFilial>')
     && str_contains((string) ($r['xml'] ?? ''), '<CodTipoCurso>2</CodTipoCurso>'));
-check('service: relatório do config no XML', str_contains((string) ($r['xml'] ?? ''), '<IdRelatorioRMReports>4321</IdRelatorioRMReports>')
+check('service: relatório do corpo no XML', str_contains((string) ($r['xml'] ?? ''), '<IdRelatorioRMReports>4321</IdRelatorioRMReports>')
     && str_contains((string) ($r['xml'] ?? ''), '<CodColigadaRelatorio>0</CodColigadaRelatorio>'));
 
 // DRY_RUN em texto de formulário (n8n "Using Fields Below").
@@ -227,11 +232,10 @@ $r = $service->enviar($base + ['CODCONTRATO' => 'CT-CORPO', 'DRY_RUN' => true]);
 checkSame('service: CODCONTRATO do corpo é usado', 'CT-CORPO', $r['CODCONTRATO'] ?? null);
 checkSame('service: CODCONTRATO do corpo dispensa a consulta do PL', 0, $consulta->consultasPl);
 
-// IDREPORT / CODCOLIGADAREPORT do corpo têm precedência sobre o config.
+// CODCOLIGADAREPORT 0 (coligada global) como número JSON não pode virar "vazio".
 $reset();
-$r = $service->enviar($base + ['IDREPORT' => '999', 'CODCOLIGADAREPORT' => '1', 'DRY_RUN' => true]);
-check('service: IDREPORT do corpo vence o config', str_contains((string) ($r['xml'] ?? ''), '<IdRelatorioRMReports>999</IdRelatorioRMReports>'));
-check('service: CODCOLIGADAREPORT do corpo vence o config', str_contains((string) ($r['xml'] ?? ''), '<CodColigadaRelatorio>1</CodColigadaRelatorio>'));
+$r = $service->enviar(['CODCOLIGADAREPORT' => 0, 'IDREPORT' => 4321, 'DRY_RUN' => true] + $base);
+check('service: CODCOLIGADAREPORT 0 numérico é aceito', str_contains((string) ($r['xml'] ?? ''), '<CodColigadaRelatorio>0</CodColigadaRelatorio>'));
 
 // Execução real: chama o processo certo, uma vez, com o XML montado.
 $reset();
@@ -247,9 +251,11 @@ $casosInvalidos = [
     'sem RA'            => array_diff_key($base, ['RA' => 1]),
     'sem OFERTA'        => array_diff_key($base, ['OFERTA' => 1]),
     'sem NOMEDOCUMENTO' => array_diff_key($base, ['NOMEDOCUMENTO' => 1]),
+    'sem IDREPORT'      => array_diff_key($base, ['IDREPORT' => 1]),
+    'sem CODCOLIGADAREPORT' => array_diff_key($base, ['CODCOLIGADAREPORT' => 1]),
     'RA só espaços'     => ['RA' => '   '] + $base,
     'DRY_RUN "sim"'     => $base + ['DRY_RUN' => 'sim'],
-    'IDREPORT texto'    => $base + ['IDREPORT' => 'abc'],
+    'IDREPORT texto'    => ['IDREPORT' => 'abc'] + $base,
 ];
 foreach ($casosInvalidos as $nome => $in) {
     $reset();
@@ -270,8 +276,12 @@ $consulta->ofertaRow = ['CODCOLIGADA' => '1', 'CODFILIAL' => '3', 'IDPERLET' => 
 check('service: oferta sem CODTIPOCURSO → ValidationException (não 500)', $falhaValidacao($service, $base) !== null);
 checkSame('service: oferta incompleta não dispara o processo', 0, count($rm->chamadas));
 
-// Sem relatório no corpo nem no config: recusa em vez de mandar id inválido.
+// O relatório vem SÓ do corpo: um valor antigo em config/env não pode ser
+// usado em silêncio (mandaria o PDF de outro relatório ao aluno).
 $reset();
-$semRelatorio = new AssinaturaService($rm, $consulta, ['usuario_servico' => 'integra.eduvem', 'assinatura' => ['relatorio_id' => '', 'relatorio_codcoligada' => '']]);
-check('service: sem IDREPORT (corpo/config) → ValidationException', $falhaValidacao($semRelatorio, $base) !== null);
-checkSame('service: sem IDREPORT não dispara o processo', 0, count($rm->chamadas));
+$comConfigAntigo = new AssinaturaService($rm, $consulta, $config + [
+    'assinatura' => ['relatorio_id' => '4321', 'relatorio_codcoligada' => '0'],
+]);
+$semRelatorio = array_diff_key($base, ['IDREPORT' => 1, 'CODCOLIGADAREPORT' => 1]);
+check('service: relatório só vem do corpo (config é ignorado)', $falhaValidacao($comConfigAntigo, $semRelatorio) !== null);
+checkSame('service: sem relatório no corpo não dispara o processo', 0, count($rm->chamadas));

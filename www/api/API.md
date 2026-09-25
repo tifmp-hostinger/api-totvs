@@ -220,33 +220,38 @@ da geração de lançamentos e permanece `0`.
 `POST /contratos` — body: `NOME, CPF, ESTADO, CIDADE (código), BAIRRO (código), RUA, NUMERO, COMPLEMENTO, NACIONALIDADE, NASCIMENTO (Y-m-d)`.
 Pipeline: `GenerateReport` (relatório **1664**, coligada 0) → `GetGeneratedReportSize` → `GetFileChunk`. Retorna `{ "CONTEUDO": <conteúdo do PDF como o RM devolve> }`.
 
-### Contrato — Assinatura eletrônica
+### Contrato — Assinatura eletrônica (TAE)
 
-`POST /contratos/assinatura` — **envia o contrato do aluno para a TOTVS Assinatura Eletrônica** (processo `EduTotvsSignContratoSliceableProcData`, via `wsProcess`/`ExecuteWithXMLParams`). O RM gera o PDF pelo relatório `IDREPORT` e manda para o aluno assinar. **Dispara um envio real a cada chamada — não é idempotente.**
+`POST /contratos/assinatura` — **envia o contrato do aluno para o TAE (TOTVS Assinatura Eletrônica)**, pelo processo `EduTotvsSignContratoSliceableProcData` (via `wsProcess`/`ExecuteWithXMLParams`). O `ProcessName` do XML ("Integração TOTVS Assinatura Eletrônica") é o nome do processo do menu *Financeiro/Contábil › Contratos › Integração TOTVS Assinatura Eletrônica*. O RM gera o PDF pelo relatório `IDREPORT` e o TAE manda o link de assinatura por e-mail. **Cada chamada real dispara um envio.**
 
 Body:
 ```json
 {
-  "RA": "000123",                       // obrigatório
-  "OFERTA": "OF2026-001",               // obrigatório — resolve coligada/filial/período letivo/tipo de curso (INT.EDUVEM.00006)
-  "NOMEDOCUMENTO": "Contrato de Matrícula", // obrigatório — nome do documento na TOTVS Assinatura
-  "CODCONTRATO": "",                    // opcional — sem ele, resolve pela matrícula no período letivo (INT.EDUVEM.00014)
-  "IDREPORT": "",                       // opcional se ASSINATURA_RELATORIO_ID estiver configurado
-  "CODCOLIGADAREPORT": "",              // opcional se ASSINATURA_RELATORIO_CODCOLIGADA estiver configurado
-  "DRY_RUN": false                      // opcional — true devolve o XML gerado SEM enviar ao RM
+  "RA": "000123",                           // obrigatório
+  "OFERTA": "OF2026-001",                   // obrigatório — resolve coligada/filial/período letivo/tipo de curso (INT.EDUVEM.00006)
+  "NOMEDOCUMENTO": "Contrato de Matrícula", // obrigatório — nome do documento no TAE
+  "IDREPORT": "1234",                       // obrigatório — id do relatório do contrato no RM Reports
+  "CODCOLIGADAREPORT": "0",                 // obrigatório — coligada do relatório (0 = global)
+  "CODCONTRATO": "",                        // opcional — sem ele, resolve pela matrícula no período letivo (INT.EDUVEM.00014)
+  "DRY_RUN": false                          // opcional — true devolve o XML gerado SEM enviar ao RM
 }
 ```
 
-| Env | Default | Uso |
-|---|---|---|
-| `ASSINATURA_RELATORIO_ID` | — | id do relatório do contrato no RM Reports (o corpo pode sobrescrever com `IDREPORT`) |
-| `ASSINATURA_RELATORIO_CODCOLIGADA` | — | coligada do relatório (o corpo pode sobrescrever com `CODCOLIGADAREPORT`) |
+Não há valor padrão para o relatório, de propósito: um id errado manda ao aluno o PDF de outro relatório. Faltou campo obrigatório → **422**.
 
-Sem relatório no corpo nem no env → **422** (não há default de propósito: um id errado manda o PDF de outro relatório).
+**XML:** `resources/edu/EduTotvsSignSliceableParamsProc.template.xml` — o XML que a fórmula visual do RM preenche no `rmsPrepareParamsProcActivity` (marcadores `[CAMPO]` viraram `{{CAMPO}}`). Só os restos da sessão em que ele foi capturado foram trocados (`ExecutionId`, `ScheduleDateTime`, `HostName`, `Ip`, `NetworkUser`). Fixos do original: `EnviarAssinanteAluno=true` (demais `EnviarAssinante*` em `false`), `Operacao=EnviarDocumento`, `TipoDocumento=RMReports`. O usuário (`CodUsuario`/`UserName`/`$CODUSUARIO`) é o usuário de serviço (`TOTVS_WS_USER`).
 
-**XML:** `resources/edu/EduTotvsSignSliceableParamsProc.template.xml` — o XML que a fórmula visual do RM preenche no `rmsPrepareParamsProcActivity` (marcadores `[CAMPO]` viraram `{{CAMPO}}`). Só os restos da sessão em que ele foi capturado foram trocados (`ExecutionId`, `ScheduleDateTime`, `HostName`, `Ip`, `NetworkUser`). Fixos do original: assinante só o aluno (`EnviarAssinanteAluno=true`, demais `false`), `Operacao=EnviarDocumento`, `TipoDocumento=RMReports`. O usuário (`CodUsuario`/`UserName`/`$CODUSUARIO`) é o usuário de serviço (`TOTVS_WS_USER`).
+**Pré-requisitos no RM, segundo a documentação da TOTVS** (lida por resumo de busca; não conferido na base da FMP):
 
-> ⚠️ **Ainda não validado contra o RM real.** A fórmula visual do RM checa os e-mails (`BuscaEmailsDiferentes` → `verificaEmailsDiferentes`) antes de disparar o processo; a API **não** faz essa checagem. Teste em homologação com `DRY_RUN` primeiro.
+- **Permissão:** o perfil do usuário de serviço precisa ter o processo *Integração TOTVS Assinatura Eletrônica* liberado (*Serviços Globais › Segurança › Perfis › Sistema: Educacional*).
+- **Parametrização do TAE no RM:** o usuário do TAE informado nos parâmetros deve ser um usuário **comum** do portal TAE, não um "usuário de serviço" (este não publica documentos).
+- **Assinantes:** o responsável financeiro do contrato **sempre** recebe o documento. Todo assinante precisa de **CPF e e-mail** no cadastro.
+- **E-mail repetido:** se assinantes diferentes (aluno, responsável financeiro, pai/mãe, fiador) tiverem o **mesmo e-mail**, o TAE recusa o envio ("destinatários com e-mail repetido"). Em algumas versões ele unifica, em outras dá erro. É isso que a fórmula visual checa (`BuscaEmailsDiferentes` → `verificaEmailsDiferentes`). A API **não** faz essa checagem.
+- **Aluno = responsável financeiro:** os cadastros de aluno e de cliente/fornecedor precisam ser idênticos em **nome, CPF e e-mail** (inclusive acentos e espaços).
+- **Contrato:** só é enviado contrato **ativo** e **não assinado** (flag *Assinado* desmarcada).
+- **Status da assinatura:** o RM só marca o contrato como *Assinado* (e preenche a data) quando roda o processo **Conferência da assinatura do documento**, que consulta a API do TAE. Esta rota não roda a conferência.
+
+> ⚠️ **Ainda não validado contra o RM real.** Teste em homologação com `DRY_RUN` primeiro.
 
 Retorno (200): `{ RA, OFERTA, CODCONTRATO, IDREPORT, PROCESSO, retorno_rm, log_job }`. O processo roda no Monitor de Jobs (assíncrono): `retorno_rm` é o JobId; a API não confirma a chegada do documento ao aluno. Erro do RM → **502**; entrada inválida, oferta ou contrato não localizados → **422**.
 

@@ -34,8 +34,6 @@ precedência:
 | `FIN_BAIXA_PROCESSO` | não | ProcessServerName da baixa. Default `FinLanBaixaData` |
 | `FIN_BAIXA_OPERACAO` | não | Default `ExecuteWithXMLParams` |
 | `FIN_CODCXA_PADRAO` | não | conta/caixa default da baixa quando não vier no corpo |
-| `ASSINATURA_RELATORIO_ID` | não | id do relatório do contrato usado por `POST /contratos/assinatura`. Sem ele, o corpo precisa trazer `IDREPORT` |
-| `ASSINATURA_RELATORIO_CODCOLIGADA` | não | coligada desse relatório. Sem ele, o corpo precisa trazer `CODCOLIGADAREPORT` |
 | `API_KEY` | **sim** (produção) | Liga a autenticação (header `X-API-Key` ou `Authorization: Bearer`). **Com `APP_DEBUG=false` e `API_KEY` vazia, as rotas não isentas respondem 503** — para rodar deliberadamente sem autenticação, defina `API_KEY_OPCIONAL=true` |
 | `API_KEY_OPCIONAL` | não | `true` = permite produção SEM `API_KEY` (volta ao comportamento antigo: aberto, com aviso no log). Use com consciência |
 | `CORS_ALLOWED_ORIGINS` | não | Origens permitidas no CORS, separadas por vírgula. Default `*` (aberto). Ex.: `https://app.fmp.edu.br,https://admin.fmp.edu.br` |

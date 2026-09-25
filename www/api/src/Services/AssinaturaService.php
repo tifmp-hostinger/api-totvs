@@ -10,9 +10,11 @@ use FMP\RMApi\Exceptions\ValidationException;
 use FMP\RMApi\Support\ProcessXml;
 
 /**
- * Envio do contrato do aluno para a TOTVS Assinatura Eletrônica
+ * Envio do contrato do aluno para o TAE — TOTVS Assinatura Eletrônica
  * (processo EduTotvsSignContratoSliceableProcData, via
- * wsProcess/ExecuteWithXMLParams).
+ * wsProcess/ExecuteWithXMLParams). Pré-requisitos do lado do RM/TAE
+ * (permissão, e-mails únicos por assinante, conferência do status) estão
+ * no API.md.
  *
  * Mesma ergonomia da geração de lançamentos: RA + OFERTA resolvem coligada,
  * filial, período letivo e tipo de curso (INT.EDUVEM.00006); o contrato vem
@@ -38,10 +40,10 @@ class AssinaturaService
      * Campos de entrada ($in):
      *  - RA                (obrig.)
      *  - OFERTA            (obrig.) resolve coligada/filial/período letivo/tipo de curso
-     *  - NOMEDOCUMENTO     (obrig.) nome do documento na TOTVS Assinatura
+     *  - NOMEDOCUMENTO     (obrig.) nome do documento no TAE
+     *  - IDREPORT          (obrig.) id do relatório do contrato no RM Reports
+     *  - CODCOLIGADAREPORT (obrig.) coligada do relatório (0 = global)
      *  - CODCONTRATO       (opc.)   sem ele, resolve pela matrícula no período letivo
-     *  - IDREPORT          (opc.)   relatório do contrato; default env ASSINATURA_RELATORIO_ID
-     *  - CODCOLIGADAREPORT (opc.)   coligada do relatório; default env ASSINATURA_RELATORIO_CODCOLIGADA
      *  - DRY_RUN           (opc.)   true = devolve o XML gerado sem enviar ao RM
      *
      * @return array<string,mixed>
@@ -65,26 +67,10 @@ class AssinaturaService
         $ra            = $req('RA');
         $offer         = $req('OFERTA');
         $nomeDocumento = $req('NOMEDOCUMENTO');
-
-        // Relatório do contrato: do corpo ou do config (env). Sem default no
-        // código de propósito — um id errado gera o PDF de outro relatório.
-        $cfg = (array) ($this->rmConfig['assinatura'] ?? []);
-        $idRelatorio = trim((string) ($in['IDREPORT'] ?? ''));
-        if ($idRelatorio === '') {
-            $idRelatorio = trim((string) ($cfg['relatorio_id'] ?? ''));
-        }
-        $codColigadaRelatorio = trim((string) ($in['CODCOLIGADAREPORT'] ?? ''));
-        if ($codColigadaRelatorio === '') {
-            $codColigadaRelatorio = trim((string) ($cfg['relatorio_codcoligada'] ?? ''));
-        }
-        if ($idRelatorio === '' || $codColigadaRelatorio === '') {
-            throw new ValidationException(
-                'Informe IDREPORT e CODCOLIGADAREPORT (relatório do contrato no RM Reports), '
-                    . 'ou configure ASSINATURA_RELATORIO_ID e ASSINATURA_RELATORIO_CODCOLIGADA.',
-                'Assinatura: relatório do contrato não informado',
-                $in
-            );
-        }
+        // Relatório do RM Reports que gera o PDF. Só do corpo, sem default:
+        // um id errado manda ao aluno o PDF de outro relatório.
+        $idRelatorio          = $req('IDREPORT');
+        $codColigadaRelatorio = $req('CODCOLIGADAREPORT');
 
         // DRY_RUN é trava de segurança: valor irreconhecível ("sim") é erro,
         // nunca um envio real silencioso (mesma regra da baixa).

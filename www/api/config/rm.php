@@ -71,16 +71,6 @@ return [
         'operacao' => Env::get('FIN_BAIXA_OPERACAO', 'ExecuteWithXMLParams'),
     ],
 
-    // Assinatura eletrônica do contrato (POST /contratos/assinatura). Relatório
-    // do RM Reports que o processo EduTotvsSignContratoSliceableProcData usa
-    // para gerar o PDF enviado ao aluno. Sem default de propósito: um id errado
-    // manda o PDF de outro relatório. O corpo da requisição pode sobrescrever
-    // (IDREPORT / CODCOLIGADAREPORT).
-    'assinatura' => [
-        'relatorio_id'          => Env::get('ASSINATURA_RELATORIO_ID', ''),
-        'relatorio_codcoligada' => Env::get('ASSINATURA_RELATORIO_CODCOLIGADA', ''),
-    ],
-
     // Relatório contrato (o ID do relatório pode variar entre bases/ambientes)
     'relatorio_contrato' => [
         'codcoligada' => '0',
