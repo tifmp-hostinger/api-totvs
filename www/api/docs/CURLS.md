@@ -549,6 +549,43 @@ curl -X POST "$BASE_URL/contratos" \
   --data-urlencode "NASCIMENTO=1990-01-15"
 ```
 
+### `POST /contratos/assinatura`
+
+Envia o contrato do aluno para o TAE — TOTVS Assinatura Eletrônica (processo `EduTotvsSignContratoSliceableProcData`). **Cada chamada real dispara um envio.** Comece com `DRY_RUN: true` (devolve o XML sem enviar). `IDREPORT`/`CODCOLIGADAREPORT` são obrigatórios; `CODCONTRATO` é opcional.
+
+**Tipo 1 — JSON**
+
+```bash
+curl -X POST "$BASE_URL/contratos/assinatura" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+  "RA": "000123",
+  "OFERTA": "OF2026-001",
+  "NOMEDOCUMENTO": "Contrato de Matrícula",
+  "IDREPORT": "1234",
+  "CODCOLIGADAREPORT": "0",
+  "CODCONTRATO": "",
+  "DRY_RUN": true
+}'
+```
+
+**Tipo 2 — Campos (form-urlencoded → n8n "Using Fields Below")**
+
+```bash
+curl -X POST "$BASE_URL/contratos/assinatura" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Accept: application/json" \
+  --data-urlencode "RA=000123" \
+  --data-urlencode "OFERTA=OF2026-001" \
+  --data-urlencode "NOMEDOCUMENTO=Contrato de Matrícula" \
+  --data-urlencode "IDREPORT=1234" \
+  --data-urlencode "CODCOLIGADAREPORT=0" \
+  --data-urlencode "CODCONTRATO=" \
+  --data-urlencode "DRY_RUN=true"
+```
+
 
 ## Oferta
 

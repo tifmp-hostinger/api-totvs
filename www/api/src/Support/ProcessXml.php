@@ -116,6 +116,9 @@ class ProcessXml
     /** Template do FinLanBaixaTBCParamsProc (GetSchema) — variante TBC orientada a pagamento. */
     private const TEMPLATE_BAIXA_TBC_LAN = __DIR__ . '/../../resources/fin/FinLanBaixaTBCParamsProc.template.xml';
 
+    /** Template do EduTotvsSignSliceableParamsProc (XML da fórmula visual de envio do RM). */
+    private const TEMPLATE_ASSINATURA_CONTRATO = __DIR__ . '/../../resources/edu/EduTotvsSignSliceableParamsProc.template.xml';
+
     /**
      * Remove a indentação comum do heredoc e qualquer espaço em branco
      * antes da declaração <?xml ...?> — o desserializador .NET do RM exige
@@ -1751,5 +1754,75 @@ XML;
         }
 
         return $xml;
+    }
+
+    /**
+     * Processo "Integração TOTVS Assinatura Eletrônica"
+     * (ProcessServerName EduTotvsSignContratoSliceableProcData, raiz
+     * EduTotvsSignSliceableParamsProc): envia o contrato (SCONTRATO) para
+     * assinatura eletrônica. O PDF é gerado pelo RM a partir do relatório
+     * IdRelatorioRMReports; o assinante é só o aluno (EnviarAssinanteAluno).
+     *
+     * Template: resources/edu/EduTotvsSignSliceableParamsProc.template.xml —
+     * o XML que a fórmula visual do RM preenche no rmsPrepareParamsProcActivity
+     * (marcadores [CAMPO] viraram {{CAMPO}}). Ele carrega restos da sessão em
+     * que foi capturado; só esses foram trocados (ExecutionId,
+     * ScheduleDateTime, HostName, Ip, NetworkUser). O resto está igual.
+     *
+     * @param string|int $codColigadaRelatorio coligada do relatório (0 = global)
+     * @param string|int $idRelatorio          id do relatório do contrato no RM Reports
+     */
+    public static function assinaturaContrato(
+        string|int $codColigada,
+        string|int $codFilial,
+        string|int $codTipoCurso,
+        string|int $idPerlet,
+        string $ra,
+        string $codContrato,
+        string|int $codColigadaRelatorio,
+        string|int $idRelatorio,
+        string $nomeDocumento,
+        string $codUsuario
+    ): string {
+        $template = @file_get_contents(self::TEMPLATE_ASSINATURA_CONTRATO);
+        if ($template === false || trim($template) === '') {
+            throw new \RuntimeException('Template da assinatura eletrônica não encontrado: ' . self::TEMPLATE_ASSINATURA_CONTRATO);
+        }
+
+        // O RM desserializa estes como short/int: validados aqui para não
+        // injetarem markup nem gerarem tipo inválido no envelope.
+        $codColigada          = self::inteiro($codColigada, 'CODCOLIGADA');
+        $codFilial            = self::inteiro($codFilial, 'CODFILIAL');
+        $codTipoCurso         = self::inteiro($codTipoCurso, 'CODTIPOCURSO');
+        $idPerlet             = self::inteiro($idPerlet, 'IDPERLET');
+        $codColigadaRelatorio = self::inteiro($codColigadaRelatorio, 'CODCOLIGADAREPORT');
+        $idRelatorio          = self::inteiro($idRelatorio, 'IDREPORT');
+
+        $valores = [
+            '{{EXECID}}'            => self::guid(),
+            '{{SCHEDULE}}'          => date('Y-m-d\TH:i:s.0000000P'),
+            '{{USUARIO}}'           => self::esc($codUsuario),
+            '{{CODCOLIGADA}}'       => (string) $codColigada,
+            '{{CODFILIAL}}'         => (string) $codFilial,
+            '{{CODTIPOCURSO}}'      => (string) $codTipoCurso,
+            '{{IDPERLET}}'          => (string) $idPerlet,
+            '{{RA}}'                => self::esc($ra),
+            '{{CODCONTRATO}}'       => self::esc($codContrato),
+            '{{CODCOLIGADAREPORT}}' => (string) $codColigadaRelatorio,
+            '{{IDREPORT}}'          => (string) $idRelatorio,
+            '{{NOMEDOCUMENTO}}'     => self::esc($nomeDocumento),
+        ];
+
+        // Confere no TEMPLATE (não no resultado): um NOMEDOCUMENTO com "{{"
+        // é texto legítimo e não pode ser confundido com placeholder órfão.
+        preg_match_all('/\{\{[A-Z]+\}\}/', $template, $m);
+        $orfaos = array_diff(array_unique($m[0]), array_keys($valores));
+        if ($orfaos !== []) {
+            throw new \RuntimeException(
+                'Template da assinatura eletrônica com placeholder não resolvido: ' . implode(', ', $orfaos)
+            );
+        }
+
+        return strtr($template, $valores);
     }
 }

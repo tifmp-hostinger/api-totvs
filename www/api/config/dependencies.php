@@ -6,6 +6,7 @@ use FMP\RMApi\Clients\RMSoapClient;
 use FMP\RMApi\Controllers\SSOController;
 use FMP\RMApi\Helpers\Crypto;
 use FMP\RMApi\Services\AlunoService;
+use FMP\RMApi\Services\AssinaturaService;
 use FMP\RMApi\Services\BaixaService;
 use FMP\RMApi\Services\BolsaService;
 use FMP\RMApi\Services\CfoService;
@@ -62,6 +63,12 @@ return [
     ),
 
     ContratoService::class => fn(ContainerInterface $c) => new ContratoService(
+        $c->get(RMSoapClient::class),
+        $c->get(ConsultaService::class),
+        $c->get('rm')
+    ),
+
+    AssinaturaService::class => fn(ContainerInterface $c) => new AssinaturaService(
         $c->get(RMSoapClient::class),
         $c->get(ConsultaService::class),
         $c->get('rm')
