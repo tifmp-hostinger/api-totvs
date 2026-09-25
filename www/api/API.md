@@ -220,6 +220,36 @@ da geração de lançamentos e permanece `0`.
 `POST /contratos` — body: `NOME, CPF, ESTADO, CIDADE (código), BAIRRO (código), RUA, NUMERO, COMPLEMENTO, NACIONALIDADE, NASCIMENTO (Y-m-d)`.
 Pipeline: `GenerateReport` (relatório **1664**, coligada 0) → `GetGeneratedReportSize` → `GetFileChunk`. Retorna `{ "CONTEUDO": <conteúdo do PDF como o RM devolve> }`.
 
+### Contrato — Assinatura eletrônica
+
+`POST /contratos/assinatura` — **envia o contrato do aluno para a TOTVS Assinatura Eletrônica** (processo `EduTotvsSignContratoSliceableProcData`, via `wsProcess`/`ExecuteWithXMLParams`). O RM gera o PDF pelo relatório `IDREPORT` e manda para o aluno assinar. **Dispara um envio real a cada chamada — não é idempotente.**
+
+Body:
+```json
+{
+  "RA": "000123",                       // obrigatório
+  "OFERTA": "OF2026-001",               // obrigatório — resolve coligada/filial/período letivo/tipo de curso (INT.EDUVEM.00006)
+  "NOMEDOCUMENTO": "Contrato de Matrícula", // obrigatório — nome do documento na TOTVS Assinatura
+  "CODCONTRATO": "",                    // opcional — sem ele, resolve pela matrícula no período letivo (INT.EDUVEM.00014)
+  "IDREPORT": "",                       // opcional se ASSINATURA_RELATORIO_ID estiver configurado
+  "CODCOLIGADAREPORT": "",              // opcional se ASSINATURA_RELATORIO_CODCOLIGADA estiver configurado
+  "DRY_RUN": false                      // opcional — true devolve o XML gerado SEM enviar ao RM
+}
+```
+
+| Env | Default | Uso |
+|---|---|---|
+| `ASSINATURA_RELATORIO_ID` | — | id do relatório do contrato no RM Reports (o corpo pode sobrescrever com `IDREPORT`) |
+| `ASSINATURA_RELATORIO_CODCOLIGADA` | — | coligada do relatório (o corpo pode sobrescrever com `CODCOLIGADAREPORT`) |
+
+Sem relatório no corpo nem no env → **422** (não há default de propósito: um id errado manda o PDF de outro relatório).
+
+**XML:** `resources/edu/EduTotvsSignSliceableParamsProc.template.xml` — o XML que a fórmula visual do RM preenche no `rmsPrepareParamsProcActivity` (marcadores `[CAMPO]` viraram `{{CAMPO}}`). Só os restos da sessão em que ele foi capturado foram trocados (`ExecutionId`, `ScheduleDateTime`, `HostName`, `Ip`, `NetworkUser`). Fixos do original: assinante só o aluno (`EnviarAssinanteAluno=true`, demais `false`), `Operacao=EnviarDocumento`, `TipoDocumento=RMReports`. O usuário (`CodUsuario`/`UserName`/`$CODUSUARIO`) é o usuário de serviço (`TOTVS_WS_USER`).
+
+> ⚠️ **Ainda não validado contra o RM real.** A fórmula visual do RM checa os e-mails (`BuscaEmailsDiferentes` → `verificaEmailsDiferentes`) antes de disparar o processo; a API **não** faz essa checagem. Teste em homologação com `DRY_RUN` primeiro.
+
+Retorno (200): `{ RA, OFERTA, CODCONTRATO, IDREPORT, PROCESSO, retorno_rm, log_job }`. O processo roda no Monitor de Jobs (assíncrono): `retorno_rm` é o JobId; a API não confirma a chegada do documento ao aluno. Erro do RM → **502**; entrada inválida, oferta ou contrato não localizados → **422**.
+
 ### Financeiro — Baixa de lançamento
 
 `POST /financeiro/baixas` — **baixa (quita) um lançamento financeiro** no RM (processo `FinLanBaixaProc`, via `wsProcess`/`ExecuteWithParams`). É a contrapartida da geração de lançamentos: pega uma parcela em aberto (`IDLAN`) e registra o recebimento numa conta/caixa. **Grava movimento real no RM.**
@@ -345,6 +375,7 @@ Valida o cupom (`INT.EDUVEM.00016`) e resolve a oferta (`00006`) pelo `OFERTA`. 
 |---|---|
 | `EduMatriculaProcData` | "Matricular aluno" (PL + contrato) e "Matricular aluno nas disciplinas" |
 | `EduGerarLancFromContratoSliceableData` | "Gerar lançamento" financeiro |
+| `EduTotvsSignContratoSliceableProcData` | "Integração TOTVS Assinatura Eletrônica" (envio do contrato) — template em `resources/edu/` |
 
 Os XMLs ficam em `src/Support/ProcessXml.php`. São estruturalmente idênticos aos capturados do RM (compatibilidade de desserialização DataContract), com valores de sessão neutralizados: `ExecutionId` = GUID novo por chamada, `ScheduleDateTime` = agora, `HostName`/`Ip`/`NetworkUser` neutros, competência = mês corrente. Mantidos de propósito (comportamento do legado): `$CODCOLIGADA=1` e `$CODTIPOCURSO=2` no contexto dos processos, `CodStatus=23`, `CodTipoMat=7`.
 

@@ -77,6 +77,8 @@ return function (App $app): void {
     /* ---------- Contrato ---------- */
 
     $app->post('/contratos', [ContratoController::class, 'gerar']);
+    // Envio para a TOTVS Assinatura Eletrônica: EduTotvsSignContratoSliceableProcData.
+    $app->post('/contratos/assinatura', [ContratoController::class, 'enviarAssinatura']);
 
     /* ---------- Financeiro (processos wsProcess) ---------- */
 

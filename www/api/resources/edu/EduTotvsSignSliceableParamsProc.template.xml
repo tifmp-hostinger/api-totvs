@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-16"?>
+<EduTotvsSignSliceableParamsProc z:Id="i1" xmlns="http://www.totvs.com.br/RM/" xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/">
+  <ActionModule xmlns="http://www.totvs.com/">S</ActionModule>
+  <ActionName xmlns="http://www.totvs.com/">EduTotvsSignContratoProcAction</ActionName>
+  <CanParallelize xmlns="http://www.totvs.com/">true</CanParallelize>
+  <CanSendMail xmlns="http://www.totvs.com/">false</CanSendMail>
+  <CanWaitSchedule xmlns="http://www.totvs.com/">false</CanWaitSchedule>
+  <CodUsuario xmlns="http://www.totvs.com/">{{USUARIO}}</CodUsuario>
+  <ConnectionId i:nil="true" xmlns="http://www.totvs.com/" />
+  <ConnectionString i:nil="true" xmlns="http://www.totvs.com/" />
+  <Context z:Id="i2" xmlns="http://www.totvs.com/" xmlns:a="http://www.totvs.com.br/RM/">
+    <a:_params xmlns:b="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$EXERCICIOFISCAL</b:Key>
+        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODLOCPRT</b:Key>
+        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">-1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODTIPOCURSO</b:Key>
+        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">{{CODTIPOCURSO}}</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$EDUTIPOUSR</b:Key>
+        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">-1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODUNIDADEBIB</b:Key>
+        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">-1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODCOLIGADA</b:Key>
+        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">{{CODCOLIGADA}}</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$RHTIPOUSR</b:Key>
+        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">-1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODIGOEXTERNO</b:Key>
+        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">-1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODSISTEMA</b:Key>
+        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">S</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODUSUARIOSERVICO</b:Key>
+        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema" />
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODUSUARIO</b:Key>
+        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">{{USUARIO}}</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$IDPRJ</b:Key>
+        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">-1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CHAPAFUNCIONARIO</b:Key>
+        <b:Value i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">-1</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+      <b:KeyValueOfanyTypeanyType>
+        <b:Key i:type="c:string" xmlns:c="http://www.w3.org/2001/XMLSchema">$CODFILIAL</b:Key>
+        <b:Value i:type="c:int" xmlns:c="http://www.w3.org/2001/XMLSchema">{{CODFILIAL}}</b:Value>
+      </b:KeyValueOfanyTypeanyType>
+    </a:_params>
+    <a:Environment>DotNet</a:Environment>
+  </Context>
+  <CustomData i:nil="true" xmlns="http://www.totvs.com/" />
+  <DisableIsolateProcess xmlns="http://www.totvs.com/">false</DisableIsolateProcess>
+  <DriverType i:nil="true" xmlns="http://www.totvs.com/" />
+  <ExecutionId xmlns="http://www.totvs.com/">{{EXECID}}</ExecutionId>
+  <FailureMessage xmlns="http://www.totvs.com/">Falha na execução do processo</FailureMessage>
+  <FriendlyLogs i:nil="true" xmlns="http://www.totvs.com/" />
+  <HideProgressDialog xmlns="http://www.totvs.com/">false</HideProgressDialog>
+  <HostName xmlns="http://www.totvs.com/">integra-rm-api</HostName>
+  <Initialized xmlns="http://www.totvs.com/">true</Initialized>
+  <Ip xmlns="http://www.totvs.com/">127.0.0.1</Ip>
+  <IsolateProcess xmlns="http://www.totvs.com/">false</IsolateProcess>
+  <JobID xmlns="http://www.totvs.com/">
+    <Children />
+    <ExecID>1</ExecID>
+    <ID>569974</ID>
+    <IsPriorityJob>false</IsPriorityJob>
+  </JobID>
+  <JobServerHostName xmlns="http://www.totvs.com/">114384-elastic-service-N-RM-P-CAQB4Z-3-d84cWIN-Z2</JobServerHostName>
+  <MasterActionName xmlns="http://www.totvs.com/">EduContratoAction</MasterActionName>
+  <MaximumQuantityOfPrimaryKeysPerProcess xmlns="http://www.totvs.com/">1000</MaximumQuantityOfPrimaryKeysPerProcess>
+  <MinimumQuantityOfPrimaryKeysPerProcess xmlns="http://www.totvs.com/">1</MinimumQuantityOfPrimaryKeysPerProcess>
+  <NetworkUser xmlns="http://www.totvs.com/">{{USUARIO}}</NetworkUser>
+  <NotifyEmail xmlns="http://www.totvs.com/">false</NotifyEmail>
+  <NotifyEmailList i:nil="true" xmlns="http://www.totvs.com/" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <NotifyFluig xmlns="http://www.totvs.com/">false</NotifyFluig>
+  <OnlineMode xmlns="http://www.totvs.com/">false</OnlineMode>
+  <PrimaryKeyList xmlns="http://www.totvs.com/" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+    <a:ArrayOfanyType>
+      <a:anyType i:type="b:short" xmlns:b="http://www.w3.org/2001/XMLSchema">{{CODCOLIGADA}}</a:anyType>
+      <a:anyType i:type="b:string" xmlns:b="http://www.w3.org/2001/XMLSchema">{{RA}}</a:anyType>
+      <a:anyType i:type="b:int" xmlns:b="http://www.w3.org/2001/XMLSchema">{{IDPERLET}}</a:anyType>
+      <a:anyType i:type="b:string" xmlns:b="http://www.w3.org/2001/XMLSchema">{{CODCONTRATO}}</a:anyType>
+    </a:ArrayOfanyType>
+  </PrimaryKeyList>
+  <PrimaryKeyNames xmlns="http://www.totvs.com/" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+    <a:string>CODCOLIGADA</a:string>
+    <a:string>RA</a:string>
+    <a:string>IDPERLET</a:string>
+    <a:string>CODCONTRATO</a:string>
+  </PrimaryKeyNames>
+  <PrimaryKeyTableName xmlns="http://www.totvs.com/">SCONTRATO</PrimaryKeyTableName>
+  <ProcessName xmlns="http://www.totvs.com/">Integração TOTVS Assinatura Eletrônica</ProcessName>
+  <QuantityOfSplits xmlns="http://www.totvs.com/">0</QuantityOfSplits>
+  <SaveLogInDatabase xmlns="http://www.totvs.com/">true</SaveLogInDatabase>
+  <SaveParamsExecution xmlns="http://www.totvs.com/">false</SaveParamsExecution>
+  <ScheduleDateTime xmlns="http://www.totvs.com/">{{SCHEDULE}}</ScheduleDateTime>
+  <Scheduler xmlns="http://www.totvs.com/">JobMonitor</Scheduler>
+  <SendMail xmlns="http://www.totvs.com/">false</SendMail>
+  <ServerName xmlns="http://www.totvs.com/">EduTotvsSignContratoSliceableProcData</ServerName>
+  <ServiceInterface i:nil="true" xmlns="http://www.totvs.com/" xmlns:a="http://schemas.datacontract.org/2004/07/System" />
+  <ShouldParallelize xmlns="http://www.totvs.com/">false</ShouldParallelize>
+  <ShowReExecuteButton xmlns="http://www.totvs.com/">true</ShowReExecuteButton>
+  <StatusMessage i:nil="true" xmlns="http://www.totvs.com/" />
+  <SuccessMessage xmlns="http://www.totvs.com/">Processo executado com sucesso</SuccessMessage>
+  <SyncExecution xmlns="http://www.totvs.com/">false</SyncExecution>
+  <UseJobMonitor xmlns="http://www.totvs.com/">true</UseJobMonitor>
+  <UserName xmlns="http://www.totvs.com/">{{USUARIO}}</UserName>
+  <WaitSchedule xmlns="http://www.totvs.com/">false</WaitSchedule>
+  <EnableJobErrorProgressbar xmlns="http://www.totvs.com/">false</EnableJobErrorProgressbar>
+  <EnableTracing xmlns="http://www.totvs.com/">false</EnableTracing>
+  <LocalOnlyExecutor i:nil="true" xmlns="http://www.totvs.com/" />
+  <RMSJobIds i:nil="true" xmlns="http://www.totvs.com/" />
+  <SlicesCount xmlns="http://www.totvs.com/">0</SlicesCount>
+  <CodColigada>{{CODCOLIGADA}}</CodColigada>
+  <CodColigadaRelatorio>{{CODCOLIGADAREPORT}}</CodColigadaRelatorio>
+  <CodFilial>{{CODFILIAL}}</CodFilial>
+  <CodTipoCurso>{{CODTIPOCURSO}}</CodTipoCurso>
+  <EnviarAssinanteAluno>true</EnviarAssinanteAluno>
+  <EnviarAssinanteDiretorDaFilial>false</EnviarAssinanteDiretorDaFilial>
+  <EnviarAssinanteFiadorDoAluno>false</EnviarAssinanteFiadorDoAluno>
+  <EnviarAssinanteGestorDoMec>false</EnviarAssinanteGestorDoMec>
+  <EnviarAssinanteMaeDoAluno>false</EnviarAssinanteMaeDoAluno>
+  <EnviarAssinantePaiDoAluno>false</EnviarAssinantePaiDoAluno>
+  <EnviarAssinanteRespAcademicoDoAluno>false</EnviarAssinanteRespAcademicoDoAluno>
+  <FiltroGenericoSelecionado i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <FiltroSelecionadoExpressao i:nil="true" />
+  <FiltroSelecionadoNome i:nil="true" />
+  <IdRelatorioRMReports>{{IDREPORT}}</IdRelatorioRMReports>
+  <IdUploadArquivoPDF>00000000-0000-0000-0000-000000000000</IdUploadArquivoPDF>
+  <ListaTestemunhas />
+  <ListaValidadores />
+  <NomeDocumento>{{NOMEDOCUMENTO}}</NomeDocumento>
+  <Operacao>EnviarDocumento</Operacao>
+  <OutrosAssinantes />
+  <TipoDocumento>RMReports</TipoDocumento>
+  <Token>-1</Token>
+</EduTotvsSignSliceableParamsProc>
